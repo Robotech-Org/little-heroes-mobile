@@ -12,4 +12,8 @@ class AppRoutes {
   static const String chats = '/chats';
   static const String notifications = '/notifications';
   static const String reports = '/reports';
+
+  //  thhis sis fro the splash screen
+  static const String splash = '/splash';
+  static const String onboarding = '/onboarding';
 }
