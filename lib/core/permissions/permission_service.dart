@@ -9,17 +9,7 @@ class PermissionService {
     return status.isGranted;
   }
 
-  Future<bool> requestCameraPermission() async {
-    final status = await Permission.camera.request();
-
-    return status.isGranted;
-  }
-
-  Future<bool> requestMicrophonePermission() async {
-    final status = await Permission.microphone.request();
-
-    return status.isGranted;
-  }
+ 
 
   Future<bool> requestLocationPermission() async {
     final status = await Permission.location.request();

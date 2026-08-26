@@ -1,4 +1,23 @@
+# ============================================================
+# ENVIRONMENT & SECRETS
+# ============================================================
+
+.env
+.env.*
+!.env.example
+
+# Local secret/config files
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+key.properties
+
+# ============================================================
 # Miscellaneous
+# ============================================================
+
 *.class
 *.log
 *.pyc
@@ -12,37 +31,104 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# ============================================================
+# IntelliJ / Android Studio
+# ============================================================
+
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# ============================================================
+# VS Code
+# ============================================================
 
-# Flutter/Dart/Pub related
+# Uncomment if you do NOT want VS Code settings committed
+# .vscode/
+
+# ============================================================
+# Flutter / Dart / Pub
+# ============================================================
+
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
 /coverage/
 
-# Symbolication related
+# ============================================================
+# Flutter generated files
+# ============================================================
+
+.packages
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# ============================================================
+# Symbolication
+# ============================================================
+
 app.*.symbols
 
-# Obfuscation related
+# Obfuscation
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# ============================================================
+# Android build artifacts
+# ============================================================
+
 /android/app/debug
 /android/app/profile
 /android/app/release
 
-# Widget Preview related
+# ============================================================
+# Widget Preview
+# ============================================================
+
 .widget_preview/
+
+# ============================================================
+# macOS
+# ============================================================
+
+**/macos/Flutter/ephemeral/
+
+# ============================================================
+# Linux
+# ============================================================
+
+**/linux/flutter/ephemeral/
+
+# ============================================================
+# Windows
+# ============================================================
+
+**/windows/flutter/ephemeral/
+
+# ============================================================
+# iOS
+# ============================================================
+
+**/ios/Flutter/ephemeral/
+
+# ============================================================
+# Firebase generated/local files
+# ============================================================
+
+firebase-debug.log
+firebase-debug.*.log
+
+# ============================================================
+# Temporary / backup files
+# ============================================================
+
+*.tmp
+*.temp
+*.bak
+*~

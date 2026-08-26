@@ -29,7 +29,8 @@ class LoggingInterceptor extends Interceptor {
   ) {
    
 
-   
+    print('Error: ${error.message}');
+
     handler.next(error);
   }
 }
