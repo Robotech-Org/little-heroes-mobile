@@ -8,6 +8,8 @@ import 'core/theme/theme_cubit.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await StorageService.instance.init();
+
   runApp(
     BlocProvider(
       create: (_) => ThemeCubit(),

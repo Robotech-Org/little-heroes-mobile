@@ -1,15 +1,69 @@
-class ApiConstants {
-  ApiConstants._();
+class AppConstants {
+  AppConstants._();
 
-  static String get baseUrl =>
-      dotenv.env['API_BASE_URL'] ?? '';
+  // =========================
+  // App Information
+  // =========================
 
-  static const String login = '/auth/login';
-  static const String register = '/auth/register';
-  static const String logout = '/auth/logout';
-  static const String profile = '/auth/profile';
+  static const String appName = 'Little Heroes';
 
-  static const String notifications = '/notifications';
-  static const String chats = '/chats';
-  static const String reports = '/reports';
+  static const String appVersion = '1.0.0';
+
+  // =========================
+  // Pagination
+  // =========================
+
+  static const int defaultPage = 1;
+
+  static const int defaultPageSize = 20;
+
+  // =========================
+  // Validation
+  // =========================
+
+  static const int minPasswordLength = 8;
+
+  static const int maxPasswordLength = 50;
+
+  static const int minNameLength = 2;
+
+  static const int maxNameLength = 50;
+
+  // =========================
+  // UI
+  // =========================
+
+  static const double defaultPadding = 16.0;
+
+  static const double smallPadding = 8.0;
+
+  static const double largePadding = 24.0;
+
+  static const double defaultRadius = 12.0;
+
+  static const double buttonHeight = 52.0;
+
+  // =========================
+  // Timing
+  // =========================
+
+  static const Duration splashDuration = Duration(seconds: 2);
+
+  static const Duration snackbarDuration = Duration(seconds: 3);
+
+  static const Duration debounceDuration = Duration(milliseconds: 500);
+
+  // =========================
+  // Network
+  // =========================
+
+  static const Duration connectionTimeout = Duration(seconds: 30);
+
+  static const Duration receiveTimeout = Duration(seconds: 30);
+
+  // =========================
+  // Other
+  // =========================
+
+  static const int maxChatMessageLength = 1000;
 }
