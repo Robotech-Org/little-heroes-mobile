@@ -1,7 +1,41 @@
 class ValidationUtils {
   ValidationUtils._();
 
-  /// Validates an email address.
+  // =========================
+  // Required
+  // =========================
+
+  static String? required(
+    String? value, {
+    String fieldName = 'This field',
+  }) {
+    if (value == null || value.trim().isEmpty) {
+      return '$fieldName is required';
+    }
+
+    return null;
+  }
+
+  // =========================
+  // Name
+  // =========================
+
+  static String? name(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Name is required';
+    }
+
+    if (value.trim().length < 2) {
+      return 'Name must be at least 2 characters';
+    }
+
+    return null;
+  }
+
+  // =========================
+  // Email
+  // =========================
+
   static bool isValidEmail(String email) {
     final value = email.trim();
 
@@ -12,29 +46,38 @@ class ValidationUtils {
     ).hasMatch(value);
   }
 
-  
-  /// Requirements:
-  /// - At least 8 characters
-  /// - At least one uppercase letter
-  /// - At least one lowercase letter
-  /// - At least one number
-  /// - At least one special character
+  static String? emailError(String email) {
+    if (email.trim().isEmpty) {
+      return 'Email is required';
+    }
+
+    if (!isValidEmail(email)) {
+      return 'Please enter a valid email address';
+    }
+
+    return null;
+  }
+
+  // =========================
+  // Password
+  // =========================
+
   static bool isStrongPassword(String password) {
     return password.length >= 8 &&
         RegExp(r'[A-Z]').hasMatch(password) &&
         RegExp(r'[a-z]').hasMatch(password) &&
         RegExp(r'[0-9]').hasMatch(password) &&
-        RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\\/\[\]+=]').hasMatch(password);
+        RegExp(
+          r'[!@#$%^&*(),.?":{}|<>_\-\\/\[\]+=]',
+        ).hasMatch(password);
   }
 
-  /// Returns true when the password is weak.
   static bool isWeakPassword(String password) {
     if (password.isEmpty) return true;
 
     return !isStrongPassword(password);
   }
 
-  /// Returns a readable password validation message.
   static String? passwordError(String password) {
     if (password.isEmpty) {
       return 'Password is required';
@@ -56,21 +99,47 @@ class ValidationUtils {
       return 'Password must contain a number';
     }
 
-    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\\/\[\]+=]').hasMatch(password)) {
+    if (!RegExp(
+      r'[!@#$%^&*(),.?":{}|<>_\-\\/\[\]+=]',
+    ).hasMatch(password)) {
       return 'Password must contain a special character';
     }
 
     return null;
   }
 
-  /// Returns a readable email validation message.
-  static String? emailError(String email) {
-    if (email.trim().isEmpty) {
-      return 'Email is required';
+  // =========================
+  // Confirm Password
+  // =========================
+
+  static String? confirmPassword(
+    String? value,
+    String password,
+  ) {
+    if (value == null || value.isEmpty) {
+      return 'Please confirm your password';
     }
 
-    if (!isValidEmail(email)) {
-      return 'Please enter a valid email address';
+    if (value != password) {
+      return 'Passwords do not match';
+    }
+
+    return null;
+  }
+
+  // =========================
+  // Phone
+  // =========================
+
+  static String? phone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Phone number is required';
+    }
+
+    final phone = value.trim();
+
+    if (!RegExp(r'^\+?[0-9]{9,15}$').hasMatch(phone)) {
+      return 'Please enter a valid phone number';
     }
 
     return null;

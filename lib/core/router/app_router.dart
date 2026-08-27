@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import 'app_routes.dart';
@@ -40,11 +42,7 @@ class AppRouter {
         path: AppRoutes.login,
         name: 'login',
         builder: (context, state) {
-          return const Scaffold(
-            body: Center(
-              child: Text('Login'),
-            ),
-          );
+          return const LoginPage();
         },
       ),
 
@@ -52,11 +50,7 @@ class AppRouter {
         path: AppRoutes.register,
         name: 'register',
         builder: (context, state) {
-          return const Scaffold(
-            body: Center(
-              child: Text('Register'),
-            ),
-          );
+          return const RegisterPage();
         },
       ),
 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "315469618700",
+    "project_id": "astutransport",
+    "storage_bucket": "astutransport.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315469618700:android:b1d298d2c9c1d1bc931829",
+        "android_client_info": {
+          "package_name": "com.example.little_heroes_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9xqLMWm_dXa0_ZFjRiNAkRl4GsHwinAg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
