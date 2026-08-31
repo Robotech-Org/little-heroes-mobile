@@ -4,6 +4,7 @@ class AppRoutes {
   // Auth
   static const String login = '/login';
   static const String register = '/register';
+  static const otpVerification = '/otp-verification';
 
   // Main
   static const String home = '/home';
@@ -16,4 +17,6 @@ class AppRoutes {
   //  thhis sis fro the splash screen
   static const String splash = '/splash';
   static const String onboarding = '/onboarding';
+
+  static const String main = '/main';
 }

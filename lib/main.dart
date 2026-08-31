@@ -2,6 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:little_heroes_mobile/core/services/notification_service.dart';
+import 'package:little_heroes_mobile/features/notifications/presentation/bloc/notification_bloc.dart';
+import 'package:little_heroes_mobile/injection_container.dart';
 
 import 'core/router/app_router.dart';
 import 'core/services/storage_service.dart';
@@ -12,7 +14,7 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase FIRST
+  // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize local storage
@@ -21,8 +23,19 @@ Future<void> main() async {
   // Initialize FCM
   await NotificationService.initialize();
 
+  await initDependencies();
   runApp(
-    BlocProvider(create: (_) => ThemeCubit(), child: const LittleHeroesApp()),
+    MultiBlocProvider(
+      providers: [
+        // Theme
+        BlocProvider<ThemeCubit>(create: (_) => ThemeCubit()),
+
+        // Notifications
+        // BlocProvider<NotificationBloc>(create: (_) => NotificationBloc()),
+        BlocProvider<NotificationBloc>(create: (_) => sl<NotificationBloc>()),
+      ],
+      child: const LittleHeroesApp(),
+    ),
   );
 }
 

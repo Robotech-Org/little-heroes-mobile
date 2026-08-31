@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/app_routes.dart';
-import '../../../../core/utils/validation_utils.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/app_text.dart';
-import '../../../../core/widgets/app_text_field.dart';
+import '../widgets/phone_number_field.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,19 +17,33 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController();
 
   bool _isLoading = false;
 
+  Country _selectedCountry = countries.first;
+
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
+  String? _validatePhone(String? value) {
+    final phone = value?.trim() ?? '';
+
+    if (phone.isEmpty) {
+      return 'Phone number is required';
+    }
+
+    if (phone.length < 7) {
+      return 'Enter a valid phone number';
+    }
+
+    return null;
+  }
+
+  Future<void> _sendOtp() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -41,8 +54,13 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
 
-    // TODO: Connect Login BLoC / UseCase.
-    await Future.delayed(const Duration(seconds: 1));
+    // Frontend-only simulation.
+    //
+    // Later:
+    // SendOtpUseCase
+    // will be connected here.
+
+    await Future.delayed(const Duration(milliseconds: 700));
 
     if (!mounted) return;
 
@@ -50,8 +68,10 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = false;
     });
 
-    // TODO: Navigate after successful login.
-    context.go(AppRoutes.home);
+    final phoneNumber =
+        '${_selectedCountry.dialCode}${_phoneController.text.trim()}';
+
+    context.push(AppRoutes.otpVerification, extra: phoneNumber);
   }
 
   @override
@@ -60,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Form(
               key: _formKey,
               child: Column(
@@ -68,72 +88,72 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   const SizedBox(height: 40),
 
+                  // Icon
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary
+                          .withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.phone_android_rounded,
+                      size: 38,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
                   AppText(
                     'Welcome Back',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineMedium
-                        ?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.headlineMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
 
                   AppText(
-                    'Sign in to continue to Little Heroes',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium,
+                    'Sign in to Little Heroes using your phone number.',
+                    style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 36),
 
-                  // Email
-                  AppTextField(
-                    controller: _emailController,
-                    label: 'Email',
-                    hint: 'Enter your email',
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    prefixIcon: const Icon(
-                      Icons.email_outlined,
-                    ),
-                    required: true,
-                    validator: (value) {
-                      return ValidationUtils.emailError(
-                        value ?? '',
-                      );
-                    },
+                  AppText(
+                    'Phone Number',
+                    style: Theme.of(context).textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
 
-                  // Password
-                  AppTextField(
-                    controller: _passwordController,
-                    label: 'Password',
-                    hint: 'Enter your password',
-                    obscureText: true,
-                    textInputAction: TextInputAction.done,
-                    prefixIcon: const Icon(
-                      Icons.lock_outline,
-                    ),
-                    required: true,
-                    validator: (value) {
-                      return ValidationUtils.passwordError(
-                        value ?? '',
-                      );
+                  PhoneNumberField(
+                    controller: _phoneController,
+                    selectedCountry: _selectedCountry,
+                    onCountryChanged: (country) {
+                      setState(() {
+                        _selectedCountry = country;
+                      });
                     },
+                    validator: _validatePhone,
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
+
+                  AppText(
+                    'We will send a 6-digit verification code to this number.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+
+                  const SizedBox(height: 28),
 
                   AppButton(
-                    text: 'Login',
-                    onPressed: _login,
+                    text: 'Send OTP',
+                    onPressed: _sendOtp,
                     isLoading: _isLoading,
                   ),
 
@@ -142,14 +162,10 @@ class _LoginPageState extends State<LoginPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const AppText(
-                        'Don\'t have an account?',
-                      ),
+                      const AppText('Don\'t have an account?'),
                       TextButton(
                         onPressed: () {
-                          context.push(
-                            AppRoutes.register,
-                          );
+                          context.push(AppRoutes.register);
                         },
                         child: const Text('Sign Up'),
                       ),
