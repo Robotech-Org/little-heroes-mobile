@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:little_heroes_mobile/features/chats/presentation/pages/chat_page.dart';
+import 'package:little_heroes_mobile/features/students/presentation/pages/students_page.dart';
 
 import '../../../home/presentation/pages/home_page.dart';
 import '../../domain/entities/user_role.dart';
 import '../widgets/bottom_navigation.dart';
-import '../widgets/messages_page.dart';
 import '../widgets/navigation_item.dart';
 import '../widgets/settings_page.dart';
-import '../widgets/students_page.dart';
 
 class MainPage extends StatefulWidget {
   final UserRole role;
@@ -20,12 +20,39 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
+  // Current active role.
+  late UserRole _role;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _role = widget.role;
+  }
+
+  // ============================================================
+  // CHANGE ROLE
+  // ============================================================
+
+  void _changeRole(UserRole newRole) {
+    if (_role == newRole) {
+      return;
+    }
+
+    setState(() {
+      _role = newRole;
+
+      // Go back to Home after changing role.
+      _currentIndex = 0;
+    });
+  }
+
   // ============================================================
   // NAVIGATION ITEMS
   // ============================================================
 
   List<NavigationItem> get _navigationItems {
-    switch (widget.role) {
+    switch (_role) {
       case UserRole.teacher:
         return const [
           NavigationItem(
@@ -106,13 +133,17 @@ class _MainPageState extends State<MainPage> {
 
   List<Widget> get _pages {
     return [
-      HomePage(role: widget.role),
+      // Home changes according to role.
+      HomePage(role: _role),
 
-      const MessagesPage(),
+      // Shared messages page.
+      const ChatsPage(),
 
-      StudentsPage(role: widget.role),
+      // Students/Children page receives current role.
+      StudentsPage(),
 
-      const SettingsPage(),
+      // Settings receives current role and callback.
+      SettingsPage(role: _role, onRoleChanged: _changeRole),
     ];
   }
 
