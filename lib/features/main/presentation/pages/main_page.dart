@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:little_heroes_mobile/features/chats/presentation/pages/chat_page.dart';
+import 'package:little_heroes_mobile/features/payments/presentation/pages/payment_page.dart';
 import 'package:little_heroes_mobile/features/students/presentation/pages/students_page.dart';
 
 import '../../../home/presentation/pages/home_page.dart';
@@ -20,13 +21,11 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
-  // Current active role.
   late UserRole _role;
 
   @override
   void initState() {
     super.initState();
-
     _role = widget.role;
   }
 
@@ -42,7 +41,7 @@ class _MainPageState extends State<MainPage> {
     setState(() {
       _role = newRole;
 
-      // Go back to Home after changing role.
+      // Always return to Home when role changes.
       _currentIndex = 0;
     });
   }
@@ -53,6 +52,10 @@ class _MainPageState extends State<MainPage> {
 
   List<NavigationItem> get _navigationItems {
     switch (_role) {
+      // ========================================================
+      // TEACHER
+      // ========================================================
+
       case UserRole.teacher:
         return const [
           NavigationItem(
@@ -77,6 +80,10 @@ class _MainPageState extends State<MainPage> {
           ),
         ];
 
+      // ========================================================
+      // PARENT
+      // ========================================================
+
       case UserRole.parent:
         return const [
           NavigationItem(
@@ -90,9 +97,9 @@ class _MainPageState extends State<MainPage> {
             activeIcon: Icons.chat_bubble_rounded,
           ),
           NavigationItem(
-            label: 'Children',
-            icon: Icons.child_care_outlined,
-            activeIcon: Icons.child_care_rounded,
+            label: 'Payment',
+            icon: Icons.payment_outlined,
+            activeIcon: Icons.payment_rounded,
           ),
           NavigationItem(
             label: 'Settings',
@@ -100,6 +107,10 @@ class _MainPageState extends State<MainPage> {
             activeIcon: Icons.settings_rounded,
           ),
         ];
+
+      // ========================================================
+      // ADVISOR
+      // ========================================================
 
       case UserRole.advisor:
         return const [
@@ -132,19 +143,46 @@ class _MainPageState extends State<MainPage> {
   // ============================================================
 
   List<Widget> get _pages {
-    return [
-      // Home changes according to role.
-      HomePage(role: _role),
+    switch (_role) {
+      // ========================================================
+      // TEACHER
+      // ========================================================
 
-      // Shared messages page.
-      const ChatsPage(),
+      case UserRole.teacher:
+        return [
+          HomePage(role: _role),
+          const ChatsPage(),
+          const StudentsPage(),
+          SettingsPage(role: _role, onRoleChanged: _changeRole),
+        ];
 
-      // Students/Children page receives current role.
-      StudentsPage(),
+      // ========================================================
+      // PARENT
+      // ========================================================
 
-      // Settings receives current role and callback.
-      SettingsPage(role: _role, onRoleChanged: _changeRole),
-    ];
+      case UserRole.parent:
+        return [
+          HomePage(role: _role),
+          const ChatsPage(),
+
+          // Payment instead of Students
+          const PaymentPage(),
+
+          SettingsPage(role: _role, onRoleChanged: _changeRole),
+        ];
+
+      // ========================================================
+      // ADVISOR
+      // ========================================================
+
+      case UserRole.advisor:
+        return [
+          HomePage(role: _role),
+          const ChatsPage(),
+          const StudentsPage(),
+          SettingsPage(role: _role, onRoleChanged: _changeRole),
+        ];
+    }
   }
 
   // ============================================================
@@ -168,13 +206,14 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     final items = _navigationItems;
+    final pages = _pages;
 
     if (_currentIndex >= items.length) {
       _currentIndex = 0;
     }
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      body: IndexedStack(index: _currentIndex, children: pages),
 
       bottomNavigationBar: MainBottomNavigation(
         currentIndex: _currentIndex,

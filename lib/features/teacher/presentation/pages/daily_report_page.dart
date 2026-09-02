@@ -29,12 +29,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
       className: 'Grade 4A',
       avatar: 'DB',
     ),
-    _Student(
-      id: '4',
-      name: 'Hana Alemu',
-      className: 'Grade 4A',
-      avatar: 'HA',
-    ),
+    _Student(id: '4', name: 'Hana Alemu', className: 'Grade 4A', avatar: 'HA'),
     _Student(
       id: '5',
       name: 'Samuel Girma',
@@ -129,24 +124,17 @@ class _DailyReportPageState extends State<DailyReportPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Today\'s Students',
+                  'Select Students',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Record daily activities and wellbeing',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 16),
+
+                const SizedBox(height: 8),
 
                 // ======================================================
                 // SEARCH
                 // ======================================================
-
                 TextField(
                   controller: _searchController,
                   onChanged: (value) {
@@ -184,40 +172,8 @@ class _DailyReportPageState extends State<DailyReportPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: colors.primary,
-                        width: 1.5,
-                      ),
+                      borderSide: BorderSide(color: colors.primary, width: 1.5),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // ============================================================
-          // STUDENT COUNT
-          // ============================================================
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Text(
-                  '${_filteredStudents.length} students',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '${_students.where((s) => s.hasReport).length} completed',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colors.primary,
                   ),
                 ),
               ],
@@ -229,7 +185,6 @@ class _DailyReportPageState extends State<DailyReportPage> {
           // ============================================================
           // STUDENT LIST
           // ============================================================
-
           Expanded(
             child: _filteredStudents.isEmpty
                 ? _EmptyStudents()
@@ -282,10 +237,7 @@ class _StudentCard extends StatelessWidget {
   final _Student student;
   final VoidCallback onTap;
 
-  const _StudentCard({
-    required this.student,
-    required this.onTap,
-  });
+  const _StudentCard({required this.student, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -366,10 +318,7 @@ class _StudentCard extends StatelessWidget {
                             label: 'Nap',
                           ),
                           const SizedBox(width: 5),
-                          _MiniStatus(
-                            icon: Icons.mood_outlined,
-                            label: 'Mood',
-                          ),
+                          _MiniStatus(icon: Icons.mood_outlined, label: 'Mood'),
                         ],
                       ),
                     ),
@@ -416,20 +365,14 @@ class _MiniStatus extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _MiniStatus({
-    required this.icon,
-    required this.label,
-  });
+  const _MiniStatus({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 7,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
@@ -437,11 +380,7 @@ class _MiniStatus extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 12,
-            color: colors.onSurfaceVariant,
-          ),
+          Icon(icon, size: 12, color: colors.onSurfaceVariant),
           const SizedBox(width: 3),
           Text(
             label,
@@ -478,16 +417,12 @@ class _EmptyStudents extends StatelessWidget {
           const SizedBox(height: 12),
           const Text(
             'No students found',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 5),
           Text(
             'Try another student name',
-            style: TextStyle(
-              color: colors.onSurfaceVariant,
-            ),
+            style: TextStyle(color: colors.onSurfaceVariant),
           ),
         ],
       ),
@@ -513,8 +448,7 @@ class _StudentDailyReportSheet extends StatefulWidget {
       _StudentDailyReportSheetState();
 }
 
-class _StudentDailyReportSheetState
-    extends State<_StudentDailyReportSheet> {
+class _StudentDailyReportSheetState extends State<_StudentDailyReportSheet> {
   final Map<String, Set<String>> _selected = {};
 
   final Map<String, List<String>> _options = {
@@ -526,20 +460,8 @@ class _StudentDailyReportSheetState
       'Ate partially',
       'Did not eat',
     ],
-    'Nap': [
-      'Slept well',
-      'Short nap',
-      'Did not sleep',
-      'Restless',
-    ],
-    'Mood': [
-      'Happy',
-      'Calm',
-      'Excited',
-      'Sad',
-      'Tired',
-      'Anxious',
-    ],
+    'Nap': ['Slept well', 'Short nap', 'Did not sleep', 'Restless'],
+    'Mood': ['Happy', 'Calm', 'Excited', 'Sad', 'Tired', 'Anxious'],
     'Behaviour': [
       'Friendly',
       'Cooperative',
@@ -548,19 +470,8 @@ class _StudentDailyReportSheetState
       'Distracted',
       'Needs support',
     ],
-    'Health': [
-      'Healthy',
-      'Feeling unwell',
-      'Fever',
-      'Cough',
-      'Medication',
-    ],
-    'Hygiene': [
-      'Clean',
-      'Hand washing',
-      'Toilet routine',
-      'Needs assistance',
-    ],
+    'Health': ['Healthy', 'Feeling unwell', 'Fever', 'Cough', 'Medication'],
+    'Hygiene': ['Clean', 'Hand washing', 'Toilet routine', 'Needs assistance'],
     'Other': [
       'Participated well',
       'Outdoor activity',
@@ -597,9 +508,7 @@ class _StudentDailyReportSheetState
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Daily report saved for ${widget.student.name}',
-        ),
+        content: Text('Daily report saved for ${widget.student.name}'),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -619,9 +528,7 @@ class _StudentDailyReportSheetState
         return Container(
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(28),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             children: [
@@ -643,7 +550,6 @@ class _StudentDailyReportSheetState
               // ============================================================
               // HEADER
               // ============================================================
-
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 12, 10),
                 child: Row(
@@ -693,14 +599,11 @@ class _StudentDailyReportSheetState
                 ),
               ),
 
-              Divider(
-                color: colors.outlineVariant.withValues(alpha: .4),
-              ),
+              Divider(color: colors.outlineVariant.withValues(alpha: .4)),
 
               // ============================================================
               // REPORT OPTIONS
               // ============================================================
-
               Expanded(
                 child: ListView(
                   controller: scrollController,
@@ -738,7 +641,6 @@ class _StudentDailyReportSheetState
               // ============================================================
               // SAVE BUTTON
               // ============================================================
-
               Container(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                 decoration: BoxDecoration(
@@ -759,9 +661,7 @@ class _StudentDailyReportSheetState
                     icon: const Icon(Icons.check_rounded),
                     label: const Text(
                       'Save Daily Report',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -821,11 +721,7 @@ class _ReportCategory extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: 19,
-                color: colors.primary,
-              ),
+              Icon(icon, size: 19, color: colors.primary),
               const SizedBox(width: 7),
               Text(
                 title,
@@ -874,10 +770,7 @@ class _ReportCategory extends StatelessWidget {
                   selected: isSelected,
                   label: Text(option),
                   avatar: isSelected
-                      ? const Icon(
-                          Icons.check_rounded,
-                          size: 16,
-                        )
+                      ? const Icon(Icons.check_rounded, size: 16)
                       : null,
                   onSelected: (_) {
                     onToggle(option);

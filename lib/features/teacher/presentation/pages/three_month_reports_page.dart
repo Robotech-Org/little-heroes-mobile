@@ -243,52 +243,6 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
                 // ==========================================================
                 // STUDENT COUNT
                 // ==========================================================
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primaryContainer,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            Icons.people_alt_rounded,
-                            size: 16,
-                            color: colors.onPrimaryContainer,
-                          ),
-                        ),
-
-                        const SizedBox(width: 10),
-
-                        Text(
-                          '${students.length} '
-                          '${students.length == 1 ? 'Student' : 'Students'}',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: colors.onSurface,
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        if (value.text.isNotEmpty)
-                          Text(
-                            'Search results',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
 
                 // ==========================================================
                 // EMPTY STATE
