@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:little_heroes_mobile/core/widgets/document_viewer/document_viewer_demo_page.dart';
 import 'package:little_heroes_mobile/features/chats/presentation/pages/chat_page.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/pages/payment_page.dart';
 import 'package:little_heroes_mobile/features/students/presentation/pages/students_page.dart';
@@ -178,7 +179,8 @@ class _MainPageState extends State<MainPage> {
       case UserRole.advisor:
         return [
           HomePage(role: _role),
-          const ChatsPage(),
+          // const ChatsPage(),
+          DocumentViewerDemoPage(),
           const StudentsPage(),
           SettingsPage(role: _role, onRoleChanged: _changeRole),
         ];
