@@ -19,4 +19,14 @@ class AppRoutes {
   static const String onboarding = '/onboarding';
 
   static const String main = '/main';
+  static const String settings = '/settings';
+
+  // ============================================================
+  // TEACHER TOOLS
+  // ============================================================
+
+    static const dailyReport = '/daily-report';
+    static const threeMonthReports = '/three-month-reports';
+    static const weeklyPlanner = '/weekly-planner';
+    static const observations = '/observations';
 }

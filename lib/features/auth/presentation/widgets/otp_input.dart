@@ -12,20 +12,18 @@ class OtpInput extends StatefulWidget {
 }
 
 class _OtpInputState extends State<OtpInput> {
-  static const int _otpLength = 6;
+  static const int _length = 6;
 
-  final List<TextEditingController> _controllers = List.generate(
-    _otpLength,
-    (_) => TextEditingController(),
-  );
+  late final List<TextEditingController> _controllers;
+  late final List<FocusNode> _focusNodes;
 
-  final List<FocusNode> _focusNodes = List.generate(
-    _otpLength,
-    (_) => FocusNode(),
-  );
+  @override
+  void initState() {
+    super.initState();
 
-  String get _otp {
-    return _controllers.map((controller) => controller.text).join();
+    _controllers = List.generate(_length, (_) => TextEditingController());
+
+    _focusNodes = List.generate(_length, (_) => FocusNode());
   }
 
   @override
@@ -41,8 +39,27 @@ class _OtpInputState extends State<OtpInput> {
     super.dispose();
   }
 
+  String get _otp {
+    return _controllers.map((controller) => controller.text).join();
+  }
+
+  void _notify() {
+    final otp = _otp;
+
+    widget.onChanged(otp);
+
+    if (otp.length == _length) {
+      widget.onCompleted?.call(otp);
+    }
+  }
+
   void _handleChanged(String value, int index) {
-    if (value.isNotEmpty && index < _otpLength - 1) {
+    if (value.length > 1) {
+      _handlePaste(value);
+      return;
+    }
+
+    if (value.isNotEmpty && index < _length - 1) {
       _focusNodes[index + 1].requestFocus();
     }
 
@@ -50,59 +67,93 @@ class _OtpInputState extends State<OtpInput> {
       _focusNodes[index - 1].requestFocus();
     }
 
-    final otp = _otp;
+    _notify();
+  }
 
-    widget.onChanged(otp);
+  void _handlePaste(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
 
-    if (otp.length == _otpLength) {
-      widget.onCompleted?.call(otp);
+    if (digits.isEmpty) {
+      return;
     }
+
+    final otp = digits.length > _length ? digits.substring(0, _length) : digits;
+
+    for (var i = 0; i < _length; i++) {
+      _controllers[i].clear();
+    }
+
+    for (var i = 0; i < otp.length; i++) {
+      _controllers[i].text = otp[i];
+    }
+
+    if (otp.length == _length) {
+      _focusNodes[_length - 1].unfocus();
+    } else {
+      _focusNodes[otp.length].requestFocus();
+    }
+
+    _notify();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(_otpLength, (index) {
-        return SizedBox(
-          width: 48,
-          height: 58,
-          child: TextField(
-            controller: _controllers[index],
-            focusNode: _focusNodes[index],
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            maxLength: 1,
-            style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              counterText: '',
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surface,
-              contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.outline,
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+
+        final boxWidth =
+            (constraints.maxWidth - (spacing * (_length - 1))) / _length;
+
+        final width = boxWidth.clamp(42.0, 54.0);
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(_length, (index) {
+            return SizedBox(
+              width: width,
+              height: 58,
+              child: TextField(
+                controller: _controllers[index],
+                focusNode: _focusNodes[index],
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                textInputAction: index == _length - 1
+                    ? TextInputAction.done
+                    : TextInputAction.next,
+                maxLength: 1,
+                autofillHints: index == 0
+                    ? const [AutofillHints.oneTimeCode]
+                    : null,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.primary,
-                  width: 2,
+                decoration: InputDecoration(
+                  counterText: '',
+                  filled: true,
+                  fillColor: colors.surface,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: colors.outlineVariant),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: colors.primary, width: 2),
+                  ),
                 ),
+                onChanged: (value) {
+                  _handleChanged(value, index);
+                },
               ),
-            ),
-            onChanged: (value) {
-              _handleChanged(value, index);
-            },
-          ),
+            );
+          }),
         );
-      }),
+      },
     );
   }
 }

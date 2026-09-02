@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:little_heroes_mobile/features/main/domain/entities/user_role.dart';
+import 'package:little_heroes_mobile/features/teacher/presentation/widgets/teacher_tools.dart';
 
 import '../widgets/home_header.dart';
 import '../widgets/home_stat_card.dart';
-import '../widgets/quick_action_card.dart';
 import '../widgets/role_dashboard.dart';
 
 class HomePage extends StatelessWidget {
@@ -13,61 +13,67 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
 
           slivers: [
-            // ======================================================
+            // ============================================================
             // HEADER
-            // ======================================================
+            // ============================================================
 
             SliverToBoxAdapter(child: HomeHeader(role: role)),
 
-            // ======================================================
+            // ============================================================
             // CONTENT
-            // ======================================================
+            // ============================================================
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  // ==================================================
+                  // ======================================================
                   // ROLE DASHBOARD
-                  // ==================================================
+                  // ======================================================
 
                   RoleDashboard(role: role),
 
                   const SizedBox(height: 24),
 
-                  // ==================================================
+                  // ======================================================
                   // STATISTICS
-                  // ==================================================
+                  // ======================================================
                   HomeStatCard(role: role),
 
+                  // ======================================================
+                  // TEACHER TOOLS
+                  // ======================================================
+                  if (role == UserRole.teacher) ...[
+                    const SizedBox(height: 28),
+
+                    const _SectionHeader(title: 'Dashboard', subtitle: ''),
+
+                    const SizedBox(height: 14),
+
+                    TeacherTools(
+                      role: role,
+                      onToolTap: (tool) {
+                        _openTeacherTool(context, tool);
+                      },
+                    ),
+                  ],
+
                   const SizedBox(height: 28),
 
-                  // ==================================================
-                  // QUICK ACTIONS
-                  // ==================================================
-                  _SectionHeader(title: 'Quick Actions'),
-
-                  const SizedBox(height: 14),
-
-                  QuickActionCard(role: role),
-
-                  const SizedBox(height: 28),
-
-                  // ==================================================
+                  // ======================================================
                   // RECENT ACTIVITY
-                  // ==================================================
-                  _SectionHeader(title: _activityTitle),
+                  // ======================================================
+                  _SectionHeader(
+                    title: _activityTitle,
+                    subtitle: _activitySubtitle,
+                  ),
 
                   const SizedBox(height: 14),
 
@@ -75,10 +81,13 @@ class HomePage extends StatelessWidget {
 
                   const SizedBox(height: 28),
 
-                  // ==================================================
+                  // ======================================================
                   // UPCOMING
-                  // ==================================================
-                  const _SectionHeader(title: 'Upcoming'),
+                  // ======================================================
+                  const _SectionHeader(
+                    title: 'Upcoming',
+                    subtitle: 'Your next scheduled activity',
+                  ),
 
                   const SizedBox(height: 14),
 
@@ -94,9 +103,48 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // ==============================================================
-  // ACTIVITY TITLE
-  // ==============================================================
+  // ========================================================================
+  // TEACHER TOOL NAVIGATION
+  // ========================================================================
+
+  void _openTeacherTool(BuildContext context, TeacherTool tool) {
+    switch (tool.title) {
+      case 'Daily Report':
+        _showToolMessage(context, 'Daily Report selected');
+        break;
+
+      case '3 Month Reports':
+        _showToolMessage(context, '3 Month Reports selected');
+        break;
+
+      case 'Weekly Planner':
+        _showToolMessage(context, 'Weekly Planner selected');
+        break;
+
+      case 'Observations':
+        _showToolMessage(context, 'Observations selected');
+        break;
+    }
+  }
+
+  void _showToolMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      );
+  }
+
+  // ========================================================================
+  // ACTIVITY TITLES
+  // ========================================================================
 
   String get _activityTitle {
     switch (role) {
@@ -110,45 +158,74 @@ class HomePage extends StatelessWidget {
         return 'Recent Activities';
     }
   }
+
+  String get _activitySubtitle {
+    switch (role) {
+      case UserRole.teacher:
+        return 'Latest updates from your classes';
+
+      case UserRole.parent:
+        return 'Latest updates about your child';
+
+      case UserRole.advisor:
+        return 'Latest student activities';
+    }
+  }
 }
 
-// ==================================================================
+// ============================================================================
 // SECTION HEADER
-// ==================================================================
+// ============================================================================
 
 class _SectionHeader extends StatelessWidget {
   final String title;
+  final String? subtitle;
 
-  const _SectionHeader({required this.title});
+  const _SectionHeader({required this.title, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = theme.colorScheme;
 
-    return Text(
-      title,
-      style: theme.textTheme.titleMedium?.copyWith(
-        fontSize: 19,
-        fontWeight: FontWeight.w700,
-        color: colorScheme.onSurface,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontSize: 19,
+            fontWeight: FontWeight.w700,
+            color: colors.onSurface,
+          ),
+        ),
+
+        if (subtitle != null) ...[
+          const SizedBox(height: 4),
+
+          Text(
+            subtitle!,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
 
-// ==================================================================
+// ============================================================================
 // RECENT ACTIVITY
-// ==================================================================
+// ============================================================================
 
 class _RecentActivity extends StatelessWidget {
   final UserRole role;
 
   const _RecentActivity({required this.role});
-
-  // ================================================================
-  // ACTIVITY DATA
-  // ================================================================
 
   List<_Activity> get activities {
     switch (role) {
@@ -222,30 +299,33 @@ class _RecentActivity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = Theme.of(context).colorScheme;
 
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+          color: colors.outlineVariant.withValues(alpha: 0.35),
         ),
       ),
-
       child: Column(
-        children: activities
-            .map((activity) => _ActivityTile(activity: activity))
-            .toList(),
+        children: List.generate(activities.length, (index) {
+          final activity = activities[index];
+
+          return _ActivityTile(
+            activity: activity,
+            showDivider: index != activities.length - 1,
+          );
+        }),
       ),
     );
   }
 }
 
-// ==================================================================
+// ============================================================================
 // ACTIVITY MODEL
-// ==================================================================
+// ============================================================================
 
 class _Activity {
   final String title;
@@ -261,103 +341,101 @@ class _Activity {
   });
 }
 
-// ==================================================================
+// ============================================================================
 // ACTIVITY TILE
-// ==================================================================
+// ============================================================================
 
 class _ActivityTile extends StatelessWidget {
   final _Activity activity;
+  final bool showDivider;
 
-  const _ActivityTile({required this.activity});
+  const _ActivityTile({required this.activity, required this.showDivider});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          // ========================================================
-          // ICON
-          // ========================================================
-
-          Container(
-            width: 45,
-            height: 45,
-
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(14),
-            ),
-
-            child: Icon(
-              activity.icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 21,
-            ),
-          ),
-
-          const SizedBox(width: 13),
-
-          // ========================================================
-          // TEXT
-          // ========================================================
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  activity.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  activity.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                child: Icon(
+                  activity.icon,
+                  color: colors.onPrimaryContainer,
+                  size: 21,
                 ),
-              ],
-            ),
+              ),
+
+              const SizedBox(width: 13),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      activity.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colors.onSurface,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      activity.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Text(
+                activity.time,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 10,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
+        ),
 
-          const SizedBox(width: 10),
-
-          // ========================================================
-          // TIME
-          // ========================================================
-          Text(
-            activity.time,
-
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 10,
-              color: colorScheme.onSurfaceVariant,
-            ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            indent: 74,
+            endIndent: 16,
+            color: colors.outlineVariant.withValues(alpha: 0.25),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
 
-// ==================================================================
-// UPCOMING
-// ==================================================================
+// ============================================================================
+// UPCOMING CARD
+// ============================================================================
 
 class _UpcomingCard extends StatelessWidget {
   final UserRole role;
@@ -395,45 +473,33 @@ class _UpcomingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = theme.colorScheme;
 
     final item = upcoming;
 
     return Container(
       padding: const EdgeInsets.all(17),
-
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(20),
-
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+          color: colors.outlineVariant.withValues(alpha: 0.35),
         ),
       ),
-
       child: Row(
         children: [
-          // ========================================================
-          // ICON
-          // ========================================================
-
           Container(
             width: 52,
             height: 52,
-
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
+              color: colors.primaryContainer,
               borderRadius: BorderRadius.circular(15),
             ),
-
-            child: Icon(item.icon, color: colorScheme.onPrimaryContainer),
+            child: Icon(item.icon, color: colors.onPrimaryContainer),
           ),
 
           const SizedBox(width: 14),
 
-          // ========================================================
-          // INFORMATION
-          // ========================================================
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,11 +508,10 @@ class _UpcomingCard extends StatelessWidget {
                   item.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
+                    color: colors.onSurface,
                   ),
                 ),
 
@@ -456,10 +521,9 @@ class _UpcomingCard extends StatelessWidget {
                   item.subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 12,
-                    color: colorScheme.onSurfaceVariant,
+                    color: colors.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -468,16 +532,12 @@ class _UpcomingCard extends StatelessWidget {
 
           const SizedBox(width: 10),
 
-          // ========================================================
-          // TIME
-          // ========================================================
           Text(
             item.time,
-
             style: theme.textTheme.bodySmall?.copyWith(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: colorScheme.primary,
+              color: colors.primary,
             ),
           ),
         ],
@@ -486,9 +546,9 @@ class _UpcomingCard extends StatelessWidget {
   }
 }
 
-// ==================================================================
+// ============================================================================
 // UPCOMING MODEL
-// ==================================================================
+// ============================================================================
 
 class _Upcoming {
   final String title;

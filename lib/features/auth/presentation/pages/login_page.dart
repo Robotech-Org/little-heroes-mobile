@@ -16,7 +16,6 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-
   final _phoneController = TextEditingController();
 
   bool _isLoading = false;
@@ -54,15 +53,11 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
 
-    // Frontend-only simulation.
-    //
-    // Later:
-    // SendOtpUseCase
-    // will be connected here.
-
     await Future.delayed(const Duration(milliseconds: 700));
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       _isLoading = false;
@@ -76,107 +71,187 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return AppScaffold(
+      // IMPORTANT:
+      // Allows the scaffold to resize when the keyboard opens.
+      resizeToAvoidBottomInset: true,
+
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 40),
-
-                  // Icon
-                  Container(
-                    width: 76,
-                    height: 76,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary
-                          .withValues(alpha: 0.10),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.phone_android_rounded,
-                      size: 38,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  AppText(
-                    'Welcome Back',
-                    style: Theme.of(context).textTheme.headlineMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  AppText(
-                    'Sign in to Little Heroes using your phone number.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 36),
-
-                  AppText(
-                    'Phone Number',
-                    style: Theme.of(context).textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  PhoneNumberField(
-                    controller: _phoneController,
-                    selectedCountry: _selectedCountry,
-                    onCountryChanged: (country) {
-                      setState(() {
-                        _selectedCountry = country;
-                      });
-                    },
-                    validator: _validatePhone,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  AppText(
-                    'We will send a 6-digit verification code to this number.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  AppButton(
-                    text: 'Send OTP',
-                    onPressed: _sendOtp,
-                    isLoading: _isLoading,
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const AppText('Don\'t have an account?'),
-                      TextButton(
-                        onPressed: () {
-                          context.push(AppRoutes.register);
-                        },
-                        child: const Text('Sign Up'),
+                      const SizedBox(height: 32),
+
+                      // ==================================================
+                      // APP ICON
+                      // ==================================================
+                      Center(
+                        child: Container(
+                          width: 82,
+                          height: 82,
+                          decoration: BoxDecoration(
+                            color: colors.primaryContainer,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.primary.withValues(alpha: 0.12),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.phone_android_rounded,
+                            size: 40,
+                            color: colors.primary,
+                          ),
+                        ),
                       ),
+
+                      const SizedBox(height: 26),
+
+                      // ==================================================
+                      // TITLE
+                      // ==================================================
+                      AppText(
+                        'Welcome Back',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // ==================================================
+                      // DESCRIPTION
+                      // ==================================================
+                      AppText(
+                        'Sign in to Little Heroes using your phone number.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: 34),
+
+                      // ==================================================
+                      // PHONE LABEL
+                      // ==================================================
+                      AppText(
+                        'Phone Number',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // ==================================================
+                      // PHONE FIELD
+                      // ==================================================
+                      PhoneNumberField(
+                        controller: _phoneController,
+                        selectedCountry: _selectedCountry,
+                        onCountryChanged: (country) {
+                          setState(() {
+                            _selectedCountry = country;
+                          });
+                        },
+                        validator: _validatePhone,
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // ==================================================
+                      // INFO
+                      // ==================================================
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            size: 16,
+                            color: colors.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              'We will send a 6-digit verification code '
+                              'to this number.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // ==================================================
+                      // SEND OTP
+                      // ==================================================
+                      AppButton(
+                        text: 'Send OTP',
+                        onPressed: _sendOtp,
+                        isLoading: _isLoading,
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      // ==================================================
+                      // SIGN UP
+                      // ==================================================
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Don\'t have an account?',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              context.push(AppRoutes.register);
+                            },
+                            child: const Text(
+                              'Sign Up',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
                     ],
                   ),
-
-                  const SizedBox(height: 30),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

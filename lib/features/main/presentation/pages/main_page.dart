@@ -6,7 +6,7 @@ import '../../../home/presentation/pages/home_page.dart';
 import '../../domain/entities/user_role.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/navigation_item.dart';
-import '../widgets/settings_page.dart';
+import 'settings_page.dart';
 
 class MainPage extends StatefulWidget {
   final UserRole role;

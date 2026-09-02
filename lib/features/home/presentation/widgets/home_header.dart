@@ -24,19 +24,19 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = theme.colorScheme;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: colors.surface,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
         ),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.04),
+            color: colors.shadow.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -52,12 +52,12 @@ class HomeHeader extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
+              color: colors.primaryContainer,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(
               Icons.person_rounded,
-              color: colorScheme.onPrimaryContainer,
+              color: colors.onPrimaryContainer,
               size: 28,
             ),
           ),
@@ -67,7 +67,6 @@ class HomeHeader extends StatelessWidget {
           // ======================================================
           // WELCOME
           // ======================================================
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,7 +75,7 @@ class HomeHeader extends StatelessWidget {
                   'Good afternoon 👋',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 14,
-                    color: colorScheme.onSurfaceVariant,
+                    color: colors.onSurfaceVariant,
                   ),
                 ),
 
@@ -87,7 +86,7 @@ class HomeHeader extends StatelessWidget {
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
+                    color: colors.onSurface,
                   ),
                 ),
 
@@ -97,7 +96,7 @@ class HomeHeader extends StatelessWidget {
                   roleName,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 13,
-                    color: colorScheme.primary,
+                    color: colors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -108,9 +107,9 @@ class HomeHeader extends StatelessWidget {
           // ======================================================
           // NOTIFICATIONS
           // ======================================================
-
           _HeaderButton(
             icon: Icons.notifications_none_rounded,
+            showBadge: true,
             onTap: () {
               context.push(AppRoutes.notifications);
             },
@@ -121,11 +120,10 @@ class HomeHeader extends StatelessWidget {
           // ======================================================
           // SETTINGS
           // ======================================================
-
           _HeaderButton(
             icon: Icons.settings_outlined,
             onTap: () {
-              // TODO: Navigate to settings
+              context.push(AppRoutes.settings);
             },
           ),
         ],
@@ -141,18 +139,20 @@ class HomeHeader extends StatelessWidget {
 class _HeaderButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
+  final bool showBadge;
 
   const _HeaderButton({
     required this.icon,
     required this.onTap,
+    this.showBadge = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = Theme.of(context).colorScheme;
 
     return Material(
-      color: colorScheme.surfaceContainerHighest,
+      color: colors.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -160,9 +160,34 @@ class _HeaderButton extends StatelessWidget {
         child: SizedBox(
           width: 44,
           height: 44,
-          child: Icon(
-            icon,
-            color: colorScheme.onSurfaceVariant,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Center(
+                child: Icon(icon, color: colors.onSurfaceVariant, size: 23),
+              ),
+
+              // ==================================================
+              // UNREAD BADGE
+              // ==================================================
+              if (showBadge)
+                Positioned(
+                  top: 7,
+                  right: 7,
+                  child: Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: colors.error,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: colors.surfaceContainerHighest,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),

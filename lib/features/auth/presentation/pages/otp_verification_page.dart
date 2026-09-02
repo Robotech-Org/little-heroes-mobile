@@ -1,3 +1,4 @@
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -13,79 +14,71 @@ import '../widgets/otp_input.dart';
 class OtpVerificationPage extends StatefulWidget {
   final String phoneNumber;
 
-  const OtpVerificationPage({super.key, required this.phoneNumber});
+  const OtpVerificationPage({
+    super.key,
+    required this.phoneNumber,
+  });
 
   @override
   State<OtpVerificationPage> createState() => _OtpVerificationPageState();
 }
 
 class _OtpVerificationPageState extends State<OtpVerificationPage> {
-  // =========================
-  // CONTROLLERS / STATE
-  // =========================
-
   String _otp = '';
-
   bool _isLoading = false;
 
   Timer? _timer;
-
   int _remainingSeconds = 30;
 
   bool get _canResend => _remainingSeconds == 0;
 
-  // =========================
-  // LIFECYCLE
-  // =========================
-
   @override
   void initState() {
     super.initState();
-
     _startTimer();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-
     super.dispose();
   }
 
-  // =========================
-  // OTP TIMER
-  // =========================
+  // ============================================================
+  // TIMER
+  // ============================================================
 
   void _startTimer() {
     _timer?.cancel();
 
-    setState(() {
-      _remainingSeconds = 30;
-    });
+    _remainingSeconds = 30;
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
 
-      if (_remainingSeconds <= 1) {
-        timer.cancel();
+        if (_remainingSeconds <= 1) {
+          timer.cancel();
 
-        setState(() {
-          _remainingSeconds = 0;
-        });
-      } else {
-        setState(() {
-          _remainingSeconds--;
-        });
-      }
-    });
+          setState(() {
+            _remainingSeconds = 0;
+          });
+        } else {
+          setState(() {
+            _remainingSeconds--;
+          });
+        }
+      },
+    );
   }
 
-  // =========================
+  // ============================================================
   // VERIFY OTP
-  // =========================
+  // ============================================================
 
   Future<void> _verifyOtp() async {
     if (_otp.length != 6) {
@@ -93,7 +86,6 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         context,
         'Please enter the 6-digit verification code.',
       );
-
       return;
     }
 
@@ -103,26 +95,11 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       _isLoading = true;
     });
 
-    // =========================================
-    // FRONTEND ONLY
-    //
-    // Later connect your real authentication:
-    //
-    // VerifyOtpUseCase
-    // AuthBloc
-    // API
-    //
-    // Example:
-    //
-    // context.read<AuthBloc>().add(
-    //   VerifyOtpRequested(
-    //     phoneNumber: widget.phoneNumber,
-    //     otp: _otp,
-    //   ),
-    // );
-    // =========================================
+    // TODO: Connect your real OTP verification here.
 
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(
+      const Duration(milliseconds: 800),
+    );
 
     if (!mounted) {
       return;
@@ -132,13 +109,14 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       _isLoading = false;
     });
 
-    // =========================================
-    // TEMPORARY FRONTEND NAVIGATION
-    // =========================================
+    SnackbarUtils.showSuccess(
+      context,
+      'Phone number verified successfully.',
+    );
 
-    SnackbarUtils.showSuccess(context, 'Phone number verified successfully.');
-
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(
+      const Duration(milliseconds: 300),
+    );
 
     if (!mounted) {
       return;
@@ -147,30 +125,20 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     context.go(AppRoutes.main);
   }
 
-  // =========================
+  // ============================================================
   // RESEND OTP
-  // =========================
+  // ============================================================
 
   void _resendOtp() {
     if (!_canResend) {
       return;
     }
 
-    // =========================================
-    // FRONTEND ONLY
-    //
-    // Later:
-    //
-    // SendOtpUseCase
-    // AuthBloc
-    // API
-    // =========================================
-
-    _startTimer();
-
     setState(() {
       _otp = '';
     });
+
+    _startTimer();
 
     SnackbarUtils.showSuccess(
       context,
@@ -178,172 +146,178 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     );
   }
 
-  // =========================
+  // ============================================================
   // BUILD
-  // =========================
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = theme.colorScheme;
 
     return AppScaffold(
+      resizeToAvoidBottomInset: true,
+
       body: SafeArea(
         child: Column(
           children: [
-            // =====================================
-            // HEADER
-            // =====================================
+            // ======================================================
+            // FIXED TOP BAR
+            // ======================================================
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      context.pop();
-                    },
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    tooltip: 'Back',
+            SizedBox(
+              height: 52,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: () {
+                    context.pop();
+                  },
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
                   ),
-                ],
+                ),
               ),
             ),
 
-            // =====================================
-            // CONTENT
-            // =====================================
+            // ======================================================
+            // SCROLLABLE CONTENT
+            // ======================================================
+
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+
+                padding: const EdgeInsets.fromLTRB(
+                  24,
+                  8,
+                  24,
+                  30,
+                ),
+
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 480),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 16),
+                    constraints: const BoxConstraints(
+                      maxWidth: 440,
+                    ),
 
-                        // =================================
-                        // PHONE ICON
-                        // =================================
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.stretch,
+
+                      children: [
+                        // ==================================================
+                        // VERIFICATION ICON
+                        // ==================================================
+
                         Center(
                           child: Container(
-                            width: 88,
-                            height: 88,
+                            width: 68,
+                            height: 68,
                             decoration: BoxDecoration(
-                              color: colorScheme.primary.withValues(
-                                alpha: 0.10,
-                              ),
+                              color: colors.primaryContainer,
                               shape: BoxShape.circle,
                             ),
-                            child: Center(
-                              child: Container(
-                                width: 64,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.phone_android_rounded,
-                                  color: Colors.white,
-                                  size: 30,
-                                ),
+                            child: Icon(
+                              Icons.lock_outline_rounded,
+                              size: 32,
+                              color: colors.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // ==================================================
+                        // TITLE
+                        // ==================================================
+
+                        AppText(
+                          'Verify your phone',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        // ==================================================
+                        // DESCRIPTION
+                        // ==================================================
+
+                        AppText(
+                          'Enter the 6-digit code we sent to',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        // ==================================================
+                        // PHONE NUMBER
+                        // ==================================================
+
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primaryContainer.withValues(
+                                alpha: 0.55,
                               ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.phone_rounded,
+                                  size: 16,
+                                  color: colors.primary,
+                                ),
+
+                                const SizedBox(width: 7),
+
+                                Text(
+                                  widget.phoneNumber,
+                                  style:
+                                      theme.textTheme.bodyMedium?.copyWith(
+                                    color: colors.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 28),
 
-                        // =================================
-                        // TITLE
-                        // =================================
-                        AppText(
-                          'Verify your phone',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        // =================================
-                        // DESCRIPTION
-                        // =================================
-                        AppText(
-                          'We sent a 6-digit verification code to your phone number.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.textTheme.bodyMedium?.color
-                                ?.withValues(alpha: 0.65),
-                            height: 1.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // =================================
-                        // PHONE NUMBER
-                        // =================================
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.06),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: colorScheme.primary.withValues(
-                                alpha: 0.12,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.phone_outlined,
-                                size: 19,
-                                color: colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  widget.phoneNumber,
-                                  textAlign: TextAlign.center,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 38),
-
-                        // =================================
+                        // ==================================================
                         // OTP LABEL
-                        // =================================
-                        AppText(
-                          'Enter verification code',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        // ==================================================
+
+                        Text(
+                          'Verification code',
                           textAlign: TextAlign.center,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
-                        // =================================
+                        // ==================================================
                         // OTP INPUT
-                        // =================================
+                        // ==================================================
+
                         OtpInput(
                           onChanged: (otp) {
                             setState(() {
@@ -357,82 +331,119 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                           },
                         ),
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
-                        // =================================
-                        // HELPER TEXT
-                        // =================================
-                        AppText(
-                          'Enter the 6-digit code sent to your phone.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.textTheme.bodySmall?.color?.withValues(
-                              alpha: 0.60,
-                            ),
-                          ),
+                        // ==================================================
+                        // OTP HELP TEXT
+                        // ==================================================
+
+                        Text(
+                          'Enter the code from your SMS',
                           textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
                         ),
 
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 20),
 
-                        // =================================
+                        // ==================================================
                         // VERIFY BUTTON
-                        // =================================
+                        // ==================================================
+
                         AppButton(
                           text: 'Verify & Continue',
                           onPressed: _verifyOtp,
                           isLoading: _isLoading,
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 12),
 
-                        // =================================
-                        // RESEND OTP
-                        // =================================
+                        // ==================================================
+                        // RESEND
+                        // ==================================================
+
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                              MainAxisAlignment.center,
                           children: [
-                            AppText(
-                              'Didn\'t receive the code?',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.textTheme.bodyMedium?.color
-                                    ?.withValues(alpha: 0.70),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            TextButton(
-                              onPressed: _canResend ? _resendOtp : null,
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 4,
+                            Flexible(
+                              child: Text(
+                                "Didn't receive it?",
+                                textAlign: TextAlign.center,
+                                style:
+                                    theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onSurfaceVariant,
                                 ),
                               ),
+                            ),
+
+                            const SizedBox(width: 3),
+
+                            TextButton(
+                              onPressed:
+                                  _canResend ? _resendOtp : null,
+
+                              style: TextButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 4,
+                                ),
+                                minimumSize: Size.zero,
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+
                               child: Text(
                                 _canResend
-                                    ? 'Resend'
+                                    ? 'Resend code'
                                     : 'Resend in ${_remainingSeconds}s',
-                                style: TextStyle(fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
                         ),
 
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
 
-                        // =================================
-                        // CHANGE PHONE
-                        // =================================
+                        // ==================================================
+                        // CHANGE PHONE NUMBER
+                        // ==================================================
+
                         Center(
                           child: TextButton.icon(
                             onPressed: () {
                               context.pop();
                             },
-                            icon: const Icon(Icons.edit_outlined, size: 17),
-                            label: const Text('Change phone number'),
+
+                            style: TextButton.styleFrom(
+                              padding:
+                                  const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+
+                            icon: const Icon(
+                              Icons.edit_outlined,
+                              size: 16,
+                            ),
+
+                            label: const Text(
+                              'Change phone number',
+                            ),
                           ),
                         ),
 
-                        const SizedBox(height: 32),
+                        // Extra bottom space so the keyboard
+                        // never covers the last button.
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),

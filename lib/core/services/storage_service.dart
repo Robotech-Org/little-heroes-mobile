@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -15,9 +16,9 @@ class StorageService {
 
   SharedPreferences? _preferences;
 
-  // =========================
-  // Initialization
-  // =========================
+  // ============================================================
+  // INITIALIZATION
+  // ============================================================
 
   Future<void> init() async {
     _preferences = await SharedPreferences.getInstance();
@@ -34,9 +35,9 @@ class StorageService {
     return _preferences!;
   }
 
-  // =========================
-  // Secure Storage
-  // =========================
+  // ============================================================
+  // SECURE STORAGE
+  // ============================================================
 
   Future<void> saveSecure(
     String key,
@@ -60,9 +61,9 @@ class StorageService {
     await _secureStorage.deleteAll();
   }
 
-  // =========================
-  // Normal Storage
-  // =========================
+  // ============================================================
+  // NORMAL STORAGE
+  // ============================================================
 
   Future<bool> saveString(
     String key,
@@ -76,9 +77,9 @@ class StorageService {
   }
 
   Future<bool> saveBool(
-    String key,
-    bool value,
-  ) async {
+    String key, {
+    required bool value,
+  }) async {
     return _prefs.setBool(key, value);
   }
 
@@ -123,9 +124,9 @@ class StorageService {
     return _prefs.clear();
   }
 
-  // =========================
-  // JSON Storage
-  // =========================
+  // ============================================================
+  // JSON STORAGE
+  // ============================================================
 
   Future<bool> saveJson(
     String key,
@@ -157,9 +158,9 @@ class StorageService {
     }
   }
 
-  // =========================
-  // Access Token
-  // =========================
+  // ============================================================
+  // ACCESS TOKEN
+  // ============================================================
 
   Future<void> saveAccessToken(String token) async {
     await saveSecure(
@@ -180,9 +181,9 @@ class StorageService {
     );
   }
 
-  // =========================
-  // Refresh Token
-  // =========================
+  // ============================================================
+  // REFRESH TOKEN
+  // ============================================================
 
   Future<void> saveRefreshToken(String token) async {
     await saveSecure(
@@ -203,14 +204,14 @@ class StorageService {
     );
   }
 
-  // =========================
-  // Authentication
-  // =========================
+  // ============================================================
+  // AUTHENTICATION
+  // ============================================================
 
   Future<void> setLoggedIn(bool value) async {
     await saveBool(
       StorageConstants.isLoggedIn,
-      value,
+      value: value,
     );
   }
 
@@ -220,9 +221,9 @@ class StorageService {
     );
   }
 
-  // =========================
-  // User
-  // =========================
+  // ============================================================
+  // USER
+  // ============================================================
 
   Future<void> saveUser(
     Map<String, dynamic> user,
@@ -245,9 +246,9 @@ class StorageService {
     );
   }
 
-  // =========================
-  // User ID
-  // =========================
+  // ============================================================
+  // USER ID
+  // ============================================================
 
   Future<void> saveUserId(String id) async {
     await saveString(
@@ -262,16 +263,16 @@ class StorageService {
     );
   }
 
-  // =========================
-  // Onboarding
-  // =========================
+  // ============================================================
+  // ONBOARDING
+  // ============================================================
 
   Future<void> setOnboardingCompleted(
     bool value,
   ) async {
     await saveBool(
       StorageConstants.onboardingCompleted,
-      value,
+      value: value,
     );
   }
 
@@ -281,9 +282,9 @@ class StorageService {
     );
   }
 
-  // =========================
-  // Theme
-  // =========================
+  // ============================================================
+  // THEME
+  // ============================================================
 
   Future<void> saveThemeMode(String mode) async {
     await saveString(
@@ -298,9 +299,15 @@ class StorageService {
     );
   }
 
-  // =========================
-  // Language
-  // =========================
+  Future<void> removeThemeMode() async {
+    await remove(
+      StorageConstants.themeMode,
+    );
+  }
+
+  // ============================================================
+  // LANGUAGE
+  // ============================================================
 
   Future<void> saveLanguage(String language) async {
     await saveString(
@@ -315,16 +322,16 @@ class StorageService {
     );
   }
 
-  // =========================
-  // Notifications
-  // =========================
+  // ============================================================
+  // NOTIFICATIONS
+  // ============================================================
 
   Future<void> setNotificationsEnabled(
     bool value,
   ) async {
     await saveBool(
       StorageConstants.notificationsEnabled,
-      value,
+      value: value,
     );
   }
 
@@ -335,15 +342,18 @@ class StorageService {
     );
   }
 
-  // =========================
-  // Cache
-  // =========================
+  // ============================================================
+  // CACHE
+  // ============================================================
 
   Future<void> saveCachedData(
     String key,
     Map<String, dynamic> data,
   ) async {
-    await saveJson(key, data);
+    await saveJson(
+      key,
+      data,
+    );
   }
 
   Map<String, dynamic>? getCachedData(String key) {
@@ -354,9 +364,9 @@ class StorageService {
     await remove(key);
   }
 
-  // =========================
-  // Last Sync
-  // =========================
+  // ============================================================
+  // LAST SYNC
+  // ============================================================
 
   Future<void> saveLastSyncTime(
     DateTime dateTime,
@@ -379,9 +389,9 @@ class StorageService {
     return DateTime.tryParse(value);
   }
 
-  // =========================
-  // Logout
-  // =========================
+  // ============================================================
+  // LOGOUT
+  // ============================================================
 
   Future<void> logout() async {
     await removeSecure(
@@ -403,11 +413,14 @@ class StorageService {
     await remove(
       StorageConstants.user,
     );
+
+    // Theme preference is intentionally NOT removed.
+    // The user's appearance preference should remain on the device.
   }
 
-  // =========================
-  // Clear Everything
-  // =========================
+  // ============================================================
+  // CLEAR EVERYTHING
+  // ============================================================
 
   Future<void> clearEverything() async {
     await clearSecure();

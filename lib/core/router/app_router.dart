@@ -2,17 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:little_heroes_mobile/features/main/domain/entities/user_role.dart';
+import 'package:little_heroes_mobile/features/main/presentation/pages/settings_page.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:little_heroes_mobile/injection_container.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/otp_verification_page.dart';
-import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/main/presentation/pages/main_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
+import '../../features/teacher/presentation/pages/daily_report_page.dart';
+import '../../features/teacher/presentation/pages/three_month_reports_page.dart';
+import '../../features/teacher/presentation/pages/weekly_planner_page.dart';
+import '../../features/teacher/presentation/pages/observations_page.dart'
+    hide ThreeMonthReportsPage;
 import 'app_routes.dart';
 
 class AppRouter {
@@ -53,7 +58,6 @@ class AppRouter {
         },
       ),
 
-      // OTP Verification
       GoRoute(
         path: AppRoutes.otpVerification,
         name: 'otpVerification',
@@ -64,30 +68,8 @@ class AppRouter {
         },
       ),
 
-      // Register
-      GoRoute(
-        path: AppRoutes.register,
-        name: 'register',
-        builder: (context, state) {
-          return const RegisterPage();
-        },
-      ),
-
       // ============================================================
       // MAIN APPLICATION
-      // ============================================================
-      //
-      // MainPage contains:
-      //
-      // Teacher:
-      // Home | Messages | Students | Settings
-      //
-      // Parent:
-      // Home | Messages | Children | Settings
-      //
-      // Advisor:
-      // Home | Messages | Students | Settings
-      //
       // ============================================================
       GoRoute(
         path: AppRoutes.main,
@@ -96,6 +78,7 @@ class AppRouter {
           return const MainPage(role: UserRole.teacher);
         },
       ),
+
       GoRoute(
         path: AppRoutes.home,
         name: 'home',
@@ -118,13 +101,6 @@ class AppRouter {
       // ============================================================
       // NOTIFICATIONS
       // ============================================================
-      // GoRoute(
-      //   path: AppRoutes.notifications,
-      //   name: 'notifications',
-      //   builder: (context, state) {
-      //     return const NotificationsPage();
-      //   },
-      // ),
       GoRoute(
         path: AppRoutes.notifications,
         name: 'notifications',
@@ -144,6 +120,62 @@ class AppRouter {
         name: 'reports',
         builder: (context, state) {
           return const Scaffold(body: Center(child: Text('Reports')));
+        },
+      ),
+
+      // ============================================================
+      // SETTINGS
+      // ============================================================
+      GoRoute(
+        path: AppRoutes.settings,
+        name: 'settings',
+        builder: (context, state) {
+          final role = state.extra as UserRole? ?? UserRole.teacher;
+
+          return SettingsPage(
+            role: role,
+            onRoleChanged: (newRole) {
+              // Role changes are handled by the parent/main page.
+              //
+              // If you later make role global using Bloc/Cubit,
+              // this callback can be connected to that state.
+            },
+          );
+        },
+      ),
+      // ============================================================
+      // TEACHER TOOLS
+      // ============================================================
+
+      GoRoute(
+        path: AppRoutes.dailyReport,
+        name: 'dailyReport',
+        builder: (context, state) {
+          return const DailyReportPage();
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.threeMonthReports,
+        name: 'threeMonthReports',
+        builder: (context, state) {
+          return const ThreeMonthReportsPage();
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.weeklyPlanner,
+        name: 'weeklyPlanner',
+        builder: (context, state) {
+          return const WeeklyPlansPage();
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.observations,
+        name: 'observations',
+        builder: (context, state) {
+          return const ObservationsPage();
         },
       ),
     ],

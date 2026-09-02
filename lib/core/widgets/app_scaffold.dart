@@ -23,7 +23,7 @@ class AppScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.bottomNavigationBar,
     this.automaticallyImplyLeading = true,
-    this.safeArea = true,
+    this.safeArea = true, required bool resizeToAvoidBottomInset,
   });
 
   @override
