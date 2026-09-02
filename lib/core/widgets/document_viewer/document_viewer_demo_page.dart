@@ -27,49 +27,10 @@ class DocumentViewerDemoPage extends StatelessWidget {
 
           _DocumentTile(
             title: 'School Image',
-            subtitle: 'PNG image',
+            subtitle: 'Image',
             icon: Icons.image_rounded,
             onTap: () {
               _open(context, 'https://picsum.photos/900/600', 'School Image');
-            },
-          ),
-
-          _DocumentTile(
-            title: 'Teacher Document',
-            subtitle: 'Word document',
-            icon: Icons.description_rounded,
-            onTap: () {
-              _open(
-                context,
-                'https://example.com/document.docx',
-                'Teacher Document',
-              );
-            },
-          ),
-
-          _DocumentTile(
-            title: 'Student Results',
-            subtitle: 'Excel spreadsheet',
-            icon: Icons.table_chart_rounded,
-            onTap: () {
-              _open(
-                context,
-                'https://example.com/results.xlsx',
-                'Student Results',
-              );
-            },
-          ),
-
-          _DocumentTile(
-            title: 'School Presentation',
-            subtitle: 'PowerPoint',
-            icon: Icons.slideshow_rounded,
-            onTap: () {
-              _open(
-                context,
-                'https://example.com/presentation.pptx',
-                'School Presentation',
-              );
             },
           ),
         ],
