@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:little_heroes_mobile/core/widgets/qr_scanner/qr_scanner_page.dart';
+import 'package:little_heroes_mobile/core/widgets/qr_scanner/qr_scanner_result.dart';
 import 'package:little_heroes_mobile/features/main/domain/entities/user_role.dart';
 import 'package:little_heroes_mobile/features/teacher/presentation/widgets/teacher_tools.dart';
 
@@ -50,7 +52,29 @@ class HomePage extends StatelessWidget {
                   // ======================================================
                   // TEACHER TOOLS
                   // ======================================================
+                  // if (role == UserRole.teacher) ...[
+                  //   const SizedBox(height: 28),
+
+                  //   const _SectionHeader(title: 'Dashboard', subtitle: ''),
+
+                  //   const SizedBox(height: 14),
+
+                  //   TeacherTools(
+                  //     role: role,
+                  //     onToolTap: (tool) {
+                  //       _openTeacherTool(context, tool);
+                  //     },
+                  //   ),
+                  // ],
                   if (role == UserRole.teacher) ...[
+                    const SizedBox(height: 28),
+
+                    const _SectionHeader(title: 'Quick Actions', subtitle: ''),
+
+                    const SizedBox(height: 14),
+
+                    _QrScannerCard(onTap: () => _openQrScanner(context)),
+
                     const SizedBox(height: 28),
 
                     const _SectionHeader(title: 'Dashboard', subtitle: ''),
@@ -101,6 +125,31 @@ class HomePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openQrScanner(BuildContext context) async {
+    final QrScannerResult? result = await Navigator.push<QrScannerResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const QrScannerPage(
+          title: 'Scan QR Code',
+          instruction: 'Scan the student QR code',
+        ),
+      ),
+    );
+
+    if (result == null || !context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('QR Code: ${result.value}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   // ========================================================================
@@ -318,6 +367,78 @@ class _RecentActivity extends StatelessWidget {
             showDivider: index != activities.length - 1,
           );
         }),
+      ),
+    );
+  }
+}
+
+class _QrScannerCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _QrScannerCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.qr_code_scanner_rounded,
+                  color: colors.onPrimaryContainer,
+                  size: 28,
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Scan QR Code',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      'Scan a student QR code',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 18,
+                color: colors.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

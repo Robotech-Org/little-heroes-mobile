@@ -53,6 +53,7 @@ dependencies:
   syncfusion_flutter_pdfviewer: ^34.2.6
   url_launcher: ^6.3.2
   path: ^1.9.1
+  mobile_scanner: ^7.4.0
 
 dev_dependencies:
   flutter_test:
