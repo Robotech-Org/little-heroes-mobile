@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:little_heroes_mobile/core/constants/user_role.dart';
-import 'package:little_heroes_mobile/core/widgets/document_viewer/document_viewer_demo_page.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/chats/presentation/pages/chat_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/pages/home_page.dart';
-import 'package:little_heroes_mobile/features/payments/presentation/pages/payment_page.dart';
+import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:little_heroes_mobile/features/students/presentation/pages/students_page.dart';
 
 import '../widgets/bottom_navigation.dart';
@@ -30,6 +29,10 @@ class _MainPageState extends State<MainPage> {
 
   List<NavigationItem> _navigationItems(UserRole role) {
     switch (role) {
+      // ==========================================================
+      // TEACHER
+      // ==========================================================
+
       case UserRole.teacher:
         return const [
           NavigationItem(
@@ -54,6 +57,10 @@ class _MainPageState extends State<MainPage> {
           ),
         ];
 
+      // ==========================================================
+      // PARENT
+      // ==========================================================
+
       case UserRole.parent:
         return const [
           NavigationItem(
@@ -62,14 +69,14 @@ class _MainPageState extends State<MainPage> {
             activeIcon: Icons.home_rounded,
           ),
           NavigationItem(
+            label: 'Notifications',
+            icon: Icons.notifications_none_rounded,
+            activeIcon: Icons.notifications_rounded,
+          ),
+          NavigationItem(
             label: 'Messages',
             icon: Icons.chat_bubble_outline_rounded,
             activeIcon: Icons.chat_bubble_rounded,
-          ),
-          NavigationItem(
-            label: 'Payment',
-            icon: Icons.payment_outlined,
-            activeIcon: Icons.payment_rounded,
           ),
           NavigationItem(
             label: 'Settings',
@@ -77,6 +84,10 @@ class _MainPageState extends State<MainPage> {
             activeIcon: Icons.settings_rounded,
           ),
         ];
+
+      // ==========================================================
+      // ADVISER
+      // ==========================================================
 
       case UserRole.adviser:
         return const [
@@ -110,6 +121,10 @@ class _MainPageState extends State<MainPage> {
 
   List<Widget> _pages(UserRole role) {
     switch (role) {
+      // ==========================================================
+      // TEACHER
+      // ==========================================================
+
       case UserRole.teacher:
         return [
           HomePage(role: role),
@@ -118,13 +133,21 @@ class _MainPageState extends State<MainPage> {
           const SettingsPage(),
         ];
 
+      // ==========================================================
+      // PARENT
+      // ==========================================================
+
       case UserRole.parent:
         return [
           HomePage(role: role),
+          const NotificationsPage(),
           const ChatsPage(),
-          const PaymentPage(),
           const SettingsPage(),
         ];
+
+      // ==========================================================
+      // ADVISER
+      // ==========================================================
 
       case UserRole.adviser:
         return [

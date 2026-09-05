@@ -4,16 +4,21 @@ import 'package:go_router/go_router.dart';
 
 import 'package:little_heroes_mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/pages/otp_verification_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/observations_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/three_month_reports_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/weekly_planner_page.dart';
 import 'package:little_heroes_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:little_heroes_mobile/features/main/presentation/pages/settings_page.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:little_heroes_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:little_heroes_mobile/features/splash/presentation/pages/splash_page.dart';
-import 'package:little_heroes_mobile/features/teacher/presentation/pages/daily_report_page.dart';
-import 'package:little_heroes_mobile/features/teacher/presentation/pages/observations_page.dart';
-import 'package:little_heroes_mobile/features/teacher/presentation/pages/three_month_reports_page.dart';
-import 'package:little_heroes_mobile/features/teacher/presentation/pages/weekly_planner_page.dart';
+
+// import 'package:little_heroes_mobile/features/teacher/presentation/pages/daily_report_page.dart';
+// import 'package:little_heroes_mobile/features/teacher/presentation/pages/observations_page.dart';
+// import 'package:little_heroes_mobile/features/teacher/presentation/pages/three_month_reports_page.dart';
+// import 'package:little_heroes_mobile/features/teacher/presentation/pages/weekly_planner_page.dart';
 
 import 'package:little_heroes_mobile/injection_container.dart';
 

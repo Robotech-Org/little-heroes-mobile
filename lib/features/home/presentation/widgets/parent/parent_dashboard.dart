@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart' show DailyReportPage;
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/three_month_report_page.dart';
+import 'package:little_heroes_mobile/features/payments/presentation/pages/payment_page.dart';
 
 class ParentDashboard extends StatelessWidget {
   const ParentDashboard({super.key});
@@ -8,17 +12,10 @@ class ParentDashboard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ============================================================
-        // WEEKLY THEME
-        // ============================================================
-
         const _WeeklyThemeCard(),
 
         const SizedBox(height: 24),
 
-        // ============================================================
-        // CHILDREN
-        // ============================================================
         const _SectionTitle(title: 'Your Children'),
 
         const SizedBox(height: 12),
@@ -43,17 +40,11 @@ class ParentDashboard extends StatelessWidget {
 
         const SizedBox(height: 24),
 
-        // ============================================================
-        // QUICK ACCESS
-        // ============================================================
         const _SectionTitle(title: 'Quick Access'),
 
         const SizedBox(height: 12),
 
-        // ============================================================
-        // QUICK ACCESS ROW 1
-        // ============================================================
-        const Row(
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
@@ -61,16 +52,26 @@ class ParentDashboard extends StatelessWidget {
                 icon: Icons.description_outlined,
                 title: 'Daily Report',
                 subtitle: 'Updated 1h ago',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DailyReportPage()),
+                  );
+                },
               ),
             ),
-
-            SizedBox(width: 10),
-
+            const SizedBox(width: 10),
             Expanded(
               child: _QuickAccessCard(
                 icon: Icons.history_edu_outlined,
                 title: '3 Month Report',
                 subtitle: 'Last: Jun 2026',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ThreeMonthReportPage(),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -78,10 +79,7 @@ class ParentDashboard extends StatelessWidget {
 
         const SizedBox(height: 10),
 
-        // ============================================================
-        // QUICK ACCESS ROW 2
-        // ============================================================
-        const Row(
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
@@ -89,16 +87,24 @@ class ParentDashboard extends StatelessWidget {
                 icon: Icons.photo_library_outlined,
                 title: 'Photo Gallery',
                 subtitle: '12 new photos',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PhotoGalleryPage()),
+                  );
+                },
               ),
             ),
-
-            SizedBox(width: 10),
-
+            const SizedBox(width: 10),
             Expanded(
               child: _QuickAccessCard(
                 icon: Icons.payment_outlined,
                 title: 'Payment',
                 subtitle: 'View payments',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PaymentPage()),
+                  );
+                },
               ),
             ),
           ],
@@ -109,7 +115,7 @@ class ParentDashboard extends StatelessWidget {
 }
 
 // ============================================================================
-// WEEKLY THEME CARD
+// WEEKLY THEME
 // ============================================================================
 
 class _WeeklyThemeCard extends StatelessWidget {
@@ -137,9 +143,7 @@ class _WeeklyThemeCard extends StatelessWidget {
               letterSpacing: 0.7,
             ),
           ),
-
           const SizedBox(height: 6),
-
           Text(
             'All About Me & My World',
             style: theme.textTheme.titleLarge?.copyWith(
@@ -147,9 +151,7 @@ class _WeeklyThemeCard extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
-
           const SizedBox(height: 10),
-
           Text(
             "Abeebech has 2 new photos and today's daily report is ready to view.",
             style: theme.textTheme.bodySmall?.copyWith(
@@ -226,10 +228,6 @@ class _ChildCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // ============================================================
-          // INITIALS
-          // ============================================================
-
           Container(
             width: 42,
             height: 42,
@@ -249,9 +247,6 @@ class _ChildCard extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-          // ============================================================
-          // CHILD INFORMATION
-          // ============================================================
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,9 +258,7 @@ class _ChildCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-
                 const SizedBox(height: 3),
-
                 Text(
                   className,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -278,9 +271,6 @@ class _ChildCard extends StatelessWidget {
 
           const SizedBox(width: 8),
 
-          // ============================================================
-          // STATUS
-          // ============================================================
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
             decoration: BoxDecoration(
@@ -309,84 +299,72 @@ class _QuickAccessCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback onTap;
 
   const _QuickAccessCard({
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      // IMPORTANT:
-      // Use a fixed height instead of minHeight.
-      //
-      // The card is inside a vertically scrolling CustomScrollView.
-      // minHeight does not provide a bounded height to the Column.
-      // Spacer() requires bounded height.
-      height: 105,
-
-      width: double.infinity,
-
-      padding: const EdgeInsets.all(13),
-
-      decoration: BoxDecoration(
-        color: theme.cardColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
-      ),
-
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ============================================================
-          // ICON
-          // ============================================================
-
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 18, color: theme.colorScheme.primary),
-          ),
-
-          // ============================================================
-          // FILL AVAILABLE SPACE
-          // ============================================================
-          const Spacer(),
-
-          // ============================================================
-          // TITLE
-          // ============================================================
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w700,
+        child: Ink(
+          height: 105,
+          width: double.infinity,
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.dividerColor.withValues(alpha: 0.5),
             ),
           ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: theme.colorScheme.primary),
+              ),
 
-          const SizedBox(height: 3),
+              const Spacer(),
 
-          // ============================================================
-          // SUBTITLE
-          // ============================================================
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+
+              const SizedBox(height: 3),
+
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

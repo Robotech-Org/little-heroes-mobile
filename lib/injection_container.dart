@@ -1,4 +1,3 @@
-
 import 'package:get_it/get_it.dart';
 
 import 'package:little_heroes_mobile/features/auth/data/datasources/auth_mock_data_source.dart';
@@ -92,8 +91,10 @@ Future<void> initDependencies() async {
   // AUTH USE CASES
   // ============================================================
 
-  if (!sl.isRegistered<SendOtp>()) {
-    sl.registerLazySingleton<SendOtp>(() => SendOtp(sl<AuthRepository>()));
+  if (!sl.isRegistered<LoginWithPhoneAndPassword>()) {
+    sl.registerLazySingleton<LoginWithPhoneAndPassword>(
+      () => LoginWithPhoneAndPassword(sl<AuthRepository>()),
+    );
   }
 
   if (!sl.isRegistered<VerifyOtp>()) {
@@ -106,7 +107,10 @@ Future<void> initDependencies() async {
 
   if (!sl.isRegistered<AuthBloc>()) {
     sl.registerFactory<AuthBloc>(
-      () => AuthBloc(sendOtp: sl<SendOtp>(), verifyOtp: sl<VerifyOtp>()),
+      () => AuthBloc(
+        loginWithPhoneAndPassword: sl<LoginWithPhoneAndPassword>(),
+        verifyOtp: sl<VerifyOtp>(),
+      ),
     );
   }
 }

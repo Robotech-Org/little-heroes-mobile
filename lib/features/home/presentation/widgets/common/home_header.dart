@@ -29,10 +29,6 @@ class HomeHeader extends StatelessWidget {
 
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        // ----------------------------------------------------------
-        // Get role from authenticated user
-        // ----------------------------------------------------------
-
         UserRole? role;
 
         if (state is AuthAuthenticated) {
@@ -42,103 +38,121 @@ class HomeHeader extends StatelessWidget {
         final roleText = role != null ? _roleName(role) : 'User';
 
         return Container(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
+          padding: const EdgeInsets.fromLTRB(23, 20, 16, 18),
           decoration: BoxDecoration(
             color: colors.surface,
             borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(28),
-              bottomRight: Radius.circular(28),
+              bottomLeft: Radius.circular(24),
+              bottomRight: Radius.circular(24),
             ),
             boxShadow: [
               BoxShadow(
-                color: colors.shadow.withValues(alpha: 0.04),
-                blurRadius: 12,
+                color: colors.shadow.withValues(alpha: 0.045),
+                blurRadius: 14,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Row(
             children: [
-              // ====================================================
+              // ==========================================================
               // PROFILE
-              // ====================================================
+              // ==========================================================
 
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: colors.primaryContainer,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Icon(
-                  Icons.person_rounded,
-                  color: colors.onPrimaryContainer,
-                  size: 28,
+              Material(
+                color: colors.primaryContainer,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: () {
+                    // You can open profile/settings here later.
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(
+                      Icons.person_rounded,
+                      color: colors.onPrimaryContainer,
+                      size: 25,
+                    ),
+                  ),
                 ),
               ),
 
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
 
-              // ====================================================
-              // WELCOME
-              // ====================================================
+              // ==========================================================
+              // WELCOME INFORMATION
+              // ==========================================================
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Good afternoon 👋',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: colors.onSurfaceVariant,
                       ),
                     ),
 
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
 
                     Text(
                       'Welcome back!',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
                         color: colors.onSurface,
                       ),
                     ),
 
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
 
-                    Text(
-                      roleText,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 13,
-                        color: colors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    // ====================================================
+                    // ROLE CHIP
+                    // ====================================================
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+
+                        const SizedBox(width: 5),
+
+                        Text(
+                          roleText,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colors.primary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
 
-              // ====================================================
-              // NOTIFICATIONS
-              // ====================================================
+              const SizedBox(width: 10),
+
+              // ==========================================================
+              // NOTIFICATION BUTTON
+              // ==========================================================
               _HeaderButton(
                 icon: Icons.notifications_none_rounded,
                 showBadge: true,
                 onTap: () {
                   context.push(AppRoutes.notifications);
-                },
-              ),
-
-              const SizedBox(width: 8),
-
-              // ====================================================
-              // SETTINGS
-              // ====================================================
-              _HeaderButton(
-                icon: Icons.settings_outlined,
-                onTap: () {
-                  context.push(AppRoutes.settings);
                 },
               ),
             ],
@@ -149,9 +163,9 @@ class HomeHeader extends StatelessWidget {
   }
 }
 
-// ==================================================================
+// ============================================================================
 // HEADER BUTTON
-// ==================================================================
+// ============================================================================
 
 class _HeaderButton extends StatelessWidget {
   final IconData icon;
@@ -178,15 +192,14 @@ class _HeaderButton extends StatelessWidget {
           width: 44,
           height: 44,
           child: Stack(
-            clipBehavior: Clip.none,
             children: [
               Center(
-                child: Icon(icon, color: colors.onSurfaceVariant, size: 23),
+                child: Icon(icon, color: colors.onSurfaceVariant, size: 22),
               ),
 
-              // ==================================================
-              // UNREAD BADGE
-              // ==================================================
+              // ==========================================================
+              // NOTIFICATION BADGE
+              // ==========================================================
               if (showBadge)
                 Positioned(
                   top: 7,

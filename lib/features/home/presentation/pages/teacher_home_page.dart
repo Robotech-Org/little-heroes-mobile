@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../widgets/common/home_header.dart';
-import '../widgets/common/home_stat_card.dart';
 import '../widgets/common/recent_activity.dart';
 import '../widgets/common/section_header.dart';
 import '../widgets/common/upcoming_card.dart';
@@ -28,9 +27,6 @@ class TeacherHomePage extends StatelessWidget {
                 delegate: SliverChildListDelegate([
                   const TeacherDashboard(),
 
-                  const SizedBox(height: 24),
-
-                  // const HomeStatCard(),
                   const SizedBox(height: 28),
 
                   const SectionHeader(title: 'Quick Actions'),
@@ -41,35 +37,7 @@ class TeacherHomePage extends StatelessWidget {
 
                   const SizedBox(height: 28),
 
-                  const SectionHeader(title: 'Dashboard'),
-
-                  const SizedBox(height: 14),
-
-                  const TeacherQuickActions(),
-
-                  const SizedBox(height: 28),
-
-                  const SectionHeader(
-                    title: 'Recent Class Activity',
-                    subtitle: 'Latest updates from your classes',
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  const RecentActivity(type: RecentActivityType.teacher),
-
-                  const SizedBox(height: 28),
-
-                  const SectionHeader(
-                    title: 'Upcoming',
-                    subtitle: 'Your next scheduled activity',
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  const UpcomingCard(type: UpcomingType.teacher),
-
-                  const SizedBox(height: 10),
+                 
                 ]),
               ),
             ),

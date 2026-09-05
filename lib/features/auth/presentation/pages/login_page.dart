@@ -13,6 +13,7 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../widgets/phone_number_field.dart';
+import '../widgets/password_field.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -35,15 +36,22 @@ class _LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<_LoginView> {
   final _formKey = GlobalKey<FormState>();
+
   final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   Country _selectedCountry = countries.first;
 
   @override
   void dispose() {
     _phoneController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
+
+  // ============================================================
+  // PHONE VALIDATION
+  // ============================================================
 
   String? _validatePhone(String? value) {
     final phone = value?.trim() ?? '';
@@ -59,7 +67,11 @@ class _LoginViewState extends State<_LoginView> {
     return null;
   }
 
-  void _sendOtp() {
+  // ============================================================
+  // LOGIN
+  // ============================================================
+
+  void _login() {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -69,7 +81,11 @@ class _LoginViewState extends State<_LoginView> {
     final phoneNumber =
         '${_selectedCountry.dialCode}${_phoneController.text.trim()}';
 
-    context.read<AuthBloc>().add(SendOtpRequested(phoneNumber: phoneNumber));
+    final password = _passwordController.text.trim();
+
+    context.read<AuthBloc>().add(
+      LoginRequested(phoneNumber: phoneNumber, password: password),
+    );
   }
 
   @override
@@ -79,9 +95,17 @@ class _LoginViewState extends State<_LoginView> {
 
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
+        // ========================================================
+        // OTP SENT SUCCESSFULLY
+        // ========================================================
+
         if (state is OtpSent) {
           context.push(AppRoutes.otpVerification, extra: state.phoneNumber);
         }
+
+        // ========================================================
+        // ERROR
+        // ========================================================
 
         if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -92,6 +116,7 @@ class _LoginViewState extends State<_LoginView> {
           );
         }
       },
+
       builder: (context, state) {
         final isLoading = state is AuthLoading;
 
@@ -105,15 +130,19 @@ class _LoginViewState extends State<_LoginView> {
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
+
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       minHeight: constraints.maxHeight,
                     ),
+
                     child: IntrinsicHeight(
                       child: Form(
                         key: _formKey,
+
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
+
                           children: [
                             const SizedBox(height: 18),
 
@@ -122,17 +151,22 @@ class _LoginViewState extends State<_LoginView> {
                             // ============================================
                             Align(
                               alignment: Alignment.centerRight,
+
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
+
                                 children: [
                                   Icon(
                                     Icons.auto_awesome,
                                     size: 17,
                                     color: colors.primary,
                                   ),
+
                                   const SizedBox(width: 5),
+
                                   Text(
                                     'Little Heroes',
+
                                     style: theme.textTheme.labelLarge?.copyWith(
                                       fontWeight: FontWeight.w800,
                                       color: colors.primary,
@@ -145,10 +179,11 @@ class _LoginViewState extends State<_LoginView> {
                             const Spacer(),
 
                             // ============================================
-                            // WELCOME CONTENT
+                            // WELCOME
                             // ============================================
                             AppText(
-                              'Welcome Back!',
+                              'Welcome Back! 👋',
+
                               style: theme.textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -0.8,
@@ -158,20 +193,22 @@ class _LoginViewState extends State<_LoginView> {
                             const SizedBox(height: 10),
 
                             Text(
-                              'Access your account using your phone number.',
+                              'Sign in using your phone number and password.',
+
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colors.onSurfaceVariant,
                                 height: 1.5,
                               ),
                             ),
 
-                            const SizedBox(height: 42),
+                            const SizedBox(height: 38),
 
                             // ============================================
-                            // LABEL
+                            // PHONE NUMBER LABEL
                             // ============================================
                             Text(
-                              'Enter Your Phone Number',
+                              'Phone Number',
+
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: colors.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
@@ -181,55 +218,74 @@ class _LoginViewState extends State<_LoginView> {
                             const SizedBox(height: 10),
 
                             // ============================================
-                            // PHONE FIELD
+                            // PHONE NUMBER FIELD
                             // ============================================
                             PhoneNumberField(
                               controller: _phoneController,
                               selectedCountry: _selectedCountry,
+
                               onCountryChanged: (country) {
                                 setState(() {
                                   _selectedCountry = country;
                                 });
                               },
+
                               validator: _validatePhone,
                             ),
 
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 20),
 
                             // ============================================
-                            // INFO TEXT
+                            // PASSWORD FIELD
                             // ============================================
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.info_outline_rounded,
-                                  size: 16,
-                                  color: colors.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 7),
-                                Expanded(
-                                  child: Text(
-                                    'We will send a verification code to this number.',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colors.onSurfaceVariant,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            PasswordField(
+                              controller: _passwordController,
+                              label: 'Password',
+                              hintText: 'Enter your password',
                             ),
 
-                            const SizedBox(height: 30),
+                            const SizedBox(height: 10),
 
                             // ============================================
-                            // CONTINUE BUTTON
+                            // FORGOT PASSWORD
+                            // ============================================
+                            Align(
+                              alignment: Alignment.centerRight,
+
+                              child: TextButton(
+                                onPressed: () {
+                                  // TODO: Navigate to forgot password page
+                                },
+
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(0, 32),
+                                ),
+
+                                child: Text(
+                                  'Forgot Password?',
+
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colors.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // ============================================
+                            // LOGIN BUTTON
                             // ============================================
                             SizedBox(
                               height: 56,
+
                               child: AppButton(
-                                text: 'Continue',
-                                onPressed: isLoading ? null : _sendOtp,
+                                text: 'Login',
+
+                                onPressed: isLoading ? null : _login,
+
                                 isLoading: isLoading,
                               ),
                             ),
@@ -241,24 +297,30 @@ class _LoginViewState extends State<_LoginView> {
                             // ============================================
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
+
                               children: [
                                 Text(
                                   "Don't have an account?",
+
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: colors.onSurfaceVariant,
                                   ),
                                 ),
+
                                 TextButton(
                                   onPressed: () {
                                     context.push(AppRoutes.register);
                                   },
+
                                   style: TextButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 6,
                                     ),
                                   ),
+
                                   child: Text(
                                     'Sign Up',
+
                                     style: TextStyle(
                                       color: colors.primary,
                                       fontWeight: FontWeight.w700,
