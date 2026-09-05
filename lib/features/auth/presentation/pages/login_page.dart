@@ -49,9 +49,7 @@ class _LoginViewState extends State<_LoginView> {
     super.dispose();
   }
 
-  // ============================================================
   // PHONE VALIDATION
-  // ============================================================
 
   String? _validatePhone(String? value) {
     final phone = value?.trim() ?? '';
@@ -67,9 +65,7 @@ class _LoginViewState extends State<_LoginView> {
     return null;
   }
 
-  // ============================================================
   // LOGIN
-  // ============================================================
 
   void _login() {
     if (!_formKey.currentState!.validate()) {
@@ -95,17 +91,17 @@ class _LoginViewState extends State<_LoginView> {
 
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
-        // ========================================================
+        //
         // OTP SENT SUCCESSFULLY
-        // ========================================================
+        //
 
         if (state is OtpSent) {
           context.push(AppRoutes.otpVerification, extra: state.phoneNumber);
         }
 
-        // ========================================================
+        //
         // ERROR
-        // ========================================================
+        //
 
         if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -146,9 +142,9 @@ class _LoginViewState extends State<_LoginView> {
                           children: [
                             const SizedBox(height: 18),
 
-                            // ============================================
+                            //
                             // TOP LOGO
-                            // ============================================
+                            //
                             Align(
                               alignment: Alignment.centerRight,
 
@@ -178,9 +174,9 @@ class _LoginViewState extends State<_LoginView> {
 
                             const Spacer(),
 
-                            // ============================================
+                            //
                             // WELCOME
-                            // ============================================
+                            //
                             AppText(
                               'Welcome Back! 👋',
 
@@ -203,9 +199,9 @@ class _LoginViewState extends State<_LoginView> {
 
                             const SizedBox(height: 38),
 
-                            // ============================================
+                            //
                             // PHONE NUMBER LABEL
-                            // ============================================
+                            //
                             Text(
                               'Phone Number',
 
@@ -217,9 +213,9 @@ class _LoginViewState extends State<_LoginView> {
 
                             const SizedBox(height: 10),
 
-                            // ============================================
+                            //
                             // PHONE NUMBER FIELD
-                            // ============================================
+                            //
                             PhoneNumberField(
                               controller: _phoneController,
                               selectedCountry: _selectedCountry,
@@ -235,9 +231,9 @@ class _LoginViewState extends State<_LoginView> {
 
                             const SizedBox(height: 20),
 
-                            // ============================================
+                            //
                             // PASSWORD FIELD
-                            // ============================================
+                            //
                             PasswordField(
                               controller: _passwordController,
                               label: 'Password',
@@ -246,9 +242,9 @@ class _LoginViewState extends State<_LoginView> {
 
                             const SizedBox(height: 10),
 
-                            // ============================================
+                            //
                             // FORGOT PASSWORD
-                            // ============================================
+                            //
                             Align(
                               alignment: Alignment.centerRight,
 
@@ -275,9 +271,9 @@ class _LoginViewState extends State<_LoginView> {
 
                             const SizedBox(height: 24),
 
-                            // ============================================
+                            //
                             // LOGIN BUTTON
-                            // ============================================
+                            //
                             SizedBox(
                               height: 56,
 
@@ -292,9 +288,9 @@ class _LoginViewState extends State<_LoginView> {
 
                             const SizedBox(height: 18),
 
-                            // ============================================
+                            //
                             // SIGN UP
-                            // ============================================
+                            //
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
 

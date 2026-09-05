@@ -38,9 +38,9 @@ class InformationPage extends StatelessWidget {
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // =====================================================
+            // =
             // HEADER
-            // =====================================================
+            // =
 
             SliverToBoxAdapter(
               child: Padding(
@@ -82,9 +82,9 @@ class InformationPage extends StatelessWidget {
               ),
             ),
 
-            // =====================================================
+            // =
             // CONTENT
-            // =====================================================
+            // =
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
               sliver: SliverList(
@@ -105,9 +105,7 @@ class InformationPage extends StatelessWidget {
   }
 }
 
-// ================================================================
 // INFORMATION SECTION MODEL
-// ================================================================
 
 class InformationSection {
   final String heading;
@@ -116,9 +114,7 @@ class InformationSection {
   const InformationSection({required this.heading, required this.content});
 }
 
-// ================================================================
 // INFORMATION SECTION WIDGET
-// ================================================================
 
 class _InformationSectionWidget extends StatelessWidget {
   final InformationSection section;

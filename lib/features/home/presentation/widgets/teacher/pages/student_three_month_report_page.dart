@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'three_month_reports_page.dart';
 
-// ============================================================================
 // DEVELOPMENT FRAMEWORK
-// ============================================================================
 
 class DevelopmentFramework {
   final String title;
@@ -18,9 +16,7 @@ class DevelopmentFramework {
   });
 }
 
-// ============================================================================
 // FRAMEWORK DATA
-// ============================================================================
 
 const List<DevelopmentFramework> kDevelopmentFrameworks = [
   DevelopmentFramework(
@@ -67,10 +63,8 @@ const List<DevelopmentFramework> kDevelopmentFrameworks = [
   ),
 ];
 
-// ============================================================================
 // PAGE 2
 // STUDENT 3 MONTH REPORT
-// ============================================================================
 
 class StudentThreeMonthReportPage extends StatefulWidget {
   final Student student;
@@ -95,9 +89,7 @@ class _StudentThreeMonthReportPageState
     _levels = List<int?>.filled(kDevelopmentFrameworks.length, null);
   }
 
-  // ========================================================================
   // PROGRESS
-  // ========================================================================
 
   int get _completed => _levels.whereType<int>().length;
 
@@ -109,9 +101,7 @@ class _StudentThreeMonthReportPageState
     return _completed / kDevelopmentFrameworks.length;
   }
 
-  // ========================================================================
   // INITIAL
-  // ========================================================================
 
   String get _studentInitial {
     final name = widget.student.name.trim();
@@ -123,9 +113,7 @@ class _StudentThreeMonthReportPageState
     return name.characters.first.toUpperCase();
   }
 
-  // ========================================================================
   // SELECT LEVEL
-  // ========================================================================
 
   void _selectLevel(int index, int level) {
     if (_levels[index] == level) {
@@ -137,9 +125,7 @@ class _StudentThreeMonthReportPageState
     });
   }
 
-  // ========================================================================
   // SAVE
-  // ========================================================================
 
   Future<void> _saveReport() async {
     if (_isSaving) {
@@ -188,9 +174,7 @@ class _StudentThreeMonthReportPageState
       );
   }
 
-  // ========================================================================
   // BUILD
-  // ========================================================================
 
   @override
   Widget build(BuildContext context) {
@@ -200,9 +184,7 @@ class _StudentThreeMonthReportPageState
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
 
-      // ====================================================================
       // PAGE 2 APP BAR
-      // ====================================================================
       appBar: AppBar(
         backgroundColor: colors.surface,
         foregroundColor: colors.onSurface,
@@ -216,16 +198,12 @@ class _StudentThreeMonthReportPageState
         ),
       ),
 
-      // ====================================================================
       // PAGE 2 BODY
-      // ====================================================================
       body: SafeArea(
         child: CustomScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
-            // ================================================================
             // STUDENT INFORMATION
-            // ================================================================
 
             SliverToBoxAdapter(
               child: Container(
@@ -299,9 +277,7 @@ class _StudentThreeMonthReportPageState
               ),
             ),
 
-            // ================================================================
             // PROGRESS
-            // ================================================================
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
@@ -351,9 +327,7 @@ class _StudentThreeMonthReportPageState
               ),
             ),
 
-            // ================================================================
             // FRAMEWORK TITLE
-            // ================================================================
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
               sliver: SliverToBoxAdapter(
@@ -366,9 +340,7 @@ class _StudentThreeMonthReportPageState
               ),
             ),
 
-            // ================================================================
             // FRAMEWORKS
-            // ================================================================
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               sliver: SliverList.builder(
@@ -391,9 +363,7 @@ class _StudentThreeMonthReportPageState
               ),
             ),
 
-            // ================================================================
             // SAVE
-            // ================================================================
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
               sliver: SliverToBoxAdapter(
@@ -426,9 +396,7 @@ class _StudentThreeMonthReportPageState
   }
 }
 
-// ============================================================================
 // FRAMEWORK CARD
-// ============================================================================
 
 class FrameworkCard extends StatelessWidget {
   final DevelopmentFramework framework;
@@ -606,9 +574,7 @@ class FrameworkCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // LEVEL BUTTON
-// ============================================================================
 
 class _LevelButton extends StatelessWidget {
   final int level;

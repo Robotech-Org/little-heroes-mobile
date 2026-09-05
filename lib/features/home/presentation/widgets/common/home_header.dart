@@ -55,9 +55,9 @@ class HomeHeader extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // ==========================================================
+              // ==
               // PROFILE
-              // ==========================================================
+              // ==
 
               Material(
                 color: colors.primaryContainer,
@@ -81,9 +81,9 @@ class HomeHeader extends StatelessWidget {
 
               const SizedBox(width: 12),
 
-              // ==========================================================
+              // ==
               // WELCOME INFORMATION
-              // ==========================================================
+              // ==
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,9 +113,9 @@ class HomeHeader extends StatelessWidget {
 
                     const SizedBox(height: 2),
 
-                    // ====================================================
+                    //
                     // ROLE CHIP
-                    // ====================================================
+                    //
                     Row(
                       children: [
                         Container(
@@ -145,9 +145,9 @@ class HomeHeader extends StatelessWidget {
 
               const SizedBox(width: 10),
 
-              // ==========================================================
+              // ==
               // NOTIFICATION BUTTON
-              // ==========================================================
+              // ==
               _HeaderButton(
                 icon: Icons.notifications_none_rounded,
                 showBadge: true,
@@ -163,9 +163,7 @@ class HomeHeader extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // HEADER BUTTON
-// ============================================================================
 
 class _HeaderButton extends StatelessWidget {
   final IconData icon;
@@ -197,9 +195,9 @@ class _HeaderButton extends StatelessWidget {
                 child: Icon(icon, color: colors.onSurfaceVariant, size: 22),
               ),
 
-              // ==========================================================
+              // ==
               // NOTIFICATION BADGE
-              // ==========================================================
+              // ==
               if (showBadge)
                 Positioned(
                   top: 7,

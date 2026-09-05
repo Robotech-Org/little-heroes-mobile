@@ -64,9 +64,7 @@ class HomeStatCard extends StatelessWidget {
   }
 }
 
-// ==================================================================
-// STAT MODEL
-// ==================================================================
+
 
 class _Stat {
   final String title;
@@ -76,9 +74,7 @@ class _Stat {
   const _Stat({required this.title, required this.value, required this.icon});
 }
 
-// ==================================================================
-// STAT ITEM
-// ==================================================================
+
 
 class _StatItem extends StatelessWidget {
   final _Stat stat;
@@ -111,17 +107,17 @@ class _StatItem extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ========================================================
+          // 
           // ICON
-          // ========================================================
+          // 
 
           Icon(stat.icon, size: 22, color: colorScheme.primary),
 
           const SizedBox(height: 12),
 
-          // ========================================================
+          // 
           // VALUE
-          // ========================================================
+          // 
           Text(
             stat.value,
             style: theme.textTheme.titleLarge?.copyWith(
@@ -133,9 +129,9 @@ class _StatItem extends StatelessWidget {
 
           const SizedBox(height: 3),
 
-          // ========================================================
+          // 
           // TITLE
-          // ========================================================
+          // 
           Text(
             stat.title,
             maxLines: 1,

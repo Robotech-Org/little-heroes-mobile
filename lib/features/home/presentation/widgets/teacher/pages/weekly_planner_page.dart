@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-// ============================================================================
+
 // WEEKLY PLAN MODEL
-// ============================================================================
+
 
 class WeeklyPlan {
   final String id;
@@ -28,9 +28,9 @@ class WeeklyPlan {
   });
 }
 
-// ============================================================================
+
 // WEEKLY PLANS PAGE
-// ============================================================================
+
 
 class WeeklyPlansPage extends StatefulWidget {
   const WeeklyPlansPage({super.key});
@@ -77,9 +77,7 @@ class _WeeklyPlansPageState extends State<WeeklyPlansPage> {
     ),
   ];
 
-  // ==========================================================================
-  // ADD PLAN
-  // ==========================================================================
+
 
   void _addPlan() {
     Navigator.push(
@@ -96,18 +94,14 @@ class _WeeklyPlansPageState extends State<WeeklyPlansPage> {
     );
   }
 
-  // ==========================================================================
-  // DATE
-  // ==========================================================================
+ 
 
   String _dayName(DateTime date) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return days[date.weekday - 1];
   }
 
-  // ==========================================================================
-  // BUILD
-  // ==========================================================================
+ 
 
   @override
   Widget build(BuildContext context) {
@@ -159,9 +153,9 @@ class _WeeklyPlansPageState extends State<WeeklyPlansPage> {
   }
 }
 
-// ============================================================================
+
 // WEEKLY PLAN CARD
-// ============================================================================
+
 
 class _WeeklyPlanCard extends StatelessWidget {
   final WeeklyPlan plan;
@@ -199,9 +193,9 @@ class _WeeklyPlanCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ================================================================
+          
           // DAY / DATE
-          // ================================================================
+          
 
           Container(
             width: 58,
@@ -235,9 +229,9 @@ class _WeeklyPlanCard extends StatelessWidget {
 
           const SizedBox(width: 14),
 
-          // ================================================================
+          
           // PLAN INFORMATION
-          // ================================================================
+          
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,9 +305,9 @@ class _WeeklyPlanCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
+
 // ADD WEEKLY PLAN PAGE
-// ============================================================================
+
 
 class AddWeeklyPlanPage extends StatefulWidget {
   final ValueChanged<WeeklyPlan> onSave;
@@ -384,9 +378,7 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
     super.dispose();
   }
 
-  // ==========================================================================
-  // SAVE
-  // ==========================================================================
+ 
 
   void _save(String status) {
     if (_titleController.text.trim().isEmpty) {
@@ -423,9 +415,7 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
     );
   }
 
-  // ==========================================================================
-  // DATE
-  // ==========================================================================
+ 
 
   Future<void> _pickDate() async {
     final date = await showDatePicker(
@@ -442,9 +432,7 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
     }
   }
 
-  // ==========================================================================
-  // BUILD
-  // ==========================================================================
+ 
 
   @override
   Widget build(BuildContext context) {
@@ -468,9 +456,9 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
         children: [
-          // ================================================================
+          
           // DATE
-          // ================================================================
+          
 
           _SectionTitle(
             title: 'Lesson Day',
@@ -508,9 +496,9 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
 
           const SizedBox(height: 22),
 
-          // ================================================================
+          
           // FRAMEWORK DOMAIN
-          // ================================================================
+          
           _SectionTitle(
             title: 'Framework Domain',
             subtitle: 'Select the learning framework domain.',
@@ -540,9 +528,9 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
 
           const SizedBox(height: 18),
 
-          // ================================================================
+          
           // SUB DOMAIN
-          // ================================================================
+          
           _SectionTitle(
             title: 'Framework Sub-domain',
             subtitle: 'Select the specific learning area.',
@@ -571,9 +559,9 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
 
           const SizedBox(height: 18),
 
-          // ================================================================
+          
           // TARGET
-          // ================================================================
+          
           _SectionTitle(
             title: 'Framework Target',
             subtitle: 'What should the child work toward?',
@@ -592,9 +580,9 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
 
           const SizedBox(height: 22),
 
-          // ================================================================
+          
           // LESSON TITLE
-          // ================================================================
+          
           _SectionTitle(
             title: 'Lesson Title',
             subtitle: 'Give the lesson a clear title.',
@@ -613,9 +601,9 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
 
           const SizedBox(height: 22),
 
-          // ================================================================
+          
           // OBJECTIVE
-          // ================================================================
+          
           _SectionTitle(
             title: 'Objective of the Lesson',
             subtitle: 'What should children learn or achieve?',
@@ -636,9 +624,9 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
 
           const SizedBox(height: 22),
 
-          // ================================================================
+          
           // MATERIALS
-          // ================================================================
+          
           _SectionTitle(
             title: 'Materials Needed',
             subtitle: 'List the materials required for the lesson.',
@@ -659,9 +647,9 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
 
           const SizedBox(height: 28),
 
-          // ================================================================
+          
           // ACTION BUTTONS
-          // ================================================================
+          
           Row(
             children: [
               Expanded(
@@ -704,9 +692,7 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
     );
   }
 
-  // ==========================================================================
-  // INPUT DECORATION
-  // ==========================================================================
+
 
   InputDecoration _inputDecoration(
     BuildContext context,
@@ -738,9 +724,9 @@ class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
   }
 }
 
-// ============================================================================
+
 // SECTION TITLE
-// ============================================================================
+
 
 class _SectionTitle extends StatelessWidget {
   final String title;

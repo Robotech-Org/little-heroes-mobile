@@ -1,25 +1,25 @@
 class AppConstants {
   AppConstants._();
 
-  // =========================
+  // =
   // App Information
-  // =========================
+  // =
 
   static const String appName = 'Little Heroes';
 
   static const String appVersion = '1.0.0';
 
-  // =========================
+  // =
   // Pagination
-  // =========================
+  // =
 
   static const int defaultPage = 1;
 
   static const int defaultPageSize = 20;
 
-  // =========================
+  // =
   // Validation
-  // =========================
+  // =
 
   static const int minPasswordLength = 8;
 
@@ -29,9 +29,9 @@ class AppConstants {
 
   static const int maxNameLength = 50;
 
-  // =========================
+  // =
   // UI
-  // =========================
+  // =
 
   static const double defaultPadding = 16.0;
 
@@ -43,9 +43,9 @@ class AppConstants {
 
   static const double buttonHeight = 52.0;
 
-  // =========================
+  // =
   // Timing
-  // =========================
+  // =
 
   static const Duration splashDuration = Duration(seconds: 2);
 
@@ -53,17 +53,17 @@ class AppConstants {
 
   static const Duration debounceDuration = Duration(milliseconds: 500);
 
-  // =========================
+  // =
   // Network
-  // =========================
+  // =
 
   static const Duration connectionTimeout = Duration(seconds: 30);
 
   static const Duration receiveTimeout = Duration(seconds: 30);
 
-  // =========================
+  // =
   // Other
-  // =========================
+  // =
 
   static const int maxChatMessageLength = 1000;
 }

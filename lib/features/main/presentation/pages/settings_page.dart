@@ -20,18 +20,14 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  // ============================================================
   // PARENT NOTIFICATIONS
-  // ============================================================
 
   bool _dailyReportEnabled = true;
   bool _newPhotosEnabled = true;
   bool _messagesEnabled = true;
   bool _billingRemindersEnabled = true;
 
-  // ============================================================
   // TEACHER / ADVISER NOTIFICATIONS
-  // ============================================================
 
   bool _studentUpdatesEnabled = true;
   bool _reportRemindersEnabled = true;
@@ -67,9 +63,9 @@ class _SettingsPageState extends State<SettingsPage> {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
 
             children: [
-              // ========================================================
+              //
               // ACCOUNT
-              // ========================================================
+              //
 
               AccountSettingsSection(
                 role: role,
@@ -94,9 +90,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 28),
 
-              // ========================================================
+              //
               // ROLE BASED NOTIFICATIONS
-              // ========================================================
+              //
               if (role != null)
                 NotificationSettingsSection(
                   role: role,
@@ -155,16 +151,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 28),
 
-              // ========================================================
+              //
               // APPEARANCE
-              // ========================================================
+              //
               const AppearanceSettings(),
 
               const SizedBox(height: 28),
 
-              // ========================================================
+              //
               // ACCOUNT ROLE
-              // ========================================================
+              //
               if (role != null)
                 SettingsSection(
                   title: 'Account Role',
@@ -173,16 +169,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 28),
 
-              // ========================================================
+              //
               // PRIVACY & TERMS
-              // ========================================================
+              //
               const PrivacyTermsSection(),
 
               const SizedBox(height: 32),
 
-              // ========================================================
+              //
               // LOGOUT
-              // ========================================================
+              //
               OutlinedButton.icon(
                 onPressed: () {
                   _showLogoutDialog(context);
@@ -208,9 +204,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // ================================================================
   // LOGOUT DIALOG
-  // ================================================================
 
   void _showLogoutDialog(BuildContext context) {
     final colors = Theme.of(context).colorScheme;

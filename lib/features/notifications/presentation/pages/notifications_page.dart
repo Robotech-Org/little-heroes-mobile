@@ -125,9 +125,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 }
 
-// ==================================================================
-// ERROR
-// ==================================================================
+
 
 class _ErrorView extends StatelessWidget {
   final String message;

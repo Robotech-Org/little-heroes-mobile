@@ -39,9 +39,7 @@ class PrivacyTermsSection extends StatelessWidget {
     );
   }
 
-  // ================================================================
   // PRIVACY POLICY
-  // ================================================================
 
   void _openPrivacyPolicy(BuildContext context) {
     Navigator.push(
@@ -91,9 +89,7 @@ class PrivacyTermsSection extends StatelessWidget {
     );
   }
 
-  // ================================================================
   // TERMS & CONDITIONS
-  // ================================================================
 
   void _openTermsAndConditions(BuildContext context) {
     Navigator.push(
@@ -144,9 +140,7 @@ class PrivacyTermsSection extends StatelessWidget {
     );
   }
 
-  // ================================================================
   // ABOUT
-  // ================================================================
 
   void _openAbout(BuildContext context) {
     Navigator.push(

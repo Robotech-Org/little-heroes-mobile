@@ -10,28 +10,19 @@ abstract class AppException implements Exception {
 class ServerException extends AppException {
   final int? statusCode;
 
-  const ServerException(
-    super.message, {
-    this.statusCode,
-  });
+  const ServerException(super.message, {this.statusCode});
 }
 
 class NetworkException extends AppException {
-  const NetworkException([
-    super.message = 'No internet connection.',
-  ]);
+  const NetworkException([super.message = 'No internet connection.']);
 }
 
 class CacheException extends AppException {
-  const CacheException([
-    super.message = 'Failed to access local storage.',
-  ]);
+  const CacheException([super.message = 'Failed to access local storage.']);
 }
 
 class UnauthorizedException extends AppException {
-  const UnauthorizedException([
-    super.message = 'You are not authorized.',
-  ]);
+  const UnauthorizedException([super.message = 'You are not authorized.']);
 }
 
 class NotFoundException extends AppException {
@@ -41,13 +32,13 @@ class NotFoundException extends AppException {
 }
 
 class ValidationException extends AppException {
-  const ValidationException([
-    super.message = 'Invalid data provided.',
-  ]);
+  const ValidationException([super.message = 'Invalid data provided.']);
 }
 
 class TimeoutException extends AppException {
-  const TimeoutException([
-    super.message = 'The request timed out.',
-  ]);
+  const TimeoutException([super.message = 'The request timed out.']);
+}
+
+class UnknownException extends AppException {
+  const UnknownException([super.message = 'Something went wrong.']);
 }

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -9,15 +8,11 @@ class ThemeCubit extends Cubit<ThemeMode> {
     _loadTheme();
   }
 
-  // ============================================================
   // STORAGE
-  // ============================================================
 
   static const String _themeKey = 'theme_mode';
 
-  // ============================================================
   // LOAD SAVED THEME
-  // ============================================================
 
   Future<void> _loadTheme() async {
     try {
@@ -37,36 +32,28 @@ class ThemeCubit extends Cubit<ThemeMode> {
     }
   }
 
-  // ============================================================
   // SET LIGHT
-  // ============================================================
 
   Future<void> setLightMode() async {
     emit(ThemeMode.light);
     await _saveTheme(ThemeMode.light);
   }
 
-  // ============================================================
   // SET DARK
-  // ============================================================
 
   Future<void> setDarkMode() async {
     emit(ThemeMode.dark);
     await _saveTheme(ThemeMode.dark);
   }
 
-  // ============================================================
   // SET SYSTEM
-  // ============================================================
 
   Future<void> setSystemMode() async {
     emit(ThemeMode.system);
     await _saveTheme(ThemeMode.system);
   }
 
-  // ============================================================
   // TOGGLE
-  // ============================================================
 
   Future<void> toggleTheme() async {
     final newMode = state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
@@ -75,9 +62,7 @@ class ThemeCubit extends Cubit<ThemeMode> {
     await _saveTheme(newMode);
   }
 
-  // ============================================================
   // SAVE
-  // ============================================================
 
   Future<void> _saveTheme(ThemeMode mode) async {
     try {
@@ -90,9 +75,7 @@ class ThemeCubit extends Cubit<ThemeMode> {
     }
   }
 
-  // ============================================================
   // THEME MODE → STRING
-  // ============================================================
 
   String _themeModeToString(ThemeMode mode) {
     switch (mode) {
@@ -105,9 +88,7 @@ class ThemeCubit extends Cubit<ThemeMode> {
     }
   }
 
-  // ============================================================
   // STRING → THEME MODE
-  // ============================================================
 
   ThemeMode? _themeModeFromString(String value) {
     switch (value) {

@@ -23,15 +23,13 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
-  // ============================================================
   // NAVIGATION ITEMS
-  // ============================================================
 
   List<NavigationItem> _navigationItems(UserRole role) {
     switch (role) {
-      // ==========================================================
+      // ==
       // TEACHER
-      // ==========================================================
+      // ==
 
       case UserRole.teacher:
         return const [
@@ -57,9 +55,9 @@ class _MainPageState extends State<MainPage> {
           ),
         ];
 
-      // ==========================================================
+      // ==
       // PARENT
-      // ==========================================================
+      // ==
 
       case UserRole.parent:
         return const [
@@ -85,9 +83,9 @@ class _MainPageState extends State<MainPage> {
           ),
         ];
 
-      // ==========================================================
+      // ==
       // ADVISER
-      // ==========================================================
+      // ==
 
       case UserRole.adviser:
         return const [
@@ -115,15 +113,13 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  // ============================================================
   // PAGES
-  // ============================================================
 
   List<Widget> _pages(UserRole role) {
     switch (role) {
-      // ==========================================================
+      // ==
       // TEACHER
-      // ==========================================================
+      // ==
 
       case UserRole.teacher:
         return [
@@ -133,9 +129,9 @@ class _MainPageState extends State<MainPage> {
           const SettingsPage(),
         ];
 
-      // ==========================================================
+      // ==
       // PARENT
-      // ==========================================================
+      // ==
 
       case UserRole.parent:
         return [
@@ -145,9 +141,9 @@ class _MainPageState extends State<MainPage> {
           const SettingsPage(),
         ];
 
-      // ==========================================================
+      // ==
       // ADVISER
-      // ==========================================================
+      // ==
 
       case UserRole.adviser:
         return [
@@ -159,9 +155,7 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  // ============================================================
   // NAVIGATION
-  // ============================================================
 
   void _onNavigationChanged(int index) {
     if (index == _currentIndex) {
@@ -173,17 +167,15 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  // ============================================================
   // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
-        // ========================================================
+        //
         // USER NOT AUTHENTICATED
-        // ========================================================
+        //
 
         if (authState is! AuthAuthenticated) {
           return const Scaffold(
@@ -191,30 +183,30 @@ class _MainPageState extends State<MainPage> {
           );
         }
 
-        // ========================================================
+        //
         // GET ROLE FROM AUTH
-        // ========================================================
+        //
 
         final role = authState.user.role;
 
-        // ========================================================
+        //
         // ROLE-BASED NAVIGATION
-        // ========================================================
+        //
 
         final items = _navigationItems(role);
         final pages = _pages(role);
 
-        // ========================================================
+        //
         // SAFETY CHECK
-        // ========================================================
+        //
 
         if (_currentIndex >= items.length) {
           _currentIndex = 0;
         }
 
-        // ========================================================
+        //
         // UI
-        // ========================================================
+        //
 
         return Scaffold(
           body: IndexedStack(index: _currentIndex, children: pages),

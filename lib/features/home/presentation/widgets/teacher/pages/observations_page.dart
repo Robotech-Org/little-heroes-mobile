@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../pages/three_month_reports_page.dart';
 
-// ============================================================================
+
 // OBSERVATION MODEL
-// ============================================================================
+
 
 class Observation {
   final String id;
@@ -27,9 +27,9 @@ class Observation {
   });
 }
 
-// ============================================================================
+
 // OBSERVATIONS PAGE
-// ============================================================================
+
 
 class ObservationsPage extends StatefulWidget {
   const ObservationsPage({super.key});
@@ -121,9 +121,9 @@ class _ObservationsPageState extends State<ObservationsPage> {
   }
 }
 
-// ============================================================================
+
 // STUDENT CARD
-// ============================================================================
+
 
 class _StudentCard extends StatelessWidget {
   final Student student;
@@ -213,9 +213,9 @@ class _StudentCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
+
 // ADD OBSERVATION PAGE
-// ============================================================================
+
 
 class AddObservationPage extends StatefulWidget {
   final Student student;
@@ -280,9 +280,7 @@ class _AddObservationPageState extends State<AddObservationPage> {
     return '$hour:$minute $period';
   }
 
-  // ==========================================================================
-  // FILE PICKER - NEW FILE_PICKER API
-  // ==========================================================================
+ 
 
   Future<void> _pickFile() async {
     try {
@@ -357,9 +355,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // ================================================================
+          
           // STUDENT
-          // ================================================================
+          
 
           Row(
             children: [
@@ -405,9 +403,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
 
           const SizedBox(height: 20),
 
-          // ================================================================
+          
           // TIME / ACTIVITY CARD
-          // ================================================================
+          
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -490,9 +488,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
 
           const SizedBox(height: 22),
 
-          // ================================================================
+          
           // ACTIVITY
-          // ================================================================
+          
           const Text(
             'Activity',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
@@ -523,9 +521,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
 
           const SizedBox(height: 22),
 
-          // ================================================================
+          
           // NOTE
-          // ================================================================
+          
           const Text(
             'Observation Note',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
@@ -549,9 +547,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
 
           const SizedBox(height: 22),
 
-          // ================================================================
+          
           // FILE
-          // ================================================================
+          
           const Text(
             'Observation File',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
@@ -607,9 +605,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
 
           const SizedBox(height: 28),
 
-          // ================================================================
+          
           // SAVE
-          // ================================================================
+          
           FilledButton.icon(
             onPressed: _save,
             icon: const Icon(Icons.save_rounded),

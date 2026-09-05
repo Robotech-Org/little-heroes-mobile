@@ -17,30 +17,26 @@ class ParentHomePage extends StatelessWidget {
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // ============================================================
             // HEADER
-            // ============================================================
 
             const SliverToBoxAdapter(child: HomeHeader()),
 
-            // ============================================================
             // CONTENT
-            // ============================================================
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  // ======================================================
+                  // ==
                   // PARENT DASHBOARD
-                  // ======================================================
+                  // ==
 
                   const ParentDashboard(),
 
                   const SizedBox(height: 28),
 
-                  // ======================================================
+                  // ==
                   // CHILD ACTIVITY
-                  // ======================================================
+                  // ==
                   // const SectionHeader(
                   //   title: 'Child Activity',
                   //   subtitle: 'Latest updates about your child',
@@ -52,9 +48,9 @@ class ParentHomePage extends StatelessWidget {
 
                   // const SizedBox(height: 28),
 
-                  // // ======================================================
+                  // // ==
                   // // UPCOMING
-                  // // ======================================================
+                  // // ==
                   // const SectionHeader(
                   //   title: 'Upcoming',
                   //   subtitle: 'Your next scheduled activity',

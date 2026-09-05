@@ -52,9 +52,9 @@ class NotificationSettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     switch (role) {
-      // ==========================================================
+      // ==
       // PARENT
-      // ==========================================================
+      // ==
 
       case UserRole.parent:
         return SettingsSection(
@@ -93,9 +93,9 @@ class NotificationSettingsSection extends StatelessWidget {
           ),
         );
 
-      // ==========================================================
+      // ==
       // TEACHER
-      // ==========================================================
+      // ==
 
       case UserRole.teacher:
         return SettingsSection(
@@ -134,9 +134,9 @@ class NotificationSettingsSection extends StatelessWidget {
           ),
         );
 
-      // ==========================================================
+      // ==
       // ADVISER
-      // ==========================================================
+      // ==
 
       case UserRole.adviser:
         return SettingsSection(

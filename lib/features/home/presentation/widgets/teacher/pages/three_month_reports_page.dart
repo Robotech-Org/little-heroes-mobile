@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'student_three_month_report_page.dart';
 
-// ============================================================================
 // STUDENT MODEL
-// ============================================================================
 
 class Student {
   final String id;
@@ -24,9 +22,7 @@ class Student {
 
 enum ReportStatus { pending, inProgress, completed }
 
-// ============================================================================
 // STUDENT DATA
-// ============================================================================
 
 const List<Student> kStudents = [
   Student(
@@ -87,10 +83,8 @@ const List<Student> kStudents = [
   ),
 ];
 
-// ============================================================================
 // PAGE 1
 // STUDENT LIST
-// ============================================================================
 
 class ThreeMonthReportsPage extends StatefulWidget {
   const ThreeMonthReportsPage({super.key});
@@ -120,9 +114,7 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
         .toList(growable: false);
   }
 
-  // ========================================================================
   // OPEN STUDENT REPORT
-  // ========================================================================
 
   void _openStudent(Student student) {
     Navigator.of(context).push(
@@ -132,9 +124,7 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
     );
   }
 
-  // ========================================================================
   // CLEAR SEARCH
-  // ========================================================================
 
   void _clearSearch() {
     _searchController.clear();
@@ -156,9 +146,7 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
 
-      // ====================================================================
       // APP BAR
-      // ====================================================================
       appBar: AppBar(
         title: const Text(
           '3 Month Reports',
@@ -170,9 +158,7 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
         scrolledUnderElevation: 0,
       ),
 
-      // ====================================================================
       // BODY
-      // ====================================================================
       body: SafeArea(
         top: false,
         child: ValueListenableBuilder<TextEditingValue>(
@@ -185,9 +171,9 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
 
               slivers: [
-                // ==========================================================
+                // ==
                 // COLLAPSING HEADER
-                // ==========================================================
+                // ==
 
                 SliverAppBar(
                   automaticallyImplyLeading: false,
@@ -240,22 +226,22 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
                   ),
                 ),
 
-                // ==========================================================
+                // ==
                 // STUDENT COUNT
-                // ==========================================================
+                // ==
 
-                // ==========================================================
+                // ==
                 // EMPTY STATE
-                // ==========================================================
+                // ==
                 if (students.isEmpty)
                   const SliverFillRemaining(
                     hasScrollBody: false,
                     child: _EmptyStudents(),
                   ),
 
-                // ==========================================================
+                // ==
                 // STUDENT LIST
-                // ==========================================================
+                // ==
                 if (students.isNotEmpty)
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
@@ -283,9 +269,7 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
   }
 }
 
-// ============================================================================
 // SEARCH FIELD
-// ============================================================================
 
 class _SearchField extends StatelessWidget {
   final TextEditingController controller;
@@ -349,9 +333,7 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // STUDENT CARD
-// ============================================================================
 
 class StudentReportCard extends StatelessWidget {
   final Student student;
@@ -398,9 +380,7 @@ class StudentReportCard extends StatelessWidget {
 
           child: Row(
             children: [
-              // ============================================================
               // AVATAR
-              // ============================================================
 
               Container(
                 width: 52,
@@ -425,9 +405,7 @@ class StudentReportCard extends StatelessWidget {
 
               const SizedBox(width: 14),
 
-              // ============================================================
               // STUDENT INFORMATION
-              // ============================================================
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,9 +470,7 @@ class StudentReportCard extends StatelessWidget {
 
               const SizedBox(width: 8),
 
-              // ============================================================
               // ARROW
-              // ============================================================
               Container(
                 width: 32,
                 height: 32,
@@ -518,9 +494,7 @@ class StudentReportCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // STATUS BADGE
-// ============================================================================
 
 class ReportStatusBadge extends StatelessWidget {
   final ReportStatus status;
@@ -606,9 +580,7 @@ class ReportStatusBadge extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // EMPTY STATE
-// ============================================================================
 
 class _EmptyStudents extends StatelessWidget {
   const _EmptyStudents();

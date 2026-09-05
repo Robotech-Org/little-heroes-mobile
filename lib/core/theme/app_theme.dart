@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
@@ -6,9 +5,7 @@ import '../constants/app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  // ============================================================
   // LIGHT THEME
-  // ============================================================
 
   static ThemeData get lightTheme {
     final colorScheme =
@@ -32,19 +29,19 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
 
-      // ========================================================
+      //
       // COLOR SCHEME
-      // ========================================================
+      //
       colorScheme: colorScheme,
 
-      // ========================================================
+      //
       // BACKGROUND
-      // ========================================================
+      //
       scaffoldBackgroundColor: AppColors.lightBackground,
 
-      // ========================================================
+      //
       // APP BAR
-      // ========================================================
+      //
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -54,18 +51,18 @@ class AppTheme {
         foregroundColor: AppColors.lightTextPrimary,
       ),
 
-      // ========================================================
+      //
       // CARD
-      // ========================================================
+      //
       cardTheme: const CardThemeData(
         color: AppColors.lightCard,
         elevation: 0,
         margin: EdgeInsets.zero,
       ),
 
-      // ========================================================
+      //
       // INPUT
-      // ========================================================
+      //
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.lightSurface,
@@ -95,17 +92,17 @@ class AppTheme {
         ),
       ),
 
-      // ========================================================
+      //
       // DIVIDER
-      // ========================================================
+      //
       dividerTheme: const DividerThemeData(
         color: AppColors.lightDivider,
         thickness: 1,
       ),
 
-      // ========================================================
+      //
       // TEXT THEME
-      // ========================================================
+      //
       textTheme: const TextTheme(
         displayLarge: TextStyle(color: AppColors.lightTextPrimary),
         displayMedium: TextStyle(color: AppColors.lightTextPrimary),
@@ -130,9 +127,7 @@ class AppTheme {
     );
   }
 
-  // ============================================================
   // DARK THEME
-  // ============================================================
 
   static ThemeData get darkTheme {
     final colorScheme =
@@ -156,19 +151,19 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
 
-      // ========================================================
+      //
       // COLOR SCHEME
-      // ========================================================
+      //
       colorScheme: colorScheme,
 
-      // ========================================================
+      //
       // BACKGROUND
-      // ========================================================
+      //
       scaffoldBackgroundColor: AppColors.darkBackground,
 
-      // ========================================================
+      //
       // APP BAR
-      // ========================================================
+      //
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -178,18 +173,18 @@ class AppTheme {
         foregroundColor: AppColors.darkTextPrimary,
       ),
 
-      // ========================================================
+      //
       // CARD
-      // ========================================================
+      //
       cardTheme: const CardThemeData(
         color: AppColors.darkCard,
         elevation: 0,
         margin: EdgeInsets.zero,
       ),
 
-      // ========================================================
+      //
       // INPUT
-      // ========================================================
+      //
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.darkSurface,
@@ -219,17 +214,17 @@ class AppTheme {
         ),
       ),
 
-      // ========================================================
+      //
       // DIVIDER
-      // ========================================================
+      //
       dividerTheme: const DividerThemeData(
         color: AppColors.darkDivider,
         thickness: 1,
       ),
 
-      // ========================================================
+      //
       // TEXT THEME
-      // ========================================================
+      //
       textTheme: const TextTheme(
         displayLarge: TextStyle(color: AppColors.darkTextPrimary),
         displayMedium: TextStyle(color: AppColors.darkTextPrimary),

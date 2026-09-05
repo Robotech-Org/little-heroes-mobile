@@ -100,9 +100,7 @@ class MomentsPage extends StatelessWidget {
   }
 }
 
-// ================================================================
 // MOMENT MODEL
-// ================================================================
 
 class _Moment {
   final String title;
@@ -122,9 +120,7 @@ class _Moment {
   });
 }
 
-// ================================================================
 // MOMENT CARD
-// ================================================================
 
 class _MomentCard extends StatelessWidget {
   final _Moment moment;

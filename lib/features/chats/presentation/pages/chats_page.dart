@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/chat.dart';
@@ -6,18 +5,14 @@ import '../../domain/entities/chat.dart';
 class ChatPage extends StatefulWidget {
   final Chat chat;
 
-  const ChatPage({
-    super.key,
-    required this.chat,
-  });
+  const ChatPage({super.key, required this.chat});
 
   @override
   State<ChatPage> createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final TextEditingController _messageController =
-      TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
 
   final ScrollController _scrollController = ScrollController();
 
@@ -44,9 +39,7 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
-  // ============================================================
   // SEND MESSAGE
-  // ============================================================
 
   void _sendMessage() {
     final text = _messageController.text.trim();
@@ -56,13 +49,7 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     setState(() {
-      _messages.add(
-        _ChatMessage(
-          text: text,
-          isMe: true,
-          time: _currentTime(),
-        ),
-      );
+      _messages.add(_ChatMessage(text: text, isMe: true, time: _currentTime()));
     });
 
     _messageController.clear();
@@ -75,16 +62,12 @@ class _ChatPageState extends State<ChatPage> {
     // ----------------------------------------------------------
   }
 
-  // ============================================================
   // CURRENT TIME
-  // ============================================================
 
   String _currentTime() {
     final now = TimeOfDay.now();
 
-    final hour = now.hourOfPeriod == 0
-        ? 12
-        : now.hourOfPeriod;
+    final hour = now.hourOfPeriod == 0 ? 12 : now.hourOfPeriod;
 
     final minute = now.minute.toString().padLeft(2, '0');
 
@@ -93,9 +76,7 @@ class _ChatPageState extends State<ChatPage> {
     return '$hour:$minute $period';
   }
 
-  // ============================================================
   // SCROLL
-  // ============================================================
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -111,9 +92,7 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
-  // ============================================================
   // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -123,10 +102,9 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
 
-      // ========================================================
+      //
       // APP BAR
-      // ========================================================
-
+      //
       appBar: AppBar(
         backgroundColor: colors.surface,
         foregroundColor: colors.onSurface,
@@ -134,10 +112,7 @@ class _ChatPageState extends State<ChatPage> {
         surfaceTintColor: Colors.transparent,
 
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 20,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () {
             Navigator.of(context).pop();
           },
@@ -147,10 +122,7 @@ class _ChatPageState extends State<ChatPage> {
 
         title: Row(
           children: [
-            _Avatar(
-              name: widget.chat.personName,
-              size: 42,
-            ),
+            _Avatar(name: widget.chat.personName, size: 42),
 
             const SizedBox(width: 12),
 
@@ -186,9 +158,7 @@ class _ChatPageState extends State<ChatPage> {
         actions: [
           IconButton(
             tooltip: 'More',
-            icon: const Icon(
-              Icons.more_vert_rounded,
-            ),
+            icon: const Icon(Icons.more_vert_rounded),
             onPressed: () {
               _showMoreOptions(context);
             },
@@ -196,10 +166,9 @@ class _ChatPageState extends State<ChatPage> {
         ],
       ),
 
-      // ========================================================
+      //
       // BODY
-      // ========================================================
-
+      //
       body: Column(
         children: [
           // ----------------------------------------------------
@@ -208,29 +177,20 @@ class _ChatPageState extends State<ChatPage> {
 
           Expanded(
             child: _messages.isEmpty
-                ? _EmptyConversation(
-                    name: widget.chat.personName,
-                  )
+                ? _EmptyConversation(name: widget.chat.personName)
                 : ListView.builder(
                     controller: _scrollController,
 
                     physics: const BouncingScrollPhysics(),
 
-                    padding: const EdgeInsets.fromLTRB(
-                      16,
-                      20,
-                      16,
-                      20,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
 
                     itemCount: _messages.length,
 
                     itemBuilder: (context, index) {
                       final message = _messages[index];
 
-                      return _MessageBubble(
-                        message: message,
-                      );
+                      return _MessageBubble(message: message);
                     },
                   ),
           ),
@@ -238,19 +198,13 @@ class _ChatPageState extends State<ChatPage> {
           // ----------------------------------------------------
           // MESSAGE INPUT
           // ----------------------------------------------------
-
-          _MessageInput(
-            controller: _messageController,
-            onSend: _sendMessage,
-          ),
+          _MessageInput(controller: _messageController, onSend: _sendMessage),
         ],
       ),
     );
   }
 
-  // ============================================================
   // MORE OPTIONS
-  // ============================================================
 
   void _showMoreOptions(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -259,48 +213,32 @@ class _ChatPageState extends State<ChatPage> {
       context: context,
       backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 12,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: const Icon(
-                    Icons.notifications_off_outlined,
-                  ),
-                  title: const Text(
-                    'Mute notifications',
-                  ),
+                  leading: const Icon(Icons.notifications_off_outlined),
+                  title: const Text('Mute notifications'),
                   onTap: () {
                     Navigator.pop(context);
                   },
                 ),
                 ListTile(
-                  leading: const Icon(
-                    Icons.search_rounded,
-                  ),
-                  title: const Text(
-                    'Search in conversation',
-                  ),
+                  leading: const Icon(Icons.search_rounded),
+                  title: const Text('Search in conversation'),
                   onTap: () {
                     Navigator.pop(context);
                   },
                 ),
                 ListTile(
-                  leading: const Icon(
-                    Icons.delete_outline_rounded,
-                  ),
-                  title: const Text(
-                    'Delete conversation',
-                  ),
+                  leading: const Icon(Icons.delete_outline_rounded),
+                  title: const Text('Delete conversation'),
                   onTap: () {
                     Navigator.pop(context);
                   },
@@ -314,18 +252,13 @@ class _ChatPageState extends State<ChatPage> {
   }
 }
 
-// ============================================================================
 // MESSAGE INPUT
-// ============================================================================
 
 class _MessageInput extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
 
-  const _MessageInput({
-    required this.controller,
-    required this.onSend,
-  });
+  const _MessageInput({required this.controller, required this.onSend});
 
   @override
   Widget build(BuildContext context) {
@@ -334,18 +267,11 @@ class _MessageInput extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          12,
-          10,
-          12,
-          10,
-        ),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
           color: colors.surface,
           border: Border(
-            top: BorderSide(
-              color: colors.outlineVariant.withOpacity(0.4),
-            ),
+            top: BorderSide(color: colors.outlineVariant.withOpacity(0.4)),
           ),
         ),
         child: Row(
@@ -369,7 +295,6 @@ class _MessageInput extends StatelessWidget {
             // --------------------------------------------------
             // TEXT FIELD
             // --------------------------------------------------
-
             Expanded(
               child: Container(
                 constraints: const BoxConstraints(
@@ -382,8 +307,7 @@ class _MessageInput extends StatelessWidget {
                 ),
                 child: TextField(
                   controller: controller,
-                  textCapitalization:
-                      TextCapitalization.sentences,
+                  textCapitalization: TextCapitalization.sentences,
                   minLines: 1,
                   maxLines: 5,
 
@@ -410,7 +334,6 @@ class _MessageInput extends StatelessWidget {
             // --------------------------------------------------
             // SEND
             // --------------------------------------------------
-
             Material(
               color: colors.primary,
               shape: const CircleBorder(),
@@ -441,27 +364,18 @@ class _MessageInput extends StatelessWidget {
       context: context,
       backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 12,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: Icon(
-                    Icons.photo_outlined,
-                    color: colors.primary,
-                  ),
-                  title: const Text(
-                    'Photo',
-                  ),
+                  leading: Icon(Icons.photo_outlined, color: colors.primary),
+                  title: const Text('Photo'),
                   onTap: () {
                     Navigator.pop(context);
                   },
@@ -471,9 +385,7 @@ class _MessageInput extends StatelessWidget {
                     Icons.insert_drive_file_outlined,
                     color: colors.primary,
                   ),
-                  title: const Text(
-                    'Document',
-                  ),
+                  title: const Text('Document'),
                   onTap: () {
                     Navigator.pop(context);
                   },
@@ -483,9 +395,7 @@ class _MessageInput extends StatelessWidget {
                     Icons.camera_alt_outlined,
                     color: colors.primary,
                   ),
-                  title: const Text(
-                    'Camera',
-                  ),
+                  title: const Text('Camera'),
                   onTap: () {
                     Navigator.pop(context);
                   },
@@ -499,16 +409,12 @@ class _MessageInput extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // MESSAGE BUBBLE
-// ============================================================================
 
 class _MessageBubble extends StatelessWidget {
   final _ChatMessage message;
 
-  const _MessageBubble({
-    required this.message,
-  });
+  const _MessageBubble({required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -522,9 +428,7 @@ class _MessageBubble extends StatelessWidget {
         ? colors.primary
         : colors.surfaceContainerHighest;
 
-    final textColor = message.isMe
-        ? colors.onPrimary
-        : colors.onSurface;
+    final textColor = message.isMe ? colors.onPrimary : colors.onSurface;
 
     return Column(
       crossAxisAlignment: alignment,
@@ -534,36 +438,23 @@ class _MessageBubble extends StatelessWidget {
             maxWidth: MediaQuery.of(context).size.width * 0.78,
           ),
 
-          margin: const EdgeInsets.only(
-            bottom: 5,
-          ),
+          margin: const EdgeInsets.only(bottom: 5),
 
-          padding: const EdgeInsets.symmetric(
-            horizontal: 15,
-            vertical: 11,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
 
           decoration: BoxDecoration(
             color: bubbleColor,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(18),
               topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(
-                message.isMe ? 18 : 4,
-              ),
-              bottomRight: Radius.circular(
-                message.isMe ? 4 : 18,
-              ),
+              bottomLeft: Radius.circular(message.isMe ? 18 : 4),
+              bottomRight: Radius.circular(message.isMe ? 4 : 18),
             ),
           ),
 
           child: Text(
             message.text,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 15,
-              height: 1.35,
-            ),
+            style: TextStyle(color: textColor, fontSize: 15, height: 1.35),
           ),
         ),
 
@@ -575,10 +466,7 @@ class _MessageBubble extends StatelessWidget {
           ),
           child: Text(
             message.time,
-            style: TextStyle(
-              fontSize: 10,
-              color: colors.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 10, color: colors.onSurfaceVariant),
           ),
         ),
       ],
@@ -586,18 +474,13 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // AVATAR
-// ============================================================================
 
 class _Avatar extends StatelessWidget {
   final String name;
   final double size;
 
-  const _Avatar({
-    required this.name,
-    this.size = 44,
-  });
+  const _Avatar({required this.name, this.size = 44});
 
   @override
   Widget build(BuildContext context) {
@@ -643,16 +526,12 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // EMPTY CONVERSATION
-// ============================================================================
 
 class _EmptyConversation extends StatelessWidget {
   final String name;
 
-  const _EmptyConversation({
-    required this.name,
-  });
+  const _EmptyConversation({required this.name});
 
   @override
   Widget build(BuildContext context) {
@@ -704,9 +583,7 @@ class _EmptyConversation extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // MESSAGE MODEL
-// ============================================================================
 
 class _ChatMessage {
   final String text;

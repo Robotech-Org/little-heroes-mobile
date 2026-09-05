@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart' show DailyReportPage;
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart'
+    show DailyReportPage;
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/three_month_report_page.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/pages/payment_page.dart';
@@ -114,9 +115,7 @@ class ParentDashboard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // WEEKLY THEME
-// ============================================================================
 
 class _WeeklyThemeCard extends StatelessWidget {
   const _WeeklyThemeCard();
@@ -165,9 +164,7 @@ class _WeeklyThemeCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // SECTION TITLE
-// ============================================================================
 
 class _SectionTitle extends StatelessWidget {
   final String title;
@@ -185,15 +182,11 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // CHILD STATUS
-// ============================================================================
 
 enum _ChildStatus { ready, inProgress }
 
-// ============================================================================
 // CHILD CARD
-// ============================================================================
 
 class _ChildCard extends StatelessWidget {
   final String initials;
@@ -291,9 +284,7 @@ class _ChildCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // QUICK ACCESS CARD
-// ============================================================================
 
 class _QuickAccessCard extends StatelessWidget {
   final IconData icon;

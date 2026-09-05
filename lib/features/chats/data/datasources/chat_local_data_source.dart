@@ -1,18 +1,13 @@
-
 import '../../domain/entities/chat.dart';
 import '../../domain/entities/message.dart';
 
 class ChatLocalDataSource {
   const ChatLocalDataSource();
 
-  // ============================================================
   // CHAT LIST
-  // ============================================================
 
   Future<List<Chat>> getChats() async {
-    await Future.delayed(
-      const Duration(milliseconds: 400),
-    );
+    await Future.delayed(const Duration(milliseconds: 400));
 
     return const [
       Chat(
@@ -83,14 +78,10 @@ class ChatLocalDataSource {
     ];
   }
 
-  // ============================================================
   // MESSAGES
-  // ============================================================
 
   Future<List<Message>> getMessages(String chatId) async {
-    await Future.delayed(
-      const Duration(milliseconds: 300),
-    );
+    await Future.delayed(const Duration(milliseconds: 300));
 
     switch (chatId) {
       case '1':

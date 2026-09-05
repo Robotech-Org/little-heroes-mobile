@@ -64,9 +64,7 @@ class MainBottomNavigation extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // NAVIGATION BUTTON
-// ============================================================================
 
 class _NavigationButton extends StatefulWidget {
   final NavigationItem item;
@@ -137,9 +135,7 @@ class _NavigationButtonState extends State<_NavigationButton> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // ============================================================
               // ICON
-              // ============================================================
 
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
@@ -162,9 +158,7 @@ class _NavigationButtonState extends State<_NavigationButton> {
 
               const SizedBox(height: 3),
 
-              // ============================================================
               // LABEL
-              // ============================================================
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 180),
 

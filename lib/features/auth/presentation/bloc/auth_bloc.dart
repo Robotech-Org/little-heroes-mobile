@@ -66,9 +66,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<VerifyOtpRequested>(_onVerifyOtpRequested);
   }
 
-  // ============================================================
   // LOGIN WITH PHONE + PASSWORD
-  // ============================================================
 
   Future<void> _onLoginRequested(
     LoginRequested event,
@@ -88,9 +86,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // ============================================================
   // VERIFY OTP
-  // ============================================================
 
   Future<void> _onVerifyOtpRequested(
     VerifyOtpRequested event,

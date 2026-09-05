@@ -44,9 +44,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     super.dispose();
   }
 
-  // ============================================================
   // TIMER
-  // ============================================================
 
   void _startTimer() {
     _timer?.cancel();
@@ -75,9 +73,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     });
   }
 
-  // ============================================================
   // VERIFY OTP
-  // ============================================================
 
   void _verifyOtp() {
     if (_otp.length != 6) {
@@ -96,9 +92,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     );
   }
 
-  // ============================================================
   // RESEND OTP
-  // ============================================================
 
   void _resendOtp() {
     if (!_canResend) {
@@ -128,9 +122,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     );
   }
 
-  // ============================================================
   // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -138,14 +130,14 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     final colors = theme.colorScheme;
 
     return BlocConsumer<AuthBloc, AuthState>(
-      // ========================================================
+      //
       // AUTH STATE LISTENER
-      // ========================================================
+      //
 
       listener: (context, state) async {
-        // ======================================================
+        // ==
         // AUTHENTICATED
-        // ======================================================
+        // ==
 
         if (state is AuthAuthenticated) {
           SnackbarUtils.showSuccess(
@@ -172,18 +164,18 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           context.go(AppRoutes.main);
         }
 
-        // ======================================================
+        // ==
         // AUTH ERROR
-        // ======================================================
+        // ==
 
         if (state is AuthError) {
           SnackbarUtils.showError(context, state.message);
         }
       },
 
-      // ========================================================
+      //
       // UI BUILDER
-      // ========================================================
+      //
       builder: (context, authState) {
         final isLoading = authState is AuthLoading;
 
@@ -192,9 +184,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           body: SafeArea(
             child: Column(
               children: [
-                // =================================================
+                // =
                 // TOP BAR
-                // =================================================
+                // =
 
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -223,9 +215,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                   ),
                 ),
 
-                // =================================================
+                // =
                 // CONTENT
-                // =================================================
+                // =
                 Expanded(
                   child: SingleChildScrollView(
                     keyboardDismissBehavior:
@@ -241,9 +233,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                         children: [
                           const SizedBox(height: 16),
 
-                          // =========================================
+                          // =
                           // TITLE
-                          // =========================================
+                          // =
                           AppText(
                             'Enter verification code',
                             textAlign: TextAlign.center,
@@ -255,9 +247,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 10),
 
-                          // =========================================
+                          // =
                           // DESCRIPTION
-                          // =========================================
+                          // =
                           AppText(
                             'We sent a 6-digit verification code to your phone number.',
                             textAlign: TextAlign.center,
@@ -269,9 +261,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 14),
 
-                          // =========================================
+                          // =
                           // PHONE NUMBER
-                          // =========================================
+                          // =
                           Center(
                             child: TextButton.icon(
                               onPressed: isLoading
@@ -307,9 +299,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 42),
 
-                          // =========================================
+                          // =
                           // OTP LABEL
-                          // =========================================
+                          // =
                           Text(
                             'Verification Code',
                             textAlign: TextAlign.center,
@@ -320,9 +312,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 14),
 
-                          // =========================================
+                          // =
                           // OTP INPUT
-                          // =========================================
+                          // =
                           OtpInput(
                             onChanged: (otp) {
                               if (isLoading) {
@@ -360,9 +352,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 32),
 
-                          // =========================================
+                          // =
                           // VERIFY BUTTON
-                          // =========================================
+                          // =
                           AppButton(
                             text: 'Verify & Continue',
                             onPressed: _otp.length == 6 && !isLoading
@@ -373,9 +365,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 24),
 
-                          // =========================================
+                          // =
                           // RESEND SECTION
-                          // =========================================
+                          // =
                           Center(
                             child: Column(
                               children: [
@@ -410,9 +402,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 8),
 
-                          // =========================================
+                          // =
                           // CHANGE NUMBER
-                          // =========================================
+                          // =
                           Center(
                             child: TextButton.icon(
                               onPressed: isLoading

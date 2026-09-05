@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ============================================================
   // BRAND COLORS
-  // ============================================================
 
   /// Main Little Heroes blue
   static const Color primary = Color(0xFF4A9FD8);
@@ -16,9 +14,7 @@ class AppColors {
   /// Darker version of primary
   static const Color primaryDark = Color(0xFF367FAF);
 
-  // ============================================================
   // SECONDARY
-  // ============================================================
 
   /// Secondary color used for supporting UI elements
   static const Color secondary = Color(0xFF8BB8D6);
@@ -27,16 +23,12 @@ class AppColors {
 
   static const Color secondaryDark = Color(0xFF5E8EAE);
 
-  // ============================================================
   // ACCENT
-  // ============================================================
 
   /// Yellow accent visible in the Figma design
   static const Color accent = Color(0xFFFCCC28);
 
-  // ============================================================
   // LIGHT THEME
-  // ============================================================
 
   /// Main application background
   static const Color lightBackground = Color(0xFFFAF6EE);
@@ -46,9 +38,7 @@ class AppColors {
 
   static const Color lightCard = Color(0xFFFFFFFF);
 
-  // ============================================================
   // LIGHT TEXT
-  // ============================================================
 
   /// Main text
   static const Color lightTextPrimary = Color(0xFF1C1C1C);
@@ -59,17 +49,13 @@ class AppColors {
   /// Less important / hint text
   static const Color lightTextTertiary = Color(0xFF9A9A9A);
 
-  // ============================================================
   // LIGHT BORDERS
-  // ============================================================
 
   static const Color lightBorder = Color(0xFFE5E1D9);
 
   static const Color lightDivider = Color(0xFFE5E1D9);
 
-  // ============================================================
   // DARK THEME
-  // ============================================================
 
   /// Dark background
   static const Color darkBackground = Color(0xFF181818);
@@ -79,9 +65,7 @@ class AppColors {
 
   static const Color darkCard = Color(0xFF242424);
 
-  // ============================================================
   // DARK TEXT
-  // ============================================================
 
   static const Color darkTextPrimary = Color(0xFFF7F7F7);
 
@@ -89,17 +73,13 @@ class AppColors {
 
   static const Color darkTextTertiary = Color(0xFF999999);
 
-  // ============================================================
   // DARK BORDERS
-  // ============================================================
 
   static const Color darkBorder = Color(0xFF3A3A3A);
 
   static const Color darkDivider = Color(0xFF3A3A3A);
 
-  // ============================================================
   // STATUS COLORS
-  // ============================================================
 
   // -------------------------
   // SUCCESS / GREEN
@@ -141,9 +121,7 @@ class AppColors {
 
   static const Color infoDark = Color(0xFF367FAF);
 
-  // ============================================================
   // COMMON
-  // ============================================================
 
   static const Color white = Colors.white;
 

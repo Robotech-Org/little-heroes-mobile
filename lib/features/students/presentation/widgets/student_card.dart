@@ -35,9 +35,7 @@ class StudentCard extends StatelessWidget {
 
           child: Row(
             children: [
-              // ============================================================
               // AVATAR
-              // ============================================================
 
               Stack(
                 children: [
@@ -82,9 +80,7 @@ class StudentCard extends StatelessWidget {
 
               const SizedBox(width: 14),
 
-              // ============================================================
               // STUDENT INFORMATION
-              // ============================================================
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,9 +154,7 @@ class StudentCard extends StatelessWidget {
 
               const SizedBox(width: 8),
 
-              // ============================================================
               // ARROW
-              // ============================================================
               Icon(
                 Icons.chevron_right_rounded,
                 color: colorScheme.onSurfaceVariant,

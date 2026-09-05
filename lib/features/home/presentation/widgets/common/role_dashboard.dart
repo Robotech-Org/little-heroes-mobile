@@ -21,9 +21,7 @@ class RoleDashboard extends StatelessWidget {
   }
 }
 
-// ==================================================================
-// TEACHER
-// ==================================================================
+
 
 class _TeacherDashboard extends StatelessWidget {
   const _TeacherDashboard();
@@ -38,9 +36,7 @@ class _TeacherDashboard extends StatelessWidget {
   }
 }
 
-// ==================================================================
-// PARENT
-// ==================================================================
+
 
 class _ParentDashboard extends StatelessWidget {
   const _ParentDashboard();
@@ -56,9 +52,7 @@ class _ParentDashboard extends StatelessWidget {
   }
 }
 
-// ==================================================================
-// adviser
-// ==================================================================
+
 
 class _adviserDashboard extends StatelessWidget {
   const _adviserDashboard();
@@ -73,9 +67,7 @@ class _adviserDashboard extends StatelessWidget {
   }
 }
 
-// ==================================================================
-// COMMON BANNER
-// ==================================================================
+
 
 class _DashboardBanner extends StatelessWidget {
   final String title;
@@ -117,9 +109,9 @@ class _DashboardBanner extends StatelessWidget {
 
       child: Row(
         children: [
-          // ========================================================
+          // 
           // TEXT
-          // ========================================================
+          // 
 
           Expanded(
             child: Column(
@@ -150,9 +142,9 @@ class _DashboardBanner extends StatelessWidget {
 
           const SizedBox(width: 15),
 
-          // ========================================================
+          // 
           // ICON
-          // ========================================================
+          // 
           Container(
             width: 58,
             height: 58,

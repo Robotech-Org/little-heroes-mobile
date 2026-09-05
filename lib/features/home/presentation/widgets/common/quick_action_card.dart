@@ -64,9 +64,7 @@ class QuickActionCard extends StatelessWidget {
   }
 }
 
-// ==================================================================
-// ACTION MODEL
-// ==================================================================
+
 
 class _Action {
   final String title;
@@ -75,9 +73,7 @@ class _Action {
   const _Action({required this.title, required this.icon});
 }
 
-// ==================================================================
-// ACTION ITEM
-// ==================================================================
+
 
 class _ActionItem extends StatelessWidget {
   final _Action action;
@@ -110,9 +106,9 @@ class _ActionItem extends StatelessWidget {
 
           child: Row(
             children: [
-              // ====================================================
+              // 
               // ICON
-              // ====================================================
+              // 
 
               Container(
                 width: 42,
@@ -132,9 +128,9 @@ class _ActionItem extends StatelessWidget {
 
               const SizedBox(width: 11),
 
-              // ====================================================
+              // 
               // TITLE
-              // ====================================================
+              // 
               Expanded(
                 child: Text(
                   action.title,

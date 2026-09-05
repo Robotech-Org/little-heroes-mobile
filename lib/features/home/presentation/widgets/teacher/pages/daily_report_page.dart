@@ -114,9 +114,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
       ),
       body: Column(
         children: [
-          // ============================================================
           // HEADER
-          // ============================================================
 
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -132,9 +130,9 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
                 const SizedBox(height: 8),
 
-                // ======================================================
+                // ==
                 // SEARCH
-                // ======================================================
+                // ==
                 TextField(
                   controller: _searchController,
                   onChanged: (value) {
@@ -182,9 +180,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
           const SizedBox(height: 10),
 
-          // ============================================================
           // STUDENT LIST
-          // ============================================================
           Expanded(
             child: _filteredStudents.isEmpty
                 ? _EmptyStudents()
@@ -208,9 +204,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
   }
 }
 
-// ============================================================================
 // STUDENT
-// ============================================================================
 
 class _Student {
   final String id;
@@ -229,9 +223,7 @@ class _Student {
   });
 }
 
-// ============================================================================
 // STUDENT CARD
-// ============================================================================
 
 class _StudentCard extends StatelessWidget {
   final _Student student;
@@ -357,9 +349,7 @@ class _StudentCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // MINI STATUS
-// ============================================================================
 
 class _MiniStatus extends StatelessWidget {
   final IconData icon;
@@ -396,9 +386,7 @@ class _MiniStatus extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // EMPTY STUDENTS
-// ============================================================================
 
 class _EmptyStudents extends StatelessWidget {
   @override
@@ -430,9 +418,7 @@ class _EmptyStudents extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // STUDENT DAILY REPORT SHEET
-// ============================================================================
 
 class _StudentDailyReportSheet extends StatefulWidget {
   final _Student student;
@@ -532,9 +518,7 @@ class _StudentDailyReportSheetState extends State<_StudentDailyReportSheet> {
           ),
           child: Column(
             children: [
-              // ============================================================
               // HANDLE
-              // ============================================================
 
               const SizedBox(height: 10),
 
@@ -547,9 +531,7 @@ class _StudentDailyReportSheetState extends State<_StudentDailyReportSheet> {
                 ),
               ),
 
-              // ============================================================
               // HEADER
-              // ============================================================
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 12, 10),
                 child: Row(
@@ -601,9 +583,7 @@ class _StudentDailyReportSheetState extends State<_StudentDailyReportSheet> {
 
               Divider(color: colors.outlineVariant.withValues(alpha: .4)),
 
-              // ============================================================
               // REPORT OPTIONS
-              // ============================================================
               Expanded(
                 child: ListView(
                   controller: scrollController,
@@ -638,9 +618,7 @@ class _StudentDailyReportSheetState extends State<_StudentDailyReportSheet> {
                 ),
               ),
 
-              // ============================================================
               // SAVE BUTTON
-              // ============================================================
               Container(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                 decoration: BoxDecoration(
@@ -674,9 +652,7 @@ class _StudentDailyReportSheetState extends State<_StudentDailyReportSheet> {
   }
 }
 
-// ============================================================================
 // REPORT CATEGORY
-// ============================================================================
 
 class _ReportCategory extends StatelessWidget {
   final String title;

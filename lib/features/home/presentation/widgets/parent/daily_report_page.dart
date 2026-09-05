@@ -62,9 +62,9 @@ class _DailyReportPageState extends State<DailyReportPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
-                    // =====================================================
+                    // =
                     // BACK BUTTON
-                    // =====================================================
+                    // =
 
                     SizedBox(
                       height: 42,
@@ -109,9 +109,9 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
                     const SizedBox(height: 5),
 
-                    // =====================================================
+                    // =
                     // HEADER
-                    // =====================================================
+                    // =
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
 
@@ -150,9 +150,9 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
                     const SizedBox(height: 30),
 
-                    // =====================================================
+                    // =
                     // MEALS
-                    // =====================================================
+                    // =
                     const ReportItem(
                       title: 'MEALS & SNACKS',
                       values: ['Ate Most'],
@@ -160,16 +160,16 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
                     const SizedBox(height: 26),
 
-                    // =====================================================
+                    // =
                     // NAP
-                    // =====================================================
+                    // =
                     const ReportItem(title: 'NAP TIME', values: ['Short Nap']),
 
                     const SizedBox(height: 26),
 
-                    // =====================================================
+                    // =
                     // MOOD
-                    // =====================================================
+                    // =
                     const ReportItem(
                       title: 'MOOD & BEHAVIOR',
                       values: ['Happy', 'Playful'],
@@ -177,9 +177,9 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
                     const SizedBox(height: 26),
 
-                    // =====================================================
+                    // =
                     // HEALTH
-                    // =====================================================
+                    // =
                     const ReportItem(
                       title: 'HEALTH & HYGIENE',
                       values: ['No Concerns'],
@@ -187,9 +187,9 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
                     const SizedBox(height: 32),
 
-                    // =====================================================
+                    // =
                     // NOTE TO TEACHER
-                    // =====================================================
+                    // =
                     Text(
                       'NOTE TO TEACHER',
 
@@ -264,9 +264,9 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
                     const SizedBox(height: 14),
 
-                    // =====================================================
+                    // =
                     // SEND NOTE BUTTON
-                    // =====================================================
+                    // =
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -307,9 +307,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
   }
 }
 
-// ============================================================================
 // REPORT ITEM
-// ============================================================================
 
 class ReportItem extends StatelessWidget {
   final String title;
@@ -356,9 +354,7 @@ class ReportItem extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // STATUS PILL
-// ============================================================================
 
 class StatusPill extends StatelessWidget {
   final String text;

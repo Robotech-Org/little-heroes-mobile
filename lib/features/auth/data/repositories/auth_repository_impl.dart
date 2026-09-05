@@ -1,4 +1,3 @@
-
 import '../../domain/entities/auth_user.dart';
 import '../../domain/entities/otp_response.dart';
 import '../../domain/repositories/auth_repository.dart';

@@ -38,9 +38,7 @@ class _MessagesPageState extends State<MessagesPage> {
     super.dispose();
   }
 
-  // ============================================================
   // LOAD CHATS
-  // ============================================================
 
   Future<void> _loadChats() async {
     setState(() {
@@ -60,9 +58,7 @@ class _MessagesPageState extends State<MessagesPage> {
     });
   }
 
-  // ============================================================
   // SEARCH
-  // ============================================================
 
   void _searchChats(String query) {
     final value = query.trim().toLowerCase();
@@ -86,18 +82,14 @@ class _MessagesPageState extends State<MessagesPage> {
     });
   }
 
-  // ============================================================
   // OPEN CHAT
-  // ============================================================
 
   void _openChat(Chat chat) {
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => ChatPage(chat: chat)));
   }
 
-  // ============================================================
   // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -132,9 +124,9 @@ class _MessagesPageState extends State<MessagesPage> {
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
 
           children: [
-            // ========================================================
+            //
             // HEADER
-            // ========================================================
+            //
 
             Text(
               'Messages',
@@ -154,16 +146,16 @@ class _MessagesPageState extends State<MessagesPage> {
 
             const SizedBox(height: 18),
 
-            // ========================================================
+            //
             // SEARCH
-            // ========================================================
+            //
             ChatSearch(controller: _searchController, onChanged: _searchChats),
 
             const SizedBox(height: 22),
 
-            // ========================================================
+            //
             // TITLE
-            // ========================================================
+            //
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
@@ -203,23 +195,23 @@ class _MessagesPageState extends State<MessagesPage> {
 
             const SizedBox(height: 12),
 
-            // ========================================================
+            //
             // LOADING
-            // ========================================================
+            //
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 80),
 
                 child: Center(child: CircularProgressIndicator()),
               )
-            // ========================================================
+            //
             // EMPTY
-            // ========================================================
+            //
             else if (_filteredChats.isEmpty)
               const _EmptyChats()
-            // ========================================================
+            //
             // CHAT LIST
-            // ========================================================
+            //
             else
               ..._filteredChats.map(
                 (chat) => Padding(
@@ -241,9 +233,7 @@ class _MessagesPageState extends State<MessagesPage> {
   }
 }
 
-// ============================================================================
 // EMPTY CHATS
-// ============================================================================
 
 class _EmptyChats extends StatelessWidget {
   const _EmptyChats();

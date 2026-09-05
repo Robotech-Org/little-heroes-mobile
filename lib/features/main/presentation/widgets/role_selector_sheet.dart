@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:little_heroes_mobile/core/constants/user_role.dart';
 
-
 class RoleSelectorSheet {
   static void show({
     required BuildContext context,
@@ -67,9 +66,7 @@ class RoleSelectorSheet {
   }
 }
 
-// ============================================================================
 // ROLE OPTION
-// ============================================================================
 
 class _RoleOption extends StatelessWidget {
   final UserRole role;

@@ -13,9 +13,9 @@ class AuthMockDataSource {
     '+251933333333': MockUser(password: '123456', role: UserRole.adviser),
   };
 
-  // ============================================================
+  
   // LOGIN WITH PHONE + PASSWORD
-  // ============================================================
+  
 
   Future<OtpResponse> loginWithPhoneAndPassword({
     required String phoneNumber,
@@ -52,9 +52,9 @@ class AuthMockDataSource {
     );
   }
 
-  // ============================================================
+  
   // VERIFY OTP
-  // ============================================================
+  
 
   Future<AuthUser> verifyOtp({
     required String phoneNumber,
@@ -88,9 +88,7 @@ class AuthMockDataSource {
   }
 }
 
-// ================================================================
-// MOCK USER MODEL
-// ================================================================
+
 
 class MockUser {
   final String password;

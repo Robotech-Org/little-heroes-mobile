@@ -10,17 +10,13 @@ class TeacherDashboard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ================================================================
         // WEEKLY THEME
-        // ================================================================
 
         const _WeeklyThemeCard(),
 
         const SizedBox(height: 24),
 
-        // ================================================================
         // TEACHER DASHBOARD
-        // ================================================================
         const _SectionTitle(title: 'Teacher Dashboard'),
 
         const SizedBox(height: 12),
@@ -31,9 +27,7 @@ class TeacherDashboard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // WEEKLY THEME
-// ============================================================================
 
 class _WeeklyThemeCard extends StatelessWidget {
   const _WeeklyThemeCard();
@@ -87,9 +81,7 @@ class _WeeklyThemeCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // SECTION TITLE
-// ============================================================================
 
 class _SectionTitle extends StatelessWidget {
   final String title;
@@ -107,9 +99,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // TEACHER TOOLS / DASHBOARD
-// ============================================================================
 
 class TeacherTools extends StatelessWidget {
   final ValueChanged<TeacherTool>? onToolTap;
@@ -174,9 +164,7 @@ class TeacherTools extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // OPEN TOOL
-// ============================================================================
 
 void _openTool(BuildContext context, TeacherTool tool) {
   switch (tool.title) {
@@ -198,9 +186,7 @@ void _openTool(BuildContext context, TeacherTool tool) {
   }
 }
 
-// ============================================================================
 // TOOL MODEL
-// ============================================================================
 
 class TeacherTool {
   final String title;
@@ -218,9 +204,7 @@ class TeacherTool {
   });
 }
 
-// ============================================================================
 // TOOL CARD
-// ============================================================================
 
 class TeacherToolCard extends StatelessWidget {
   final TeacherTool tool;
@@ -251,9 +235,7 @@ class TeacherToolCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ============================================================
               // ICON
-              // ============================================================
 
               Container(
                 width: 44,
@@ -271,9 +253,7 @@ class TeacherToolCard extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // ============================================================
               // TITLE
-              // ============================================================
               Text(
                 tool.title,
                 maxLines: 1,
@@ -287,9 +267,7 @@ class TeacherToolCard extends StatelessWidget {
 
               const SizedBox(height: 4),
 
-              // ============================================================
               // DESCRIPTION
-              // ============================================================
               Text(
                 tool.description,
                 maxLines: 1,
@@ -302,9 +280,7 @@ class TeacherToolCard extends StatelessWidget {
 
               const Spacer(),
 
-              // ============================================================
               // COUNT + LABEL
-              // ============================================================
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [

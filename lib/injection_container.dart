@@ -17,9 +17,9 @@ import 'features/notifications/presentation/bloc/notification_bloc.dart';
 final GetIt sl = GetIt.instance;
 
 Future<void> initDependencies() async {
-  // ============================================================
+  //
   // NOTIFICATION DATA SOURCE
-  // ============================================================
+  //
 
   if (!sl.isRegistered<NotificationLocalDataSource>()) {
     sl.registerLazySingleton<NotificationLocalDataSource>(
@@ -27,9 +27,9 @@ Future<void> initDependencies() async {
     );
   }
 
-  // ============================================================
+  //
   // NOTIFICATION REPOSITORY
-  // ============================================================
+  //
 
   if (!sl.isRegistered<NotificationRepository>()) {
     sl.registerLazySingleton<NotificationRepository>(
@@ -39,9 +39,9 @@ Future<void> initDependencies() async {
     );
   }
 
-  // ============================================================
+  //
   // NOTIFICATION USE CASES
-  // ============================================================
+  //
 
   if (!sl.isRegistered<GetNotifications>()) {
     sl.registerLazySingleton<GetNotifications>(
@@ -55,9 +55,9 @@ Future<void> initDependencies() async {
     );
   }
 
-  // ============================================================
+  //
   // NOTIFICATION BLOC
-  // ============================================================
+  //
 
   if (!sl.isRegistered<NotificationBloc>()) {
     sl.registerFactory<NotificationBloc>(
@@ -69,17 +69,17 @@ Future<void> initDependencies() async {
     );
   }
 
-  // ============================================================
+  //
   // AUTH DATA SOURCE
-  // ============================================================
+  //
 
   if (!sl.isRegistered<AuthMockDataSource>()) {
     sl.registerLazySingleton<AuthMockDataSource>(() => AuthMockDataSource());
   }
 
-  // ============================================================
+  //
   // AUTH REPOSITORY
-  // ============================================================
+  //
 
   if (!sl.isRegistered<AuthRepository>()) {
     sl.registerLazySingleton<AuthRepository>(
@@ -87,9 +87,9 @@ Future<void> initDependencies() async {
     );
   }
 
-  // ============================================================
+  //
   // AUTH USE CASES
-  // ============================================================
+  //
 
   if (!sl.isRegistered<LoginWithPhoneAndPassword>()) {
     sl.registerLazySingleton<LoginWithPhoneAndPassword>(
@@ -101,9 +101,9 @@ Future<void> initDependencies() async {
     sl.registerLazySingleton<VerifyOtp>(() => VerifyOtp(sl<AuthRepository>()));
   }
 
-  // ============================================================
+  //
   // AUTH BLOC
-  // ============================================================
+  //
 
   if (!sl.isRegistered<AuthBloc>()) {
     sl.registerFactory<AuthBloc>(

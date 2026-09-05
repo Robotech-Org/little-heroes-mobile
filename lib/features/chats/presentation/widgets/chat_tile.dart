@@ -27,17 +27,17 @@ class ChatTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // ==================================================
+              // ==
               // AVATAR
-              // ==================================================
+              // ==
 
               _ChatAvatar(name: chat.personName),
 
               const SizedBox(width: 13),
 
-              // ==================================================
+              // ==
               // CHAT INFORMATION
-              // ==================================================
+              // ==
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,9 +95,9 @@ class ChatTile extends StatelessWidget {
 
               const SizedBox(width: 8),
 
-              // ==================================================
+              // ==
               // ARROW
-              // ==================================================
+              // ==
               Icon(
                 Icons.chevron_right_rounded,
                 color: colors.onSurfaceVariant,
@@ -117,9 +117,9 @@ class ChatTile extends StatelessWidget {
   }
 }
 
-// ================================================================
+
 // CHAT AVATAR
-// ================================================================
+
 
 class _ChatAvatar extends StatelessWidget {
   final String name;

@@ -33,9 +33,7 @@ class StudentDetailsPage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
 
         children: [
-          // ============================================================
           // PROFILE HEADER
-          // ============================================================
 
           Container(
             padding: const EdgeInsets.all(20),
@@ -148,9 +146,7 @@ class StudentDetailsPage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // ============================================================
           // QUICK STATS
-          // ============================================================
           Row(
             children: [
               Expanded(
@@ -175,9 +171,7 @@ class StudentDetailsPage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // ============================================================
           // PERSONAL INFORMATION
-          // ============================================================
           _SectionTitle(title: 'Personal Information'),
 
           const SizedBox(height: 10),
@@ -212,9 +206,7 @@ class StudentDetailsPage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // ============================================================
           // PARENT INFORMATION
-          // ============================================================
           _SectionTitle(title: 'Parent / Guardian'),
 
           const SizedBox(height: 10),
@@ -243,9 +235,7 @@ class StudentDetailsPage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // ============================================================
           // RECENT ACTIVITY
-          // ============================================================
           _SectionTitle(title: 'Recent Activity'),
 
           const SizedBox(height: 10),
@@ -265,9 +255,7 @@ class StudentDetailsPage extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // STAT CARD
-// ============================================================================
 
 class _StatCard extends StatelessWidget {
   final String title;
@@ -329,9 +317,7 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // SECTION TITLE
-// ============================================================================
 
 class _SectionTitle extends StatelessWidget {
   final String title;
@@ -349,9 +335,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // INFO CARD
-// ============================================================================
 
 class _InfoCard extends StatelessWidget {
   final List<Widget> children;
@@ -377,9 +361,7 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // INFO ROW
-// ============================================================================
 
 class _InfoRow extends StatelessWidget {
   final IconData icon;

@@ -54,6 +54,9 @@ dependencies:
   url_launcher: ^6.3.2
   path: ^1.9.1
   mobile_scanner: ^7.4.0
+  dio_cookie_manager: ^3.5.0
+  cookie_jar: ^4.0.9
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

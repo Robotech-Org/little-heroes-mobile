@@ -37,9 +37,7 @@ class _StudentsPageState extends State<StudentsPage> {
     super.dispose();
   }
 
-  // ============================================================
   // LOAD STUDENTS
-  // ============================================================
 
   Future<void> _loadStudents() async {
     setState(() {
@@ -59,9 +57,7 @@ class _StudentsPageState extends State<StudentsPage> {
     });
   }
 
-  // ============================================================
   // SEARCH
-  // ============================================================
 
   void _searchStudents(String query) {
     final value = query.trim().toLowerCase();
@@ -85,9 +81,7 @@ class _StudentsPageState extends State<StudentsPage> {
     });
   }
 
-  // ============================================================
   // OPEN STUDENT
-  // ============================================================
 
   void _openStudent(Student student) {
     Navigator.of(context).push(
@@ -95,9 +89,7 @@ class _StudentsPageState extends State<StudentsPage> {
     );
   }
 
-  // ============================================================
   // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -132,9 +124,9 @@ class _StudentsPageState extends State<StudentsPage> {
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
 
           children: [
-            // ======================================================
+            // ==
             // HEADER
-            // ======================================================
+            // ==
 
             Text(
               'Students',
@@ -154,9 +146,9 @@ class _StudentsPageState extends State<StudentsPage> {
 
             const SizedBox(height: 18),
 
-            // ======================================================
+            // ==
             // SEARCH
-            // ======================================================
+            // ==
             StudentSearch(
               controller: _searchController,
               onChanged: _searchStudents,
@@ -164,9 +156,9 @@ class _StudentsPageState extends State<StudentsPage> {
 
             const SizedBox(height: 20),
 
-            // ======================================================
+            // ==
             // STUDENT COUNT
-            // ======================================================
+            // ==
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
@@ -204,23 +196,23 @@ class _StudentsPageState extends State<StudentsPage> {
 
             const SizedBox(height: 12),
 
-            // ======================================================
+            // ==
             // LOADING
-            // ======================================================
+            // ==
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 70),
 
                 child: Center(child: CircularProgressIndicator()),
               )
-            // ======================================================
+            // ==
             // EMPTY SEARCH RESULT
-            // ======================================================
+            // ==
             else if (_filteredStudents.isEmpty)
               _EmptyStudents(searchQuery: _searchController.text)
-            // ======================================================
+            // ==
             // STUDENT LIST
-            // ======================================================
+            // ==
             else
               ..._filteredStudents.map((student) {
                 return Padding(
@@ -242,9 +234,7 @@ class _StudentsPageState extends State<StudentsPage> {
   }
 }
 
-// ============================================================================
 // EMPTY STUDENTS
-// ============================================================================
 
 class _EmptyStudents extends StatelessWidget {
   final String searchQuery;
