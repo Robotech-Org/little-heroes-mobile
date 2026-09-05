@@ -15,11 +15,6 @@ import 'package:little_heroes_mobile/features/notifications/presentation/pages/n
 import 'package:little_heroes_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:little_heroes_mobile/features/splash/presentation/pages/splash_page.dart';
 
-// import 'package:little_heroes_mobile/features/teacher/presentation/pages/daily_report_page.dart';
-// import 'package:little_heroes_mobile/features/teacher/presentation/pages/observations_page.dart';
-// import 'package:little_heroes_mobile/features/teacher/presentation/pages/three_month_reports_page.dart';
-// import 'package:little_heroes_mobile/features/teacher/presentation/pages/weekly_planner_page.dart';
-
 import 'package:little_heroes_mobile/injection_container.dart';
 
 import 'app_routes.dart';
