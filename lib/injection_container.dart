@@ -1,4 +1,9 @@
 import 'package:get_it/get_it.dart';
+import 'package:little_heroes_mobile/features/auth/data/datasources/auth_mock_data_source.dart';
+import 'package:little_heroes_mobile/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:little_heroes_mobile/features/auth/domain/repositories/auth_repository.dart';
+import 'package:little_heroes_mobile/features/auth/domain/usecases/send_otp.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 
 import 'features/notifications/data/datasources/notification_local_data_source.dart';
 import 'features/notifications/data/repositories/notification_repository_impl.dart';
@@ -66,4 +71,30 @@ Future<void> initDependencies() async {
       ),
     );
   }
+
+  // ============================================
+  // AUTH - BLOC
+  // ============================================
+
+  sl.registerFactory(() => AuthBloc(sendOtp: sl()));
+
+  // ============================================
+  // AUTH - USE CASES
+  // ============================================
+
+  sl.registerLazySingleton(() => SendOtp(sl()));
+
+  // ============================================
+  // AUTH - REPOSITORY
+  // ============================================
+
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(mockDataSource: sl()),
+  );
+
+  // ============================================
+  // AUTH - DATA SOURCE
+  // ============================================
+
+  sl.registerLazySingleton<AuthMockDataSource>(() => AuthMockDataSourceImpl());
 }

@@ -1,24 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/widgets/country_picker.dart';
 
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../../../../core/widgets/app_text.dart';
+import '../../../../injection_container.dart';
+
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
+import '../bloc/auth_state.dart';
 import '../widgets/phone_number_field.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider<AuthBloc>(
+      create: (_) => sl<AuthBloc>(),
+      child: const _LoginView(),
+    );
+  }
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginView extends StatefulWidget {
+  const _LoginView();
+
+  @override
+  State<_LoginView> createState() => _LoginViewState();
+}
+
+class _LoginViewState extends State<_LoginView> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
-
-  bool _isLoading = false;
 
   Country _selectedCountry = countries.first;
 
@@ -42,31 +59,17 @@ class _LoginPageState extends State<LoginPage> {
     return null;
   }
 
-  Future<void> _sendOtp() async {
+  void _sendOtp() {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     FocusScope.of(context).unfocus();
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = false;
-    });
-
     final phoneNumber =
         '${_selectedCountry.dialCode}${_phoneController.text.trim()}';
 
-    context.push(AppRoutes.otpVerification, extra: phoneNumber);
+    context.read<AuthBloc>().add(SendOtpRequested(phoneNumber: phoneNumber));
   }
 
   @override
@@ -74,186 +77,211 @@ class _LoginPageState extends State<LoginPage> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return AppScaffold(
-      // IMPORTANT:
-      // Allows the scaffold to resize when the keyboard opens.
-      resizeToAvoidBottomInset: true,
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is OtpSent) {
+          context.push(AppRoutes.otpVerification, extra: state.phoneNumber);
+        }
 
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 32),
+        if (state is AuthError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        final isLoading = state is AuthLoading;
 
-                      // ==================================================
-                      // APP ICON
-                      // ==================================================
-                      Center(
-                        child: Container(
-                          width: 82,
-                          height: 82,
-                          decoration: BoxDecoration(
-                            color: colors.primaryContainer,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.primary.withValues(alpha: 0.12),
-                                blurRadius: 24,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.phone_android_rounded,
-                            size: 40,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ),
+        return AppScaffold(
+          resizeToAvoidBottomInset: true,
+          body: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 18),
 
-                      const SizedBox(height: 26),
-
-                      // ==================================================
-                      // TITLE
-                      // ==================================================
-                      AppText(
-                        'Welcome Back',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // ==================================================
-                      // DESCRIPTION
-                      // ==================================================
-                      AppText(
-                        'Sign in to Little Heroes using your phone number.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurfaceVariant,
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-
-                      const SizedBox(height: 34),
-
-                      // ==================================================
-                      // PHONE LABEL
-                      // ==================================================
-                      AppText(
-                        'Phone Number',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      // ==================================================
-                      // PHONE FIELD
-                      // ==================================================
-                      PhoneNumberField(
-                        controller: _phoneController,
-                        selectedCountry: _selectedCountry,
-                        onCountryChanged: (country) {
-                          setState(() {
-                            _selectedCountry = country;
-                          });
-                        },
-                        validator: _validatePhone,
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      // ==================================================
-                      // INFO
-                      // ==================================================
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.info_outline_rounded,
-                            size: 16,
-                            color: colors.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 7),
-                          Expanded(
-                            child: Text(
-                              'We will send a 6-digit verification code '
-                              'to this number.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colors.onSurfaceVariant,
-                                height: 1.4,
+                            // ============================================
+                            // TOP LOGO
+                            // ============================================
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome,
+                                    size: 17,
+                                    color: colors.primary,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Little Heroes',
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
-                      ),
 
-                      const SizedBox(height: 28),
+                            const Spacer(),
 
-                      // ==================================================
-                      // SEND OTP
-                      // ==================================================
-                      AppButton(
-                        text: 'Send OTP',
-                        onPressed: _sendOtp,
-                        isLoading: _isLoading,
-                      ),
+                            // ============================================
+                            // WELCOME CONTENT
+                            // ============================================
+                            AppText(
+                              'Welcome Back!',
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.8,
+                              ),
+                            ),
 
-                      const SizedBox(height: 22),
+                            const SizedBox(height: 10),
 
-                      // ==================================================
-                      // SIGN UP
-                      // ==================================================
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Don\'t have an account?',
-                              textAlign: TextAlign.center,
+                            Text(
+                              'Access your account using your phone number.',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colors.onSurfaceVariant,
+                                height: 1.5,
                               ),
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              context.push(AppRoutes.register);
-                            },
-                            child: const Text(
-                              'Sign Up',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                        ],
-                      ),
 
-                      const SizedBox(height: 24),
-                    ],
+                            const SizedBox(height: 42),
+
+                            // ============================================
+                            // LABEL
+                            // ============================================
+                            Text(
+                              'Enter Your Phone Number',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: colors.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            // ============================================
+                            // PHONE FIELD
+                            // ============================================
+                            PhoneNumberField(
+                              controller: _phoneController,
+                              selectedCountry: _selectedCountry,
+                              onCountryChanged: (country) {
+                                setState(() {
+                                  _selectedCountry = country;
+                                });
+                              },
+                              validator: _validatePhone,
+                            ),
+
+                            const SizedBox(height: 14),
+
+                            // ============================================
+                            // INFO TEXT
+                            // ============================================
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 16,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 7),
+                                Expanded(
+                                  child: Text(
+                                    'We will send a verification code to this number.',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colors.onSurfaceVariant,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 30),
+
+                            // ============================================
+                            // CONTINUE BUTTON
+                            // ============================================
+                            SizedBox(
+                              height: 56,
+                              child: AppButton(
+                                text: 'Continue',
+                                onPressed: isLoading ? null : _sendOtp,
+                                isLoading: isLoading,
+                              ),
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            // ============================================
+                            // SIGN UP
+                            // ============================================
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Don't have an account?",
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    context.push(AppRoutes.register);
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      color: colors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const Spacer(),
+
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }
