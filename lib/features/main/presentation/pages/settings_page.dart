@@ -1,146 +1,163 @@
 
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/theme_cubit.dart';
-import '../../domain/entities/user_role.dart';
-import '../widgets/role_selector_sheet.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+
 import '../widgets/settings_role_tile.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_tile.dart';
 
 class SettingsPage extends StatelessWidget {
-  final UserRole role;
-  final ValueChanged<UserRole> onRoleChanged;
-
-  const SettingsPage({
-    super.key,
-    required this.role,
-    required this.onRoleChanged,
-  });
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        // ============================================================
+        // GET AUTHENTICATED USER
+        // ============================================================
 
-      appBar: AppBar(
-        title: const Text(
-          'Settings',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        backgroundColor: colors.surface,
-        foregroundColor: colors.onSurface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-      ),
+        final authUser =
+            authState is AuthAuthenticated ? authState.user : null;
 
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          20,
-          20,
-          20,
-          32,
-        ),
-        children: [
-          // ==========================================================
-          // APPEARANCE
-          // ==========================================================
+        // Get role from authenticated user
+        final role = authUser?.role;
 
-          SettingsSection(
-            title: 'Appearance',
-            child: _AppearanceSettings(),
-          ),
+        return Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
 
-          const SizedBox(height: 28),
+          // ============================================================
+          // APP BAR
+          // ============================================================
 
-          // ==========================================================
-          // ROLE
-          // ==========================================================
-
-          SettingsSection(
-            title: 'Role',
-            child: SettingsRoleTile(
-              role: role,
-              onChange: () {
-                RoleSelectorSheet.show(
-                  context: context,
-                  currentRole: role,
-                  onRoleSelected: onRoleChanged,
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          // ==========================================================
-          // ACCOUNT
-          // ==========================================================
-
-          SettingsSection(
-            title: 'Account',
-            child: Column(
-              children: [
-                SettingsTile(
-                  icon: Icons.person_outline_rounded,
-                  title: 'Profile',
-                  subtitle: 'Manage your profile',
-                  onTap: () {},
-                ),
-
-                SettingsTile(
-                  icon: Icons.lock_outline_rounded,
-                  title: 'Security',
-                  subtitle: 'Password and security',
-                  onTap: () {},
-                ),
-
-                SettingsTile(
-                  icon: Icons.notifications_outlined,
-                  title: 'Notifications',
-                  subtitle: 'Notification preferences',
-                  onTap: () {},
-                  showDivider: false,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          // ==========================================================
-          // LOGOUT
-          // ==========================================================
-
-          OutlinedButton.icon(
-            onPressed: () {
-              _showLogoutDialog(context);
-            },
-            icon: const Icon(
-              Icons.logout_rounded,
-            ),
-            label: const Text(
-              'Logout',
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: colors.error,
-              side: BorderSide(
-                color: colors.error,
-              ),
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          appBar: AppBar(
+            title: const Text(
+              'Settings',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
               ),
             ),
+            backgroundColor: colors.surface,
+            foregroundColor: colors.onSurface,
+            elevation: 0,
+            surfaceTintColor: Colors.transparent,
           ),
-        ],
-      ),
+
+          // ============================================================
+          // BODY
+          // ============================================================
+
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              32,
+            ),
+            children: [
+              // ========================================================
+              // APPEARANCE
+              // ========================================================
+
+              SettingsSection(
+                title: 'Appearance',
+                child: const _AppearanceSettings(),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ========================================================
+              // ACCOUNT ROLE
+              // ========================================================
+
+              if (role != null)
+                SettingsSection(
+                  title: 'Account Role',
+                  child: SettingsRoleTile(
+                    // Role comes from AuthBloc
+                    role: role,
+
+                    // Keep this because SettingsRoleTile currently
+                    // requires onChange.
+                    onChange: () {
+                      // Role is controlled by authentication.
+                      // Do not manually change it here.
+                    },
+                  ),
+                ),
+
+              const SizedBox(height: 28),
+
+              // ========================================================
+              // ACCOUNT
+              // ========================================================
+
+              SettingsSection(
+                title: 'Account',
+                child: Column(
+                  children: [
+                    SettingsTile(
+                      icon: Icons.person_outline_rounded,
+                      title: 'Profile',
+                      subtitle: 'Manage your profile',
+                      onTap: () {},
+                    ),
+
+                    SettingsTile(
+                      icon: Icons.lock_outline_rounded,
+                      title: 'Security',
+                      subtitle: 'Manage your account security',
+                      onTap: () {},
+                    ),
+
+                    SettingsTile(
+                      icon: Icons.notifications_outlined,
+                      title: 'Notifications',
+                      subtitle: 'Notification preferences',
+                      onTap: () {},
+                      showDivider: false,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ========================================================
+              // LOGOUT
+              // ========================================================
+
+              OutlinedButton.icon(
+                onPressed: () {
+                  _showLogoutDialog(context);
+                },
+                icon: const Icon(
+                  Icons.logout_rounded,
+                ),
+                label: const Text('Logout'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colors.error,
+                  side: BorderSide(
+                    color: colors.error,
+                  ),
+                  minimumSize: const Size.fromHeight(52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -155,9 +172,7 @@ class SettingsPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'Logout',
-          ),
+          title: const Text('Logout'),
           content: const Text(
             'Are you sure you want to logout?',
           ),
@@ -166,10 +181,9 @@ class SettingsPage extends StatelessWidget {
               onPressed: () {
                 Navigator.pop(dialogContext);
               },
-              child: const Text(
-                'Cancel',
-              ),
+              child: const Text('Cancel'),
             ),
+
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: colors.error,
@@ -179,11 +193,9 @@ class SettingsPage extends StatelessWidget {
                 Navigator.pop(dialogContext);
 
                 // TODO:
-                // Connect logout to your authentication system later.
+                // Add LogoutRequested event later
               },
-              child: const Text(
-                'Logout',
-              ),
+              child: const Text('Logout'),
             ),
           ],
         );
@@ -197,6 +209,8 @@ class SettingsPage extends StatelessWidget {
 // ============================================================================
 
 class _AppearanceSettings extends StatelessWidget {
+  const _AppearanceSettings();
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -217,7 +231,9 @@ class _AppearanceSettings extends StatelessWidget {
                 title: 'System default',
                 subtitle: 'Follow your device theme',
                 onChanged: () {
-                  context.read<ThemeCubit>().setSystemMode();
+                  context
+                      .read<ThemeCubit>()
+                      .setSystemMode();
                 },
               ),
 
@@ -227,7 +243,9 @@ class _AppearanceSettings extends StatelessWidget {
                 icon: Icons.light_mode_outlined,
                 title: 'Light',
                 onChanged: () {
-                  context.read<ThemeCubit>().setLightMode();
+                  context
+                      .read<ThemeCubit>()
+                      .setLightMode();
                 },
               ),
 
@@ -237,7 +255,9 @@ class _AppearanceSettings extends StatelessWidget {
                 icon: Icons.dark_mode_outlined,
                 title: 'Dark',
                 onChanged: () {
-                  context.read<ThemeCubit>().setDarkMode();
+                  context
+                      .read<ThemeCubit>()
+                      .setDarkMode();
                 },
                 showDivider: false,
               ),
@@ -281,9 +301,7 @@ class _ThemeOption extends StatelessWidget {
         RadioListTile<ThemeMode>(
           value: value,
           groupValue: groupValue,
-          onChanged: (_) {
-            onChanged();
-          },
+          onChanged: (_) => onChanged(),
           title: Text(
             title,
             style: const TextStyle(

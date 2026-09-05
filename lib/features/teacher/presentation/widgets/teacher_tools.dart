@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:little_heroes_mobile/core/constants/user_role.dart';
 import 'package:little_heroes_mobile/core/router/app_routes.dart';
-
-import '../../../main/domain/entities/user_role.dart';
 
 class TeacherTools extends StatelessWidget {
   final UserRole role;

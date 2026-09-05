@@ -1,8 +1,11 @@
+
 import 'package:get_it/get_it.dart';
+
 import 'package:little_heroes_mobile/features/auth/data/datasources/auth_mock_data_source.dart';
 import 'package:little_heroes_mobile/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:little_heroes_mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:little_heroes_mobile/features/auth/domain/usecases/send_otp.dart';
+import 'package:little_heroes_mobile/features/auth/domain/usecases/verify_otp.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 
 import 'features/notifications/data/datasources/notification_local_data_source.dart';
@@ -14,7 +17,6 @@ import 'features/notifications/presentation/bloc/notification_bloc.dart';
 
 final GetIt sl = GetIt.instance;
 
-/// Initialize all application dependencies.
 Future<void> initDependencies() async {
   // ============================================================
   // NOTIFICATION DATA SOURCE
@@ -39,7 +41,7 @@ Future<void> initDependencies() async {
   }
 
   // ============================================================
-  // GET NOTIFICATIONS
+  // NOTIFICATION USE CASES
   // ============================================================
 
   if (!sl.isRegistered<GetNotifications>()) {
@@ -47,10 +49,6 @@ Future<void> initDependencies() async {
       () => GetNotifications(repository: sl<NotificationRepository>()),
     );
   }
-
-  // ============================================================
-  // MARK NOTIFICATION AS READ
-  // ============================================================
 
   if (!sl.isRegistered<MarkNotificationAsRead>()) {
     sl.registerLazySingleton<MarkNotificationAsRead>(
@@ -72,29 +70,43 @@ Future<void> initDependencies() async {
     );
   }
 
-  // ============================================
-  // AUTH - BLOC
-  // ============================================
+  // ============================================================
+  // AUTH DATA SOURCE
+  // ============================================================
 
-  sl.registerFactory(() => AuthBloc(sendOtp: sl()));
+  if (!sl.isRegistered<AuthMockDataSource>()) {
+    sl.registerLazySingleton<AuthMockDataSource>(() => AuthMockDataSource());
+  }
 
-  // ============================================
-  // AUTH - USE CASES
-  // ============================================
+  // ============================================================
+  // AUTH REPOSITORY
+  // ============================================================
 
-  sl.registerLazySingleton(() => SendOtp(sl()));
+  if (!sl.isRegistered<AuthRepository>()) {
+    sl.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryImpl(mockDataSource: sl<AuthMockDataSource>()),
+    );
+  }
 
-  // ============================================
-  // AUTH - REPOSITORY
-  // ============================================
+  // ============================================================
+  // AUTH USE CASES
+  // ============================================================
 
-  sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(mockDataSource: sl()),
-  );
+  if (!sl.isRegistered<SendOtp>()) {
+    sl.registerLazySingleton<SendOtp>(() => SendOtp(sl<AuthRepository>()));
+  }
 
-  // ============================================
-  // AUTH - DATA SOURCE
-  // ============================================
+  if (!sl.isRegistered<VerifyOtp>()) {
+    sl.registerLazySingleton<VerifyOtp>(() => VerifyOtp(sl<AuthRepository>()));
+  }
 
-  sl.registerLazySingleton<AuthMockDataSource>(() => AuthMockDataSourceImpl());
+  // ============================================================
+  // AUTH BLOC
+  // ============================================================
+
+  if (!sl.isRegistered<AuthBloc>()) {
+    sl.registerFactory<AuthBloc>(
+      () => AuthBloc(sendOtp: sl<SendOtp>(), verifyOtp: sl<VerifyOtp>()),
+    );
+  }
 }

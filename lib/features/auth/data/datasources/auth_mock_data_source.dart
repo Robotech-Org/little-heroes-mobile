@@ -1,36 +1,53 @@
-import '../models/otp_response_model.dart';
+import '../../../../core/constants/user_role.dart';
+import '../../domain/entities/auth_user.dart';
+import '../../domain/entities/otp_response.dart';
 
-abstract class AuthMockDataSource {
-  Future<OtpResponseModel> sendOtp({required String phoneNumber});
-}
+class AuthMockDataSource {
+  static const String testOtp = '123456';
 
-class AuthMockDataSourceImpl implements AuthMockDataSource {
-  @override
-  Future<OtpResponseModel> sendOtp({required String phoneNumber}) async {
-    print('📱 MOCK OTP REQUEST: $phoneNumber');
+  static const Map<String, UserRole> mockUsers = {
+    '+251911111111': UserRole.parent,
+    '+251922222222': UserRole.teacher,
+    '+251933333333': UserRole.adviser,
+  };
 
-    // Simulate network delay
+  Future<OtpResponse> sendOtp({
+    required String phoneNumber,
+  }) async {
     await Future.delayed(const Duration(seconds: 1));
 
-    // Test phone numbers
-    final testNumbers = ['+251911111111', '+251922222222', '+251933333333'];
-
-    if (testNumbers.contains(phoneNumber)) {
-      print('✅ MOCK OTP SENT SUCCESSFULLY');
-
-      return OtpResponseModel(
-        success: true,
-        message: 'OTP sent successfully. Test OTP: 123456',
-        phoneNumber: phoneNumber,
+    if (!mockUsers.containsKey(phoneNumber)) {
+      throw Exception(
+        'This phone number is not registered. Please use a test account.',
       );
     }
 
-    print('❌ MOCK OTP FAILED');
-
-    return OtpResponseModel(
-      success: false,
-      message: 'Mock login failed. Please use +251911111111 for testing.',
+    return OtpResponse(
+      success: true,
+      message: 'OTP sent successfully',
       phoneNumber: phoneNumber,
+    );
+  }
+
+  Future<AuthUser> verifyOtp({
+    required String phoneNumber,
+    required String otp,
+  }) async {
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (otp != testOtp) {
+      throw Exception('Invalid verification code');
+    }
+
+    final role = mockUsers[phoneNumber];
+
+    if (role == null) {
+      throw Exception('User not found');
+    }
+
+    return AuthUser(
+      phoneNumber: phoneNumber,
+      role: role,
     );
   }
 }

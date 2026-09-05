@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:little_heroes_mobile/features/main/domain/entities/user_role.dart';
+import 'package:little_heroes_mobile/core/constants/user_role.dart';
 
 class HomeStatCard extends StatelessWidget {
   final UserRole role;
@@ -34,7 +34,7 @@ class HomeStatCard extends StatelessWidget {
           ),
         ];
 
-      case UserRole.advisor:
+      case UserRole.adviser:
         return const [
           _Stat(title: 'Students', value: '48', icon: Icons.people_outline),
           _Stat(title: 'Cases', value: '7', icon: Icons.folder_open_outlined),

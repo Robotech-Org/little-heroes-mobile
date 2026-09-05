@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:little_heroes_mobile/features/main/domain/entities/user_role.dart';
+import 'package:little_heroes_mobile/core/constants/user_role.dart';
 
 class RoleDashboard extends StatelessWidget {
   final UserRole role;
@@ -15,8 +15,8 @@ class RoleDashboard extends StatelessWidget {
       case UserRole.parent:
         return const _ParentDashboard();
 
-      case UserRole.advisor:
-        return const _AdvisorDashboard();
+      case UserRole.adviser:
+        return const _adviserDashboard();
     }
   }
 }
@@ -57,11 +57,11 @@ class _ParentDashboard extends StatelessWidget {
 }
 
 // ==================================================================
-// ADVISOR
+// adviser
 // ==================================================================
 
-class _AdvisorDashboard extends StatelessWidget {
-  const _AdvisorDashboard();
+class _adviserDashboard extends StatelessWidget {
+  const _adviserDashboard();
 
   @override
   Widget build(BuildContext context) {

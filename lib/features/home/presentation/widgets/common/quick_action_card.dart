@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:little_heroes_mobile/features/main/domain/entities/user_role.dart';
+import 'package:little_heroes_mobile/core/constants/user_role.dart';
 
 class QuickActionCard extends StatelessWidget {
   final UserRole role;
@@ -24,7 +24,7 @@ class QuickActionCard extends StatelessWidget {
           _Action(title: 'Progress', icon: Icons.trending_up_outlined),
         ];
 
-      case UserRole.advisor:
+      case UserRole.adviser:
         return const [
           _Action(title: 'Students', icon: Icons.people_outline),
           _Action(title: 'Cases', icon: Icons.folder_open_outlined),

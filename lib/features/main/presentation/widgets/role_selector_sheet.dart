@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:little_heroes_mobile/core/constants/user_role.dart';
 
-import '../../domain/entities/user_role.dart';
 
 class RoleSelectorSheet {
   static void show({
@@ -90,8 +90,8 @@ class _RoleOption extends StatelessWidget {
       case UserRole.parent:
         return 'Parent';
 
-      case UserRole.advisor:
-        return 'Advisor';
+      case UserRole.adviser:
+        return 'adviser';
     }
   }
 
@@ -103,7 +103,7 @@ class _RoleOption extends StatelessWidget {
       case UserRole.parent:
         return Icons.family_restroom_outlined;
 
-      case UserRole.advisor:
+      case UserRole.adviser:
         return Icons.support_agent_outlined;
     }
   }

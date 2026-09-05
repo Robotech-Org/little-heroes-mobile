@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:little_heroes_mobile/features/main/domain/entities/user_role.dart';
+
+import 'package:little_heroes_mobile/features/auth/presentation/pages/login_page.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/pages/otp_verification_page.dart';
+import 'package:little_heroes_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:little_heroes_mobile/features/main/presentation/pages/settings_page.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
+import 'package:little_heroes_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:little_heroes_mobile/features/splash/presentation/pages/splash_page.dart';
+import 'package:little_heroes_mobile/features/teacher/presentation/pages/daily_report_page.dart';
+import 'package:little_heroes_mobile/features/teacher/presentation/pages/observations_page.dart';
+import 'package:little_heroes_mobile/features/teacher/presentation/pages/three_month_reports_page.dart';
+import 'package:little_heroes_mobile/features/teacher/presentation/pages/weekly_planner_page.dart';
+
 import 'package:little_heroes_mobile/injection_container.dart';
 
-import '../../features/auth/presentation/pages/login_page.dart';
-import '../../features/auth/presentation/pages/otp_verification_page.dart';
-import '../../features/home/presentation/pages/home_page.dart';
-import '../../features/main/presentation/pages/main_page.dart';
-import '../../features/onboarding/presentation/pages/onboarding_page.dart';
-import '../../features/splash/presentation/pages/splash_page.dart';
-import '../../features/teacher/presentation/pages/daily_report_page.dart';
-import '../../features/teacher/presentation/pages/three_month_reports_page.dart';
-import '../../features/teacher/presentation/pages/weekly_planner_page.dart';
-import '../../features/teacher/presentation/pages/observations_page.dart'
-    hide ThreeMonthReportsPage;
 import 'app_routes.dart';
 
 class AppRouter {
@@ -75,15 +74,7 @@ class AppRouter {
         path: AppRoutes.main,
         name: 'main',
         builder: (context, state) {
-          return const MainPage(role: UserRole.teacher);
-        },
-      ),
-
-      GoRoute(
-        path: AppRoutes.home,
-        name: 'home',
-        builder: (context, state) {
-          return const MainPage(role: UserRole.teacher);
+          return const MainPage();
         },
       ),
 
@@ -130,23 +121,13 @@ class AppRouter {
         path: AppRoutes.settings,
         name: 'settings',
         builder: (context, state) {
-          final role = state.extra as UserRole? ?? UserRole.teacher;
-
-          return SettingsPage(
-            role: role,
-            onRoleChanged: (newRole) {
-              // Role changes are handled by the parent/main page.
-              //
-              // If you later make role global using Bloc/Cubit,
-              // this callback can be connected to that state.
-            },
-          );
+          return const SettingsPage();
         },
       ),
+
       // ============================================================
       // TEACHER TOOLS
       // ============================================================
-
       GoRoute(
         path: AppRoutes.dailyReport,
         name: 'dailyReport',

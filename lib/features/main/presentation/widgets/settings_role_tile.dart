@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/user_role.dart';
+import '../../../../core/constants/user_role.dart';
 
 class SettingsRoleTile extends StatelessWidget {
   final UserRole role;
@@ -20,8 +20,8 @@ class SettingsRoleTile extends StatelessWidget {
       case UserRole.parent:
         return 'Parent';
 
-      case UserRole.advisor:
-        return 'Advisor';
+      case UserRole.adviser:
+        return 'Adviser';
     }
   }
 
@@ -33,7 +33,7 @@ class SettingsRoleTile extends StatelessWidget {
       case UserRole.parent:
         return Icons.family_restroom_outlined;
 
-      case UserRole.advisor:
+      case UserRole.adviser:
         return Icons.support_agent_outlined;
     }
   }
