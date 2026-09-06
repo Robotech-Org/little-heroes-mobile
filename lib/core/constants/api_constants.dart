@@ -80,6 +80,9 @@ class ApiConstants {
 
   // OTHER APIs
 
+  static const String listStudents =
+      '/api/method/little_heroes.api.v1.students.list_students';
+
   static const String notifications = '/notifications';
 
   static const String chats = '/chats';

@@ -24,6 +24,7 @@ class AppRoutes {
   // TEACHER TOOLS
 
   static const dailyReport = '/daily-report';
+  static const dailyReport_teachers = '/daily-report-teachers';
   static const threeMonthReports = '/three-month-reports';
   static const weeklyPlanner = '/weekly-planner';
   static const observations = '/observations';

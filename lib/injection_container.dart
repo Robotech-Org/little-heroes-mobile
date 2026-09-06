@@ -1,5 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/daily_report_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/three_month_report_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/daily_report_repository_impl.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/three_month_report_repository_impl.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
+import 'package:little_heroes_mobile/features/students/data/datasources/student_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/students/data/repositories/student_repository_impl.dart';
+import 'package:little_heroes_mobile/features/students/domain/repositories/student_repository.dart';
 
 import 'core/constants/api_constants.dart';
 import 'core/network/dio_client.dart'; // ADD THIS IMPORT
@@ -140,6 +149,58 @@ Future<void> initDependencies() async {
         verifyOtp: sl<VerifyOtp>(),
         logout: sl<Logout>(),
         changePassword: sl<ChangePassword>(),
+      ),
+    );
+  }
+
+  // Daily Report Remote Data Source
+  if (!sl.isRegistered<DailyReportRemoteDataSource>()) {
+    sl.registerLazySingleton<DailyReportRemoteDataSource>(
+      () => DailyReportRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  // Daily Report Repository
+  if (!sl.isRegistered<DailyReportRepository>()) {
+    sl.registerLazySingleton<DailyReportRepository>(
+      () => DailyReportRepositoryImpl(
+        remoteDataSource: sl<DailyReportRemoteDataSource>(),
+      ),
+    );
+  }
+
+  // ============================================================
+  // THREE MONTH REPORT - ADD THIS SECTION
+  // ============================================================
+
+  // Three Month Report Remote Data Source
+  if (!sl.isRegistered<ThreeMonthReportRemoteDataSource>()) {
+    sl.registerLazySingleton<ThreeMonthReportRemoteDataSource>(
+      () => ThreeMonthReportRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  // Three Month Report Repository
+  if (!sl.isRegistered<ThreeMonthReportRepository>()) {
+    sl.registerLazySingleton<ThreeMonthReportRepository>(
+      () => ThreeMonthReportRepositoryImpl(
+        remoteDataSource: sl<ThreeMonthReportRemoteDataSource>(),
+      ),
+    );
+  }
+
+  // Student Remote Data Source
+  if (!sl.isRegistered<StudentRemoteDataSource>()) {
+    sl.registerLazySingleton<StudentRemoteDataSource>(
+      () => StudentRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  // Student Repository
+  if (!sl.isRegistered<StudentRepository>()) {
+    sl.registerLazySingleton<StudentRepository>(
+      () => StudentRepositoryImpl(
+        remoteDataSource: sl<StudentRemoteDataSource>(),
       ),
     );
   }
