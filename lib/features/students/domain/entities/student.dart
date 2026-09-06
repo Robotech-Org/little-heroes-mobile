@@ -1,39 +1,69 @@
 class Student {
-  final String id;
   final String name;
-  final String initials;
-  final String grade;
-  final String className;
-  final String lastActivity;
-  final bool isActive;
-
-  // Details
-  final String age;
   final String gender;
   final String dateOfBirth;
-  final String parentName;
-  final String parentPhone;
-  final String email;
-  final String attendance;
-  final String academicProgress;
-  final String favoriteSubject;
+  final String ageRange;
+  final String enrollmentStatus;
+  final String creation;
+  final String modified;
 
-  const Student({
-    required this.id,
+  Student({
     required this.name,
-    required this.initials,
-    required this.grade,
-    required this.className,
-    required this.lastActivity,
-    required this.isActive,
-    required this.age,
     required this.gender,
     required this.dateOfBirth,
-    required this.parentName,
-    required this.parentPhone,
-    required this.email,
-    required this.attendance,
-    required this.academicProgress,
-    required this.favoriteSubject,
+    required this.ageRange,
+    required this.enrollmentStatus,
+    required this.creation,
+    required this.modified,
   });
+
+  factory Student.fromJson(Map<String, dynamic> json) {
+    return Student(
+      name: json['child_full_name']?.toString() ?? '',
+      gender: json['child_gender']?.toString() ?? '',
+      dateOfBirth: json['child_date_of_birth']?.toString() ?? '',
+      ageRange: json['child_age_range']?.toString() ?? '',
+      enrollmentStatus: json['enrollment_status']?.toString() ?? '',
+      creation: json['creation']?.toString() ?? '',
+      modified: json['modified']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'child_full_name': name,
+      'child_gender': gender,
+      'child_date_of_birth': dateOfBirth,
+      'child_age_range': ageRange,
+      'enrollment_status': enrollmentStatus,
+      'creation': creation,
+      'modified': modified,
+    };
+  }
+
+  // Helper to get initials
+  String get initials {
+    final parts = name.trim().split(' ');
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+
+  // Helper to get status color
+  String get statusText {
+    switch (enrollmentStatus.toLowerCase()) {
+      case 'active':
+        return 'Active';
+      case 'inactive':
+        return 'Inactive';
+      case 'pending':
+        return 'Pending';
+      default:
+        return enrollmentStatus;
+    }
+  }
+
+  bool get isActive {
+    return enrollmentStatus.toLowerCase() == 'active';
+  }
 }

@@ -169,7 +169,7 @@ class TeacherTools extends StatelessWidget {
 void _openTool(BuildContext context, TeacherTool tool) {
   switch (tool.title) {
     case 'Daily Report':
-      context.push(AppRoutes.dailyReport);
+      context.push(AppRoutes.dailyReport_teachers);
       break;
 
     case '3 Month Reports':

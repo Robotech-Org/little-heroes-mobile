@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:little_heroes_mobile/features/students/domain/entities/student.dart';
 
 import 'three_month_reports_page.dart';
 
@@ -258,17 +259,16 @@ class _StudentThreeMonthReportPageState
 
                           const SizedBox(height: 5),
 
-                          Text(
-                            '${widget.student.age} years • '
-                            '${widget.student.classroom}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-
+                          // Text(
+                          //   '${widget.student.age} years • '
+                          //   // '${widget.student.classroom}',
+                          //   style: theme.textTheme.bodyMedium?.copyWith(
+                          //     color: colors.onSurfaceVariant,
+                          //   ),
+                          // ),
                           const SizedBox(height: 8),
 
-                          ReportStatusBadge(status: widget.student.status),
+                          // ReportStatusBadge(status: widget.student.status),
                         ],
                       ),
                     ),

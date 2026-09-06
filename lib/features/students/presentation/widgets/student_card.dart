@@ -4,160 +4,148 @@ import '../../domain/entities/student.dart';
 
 class StudentCard extends StatelessWidget {
   final Student student;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
-  const StudentCard({super.key, required this.student, this.onTap});
+  const StudentCard({super.key, required this.student, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Material(
-      color: colorScheme.surface,
-      borderRadius: BorderRadius.circular(20),
-
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.08)),
+      ),
       child: InkWell(
         onTap: onTap,
-
-        borderRadius: BorderRadius.circular(20),
-
-        child: Container(
-          padding: const EdgeInsets.all(15),
-
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-            ),
-          ),
-
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // AVATAR
-
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 27,
-
-                    backgroundColor: colorScheme.primaryContainer,
-
-                    child: Text(
-                      student.initials,
-
-                      style: TextStyle(
-                        color: colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                      ),
-                    ),
+              // Avatar
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.primaryContainer,
+                      colorScheme.primaryContainer.withValues(alpha: 0.5),
+                    ],
                   ),
-
-                  if (student.isActive)
-                    Positioned(
-                      right: 0,
-                      bottom: 1,
-
-                      child: Container(
-                        width: 13,
-                        height: 13,
-
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-
-                          border: Border.all(
-                            color: colorScheme.surface,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  student.initials,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                ),
               ),
-
               const SizedBox(width: 14),
 
-              // STUDENT INFORMATION
+              // Student Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-
                   children: [
                     Text(
                       student.name,
-
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
                     Row(
                       children: [
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
                         Text(
-                          student.grade,
-
+                          student.ageRange,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-
-                          child: Text(
-                            '•',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.female_rounded,
+                          size: 14,
+                          color: colorScheme.onSurfaceVariant,
                         ),
-
-                        Expanded(
-                          child: Text(
-                            student.className,
-
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                        const SizedBox(width: 4),
+                        Text(
+                          student.gender,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 5),
-
-                    Text(
-                      student.lastActivity,
-
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                    const SizedBox(height: 6),
+                    // Status Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: student.isActive
+                            ? Colors.green.withValues(alpha: 0.1)
+                            : Colors.grey.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: student.isActive
+                                  ? Colors.green
+                                  : Colors.grey,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            student.statusText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: student.isActive
+                                  ? Colors.green
+                                  : Colors.grey,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(width: 8),
-
-              // ARROW
+              // Chevron
               Icon(
                 Icons.chevron_right_rounded,
-                color: colorScheme.onSurfaceVariant,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                size: 24,
               ),
             ],
           ),

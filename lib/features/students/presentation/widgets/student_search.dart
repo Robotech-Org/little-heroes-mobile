@@ -2,74 +2,64 @@ import 'package:flutter/material.dart';
 
 class StudentSearch extends StatelessWidget {
   final TextEditingController controller;
-  final ValueChanged<String> onChanged;
+  final Function(String) onChanged;
+  final VoidCallback? onClear;
 
   const StudentSearch({
     super.key,
     required this.controller,
     required this.onChanged,
+    this.onClear,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-
-      textInputAction: TextInputAction.search,
-
-      decoration: InputDecoration(
-        hintText: 'Search students...',
-
-        prefixIcon: const Icon(Icons.search_rounded),
-
-        suffixIcon: ValueListenableBuilder<TextEditingValue>(
-          valueListenable: controller,
-          builder: (context, value, child) {
-            if (value.text.isEmpty) {
-              return const SizedBox.shrink();
-            }
-
-            return IconButton(
-              tooltip: 'Clear',
-              icon: const Icon(Icons.close_rounded),
-              onPressed: () {
-                controller.clear();
-                onChanged('');
-              },
-            );
-          },
-        ),
-
-        filled: true,
-
-        fillColor: colorScheme.surface,
-
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 15,
-        ),
-
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceVariant.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.08)),
+      ),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Search students...',
+          hintStyle: TextStyle(
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
           ),
-        ),
-
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: colorScheme.onSurfaceVariant,
+            size: 22,
           ),
-        ),
-
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+          suffixIcon: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              if (value.text.isEmpty) return const SizedBox.shrink();
+              return IconButton(
+                tooltip: 'Clear search',
+                onPressed:
+                    onClear ??
+                    () {
+                      controller.clear();
+                      onChanged('');
+                    },
+                icon: Icon(
+                  Icons.clear_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              );
+            },
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
       ),
     );

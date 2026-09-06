@@ -1,90 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:little_heroes_mobile/core/constants/user_role.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
+import 'package:little_heroes_mobile/features/home/data/models/three_month_report_model.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
+import 'package:little_heroes_mobile/injection_container.dart' as di;
 
 import 'student_three_month_report_page.dart';
-
-// STUDENT MODEL
-
-class Student {
-  final String id;
-  final String name;
-  final int age;
-  final String classroom;
-  final ReportStatus status;
-
-  const Student({
-    required this.id,
-    required this.name,
-    required this.age,
-    required this.classroom,
-    required this.status,
-  });
-}
-
-enum ReportStatus { pending, inProgress, completed }
-
-// STUDENT DATA
-
-const List<Student> kStudents = [
-  Student(
-    id: '1',
-    name: 'Abebe Bekele',
-    age: 5,
-    classroom: 'Class 4A',
-    status: ReportStatus.pending,
-  ),
-  Student(
-    id: '2',
-    name: 'Sara Ahmed',
-    age: 6,
-    classroom: 'Class 4A',
-    status: ReportStatus.inProgress,
-  ),
-  Student(
-    id: '3',
-    name: 'Daniel Thomas',
-    age: 5,
-    classroom: 'Class 4A',
-    status: ReportStatus.completed,
-  ),
-  Student(
-    id: '4',
-    name: 'Hana Samuel',
-    age: 6,
-    classroom: 'Class 4A',
-    status: ReportStatus.pending,
-  ),
-  Student(
-    id: '5',
-    name: 'Michael John',
-    age: 5,
-    classroom: 'Class 4A',
-    status: ReportStatus.inProgress,
-  ),
-  Student(
-    id: '6',
-    name: 'Liya Tesfaye',
-    age: 6,
-    classroom: 'Class 4A',
-    status: ReportStatus.completed,
-  ),
-  Student(
-    id: '7',
-    name: 'Samuel Girma',
-    age: 5,
-    classroom: 'Class 4B',
-    status: ReportStatus.pending,
-  ),
-  Student(
-    id: '8',
-    name: 'Mimi Yohannes',
-    age: 6,
-    classroom: 'Class 4B',
-    status: ReportStatus.inProgress,
-  ),
-];
-
-// PAGE 1
-// STUDENT LIST
 
 class ThreeMonthReportsPage extends StatefulWidget {
   const ThreeMonthReportsPage({super.key});
@@ -95,40 +18,23 @@ class ThreeMonthReportsPage extends StatefulWidget {
 
 class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
   final TextEditingController _searchController = TextEditingController();
-
   final ScrollController _scrollController = ScrollController();
 
-  List<Student> _filterStudents(String query) {
-    final search = query.trim().toLowerCase();
+  List<ThreeMonthReportModel> _reports = [];
+  bool _isLoading = true;
+  bool _isError = false;
+  String _errorMessage = '';
+  int _currentPage = 1;
+  int _totalPages = 0;
+  int _totalReports = 0;
+  final int _pageSize = 20;
 
-    if (search.isEmpty) {
-      return kStudents;
-    }
+  String? _selectedStudent;
 
-    return kStudents
-        .where(
-          (student) =>
-              student.name.toLowerCase().contains(search) ||
-              student.classroom.toLowerCase().contains(search),
-        )
-        .toList(growable: false);
-  }
-
-  // OPEN STUDENT REPORT
-
-  void _openStudent(Student student) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => StudentThreeMonthReportPage(student: student),
-      ),
-    );
-  }
-
-  // CLEAR SEARCH
-
-  void _clearSearch() {
-    _searchController.clear();
-    setState(() {});
+  @override
+  void initState() {
+    super.initState();
+    _loadReports();
   }
 
   @override
@@ -138,6 +44,82 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
     super.dispose();
   }
 
+  Future<void> _loadReports({int page = 1}) async {
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+    });
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = 'Please login to view reports';
+        });
+        return;
+      }
+
+      final role = authState.user.role;
+      if (role != UserRole.teacher) {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = 'You do not have permission to view reports';
+        });
+        return;
+      }
+
+      final repository = di.sl<ThreeMonthReportRepository>();
+      final response = await repository.getThreeMonthReports(
+        page: page,
+        pageSize: _pageSize,
+      );
+
+      setState(() {
+        _reports = response.items;
+        _totalReports = response.total;
+        _totalPages = (response.total / response.pageSize).ceil();
+        _currentPage = response.page;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isError = true;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  List<ThreeMonthReportModel> _filterReports(String query) {
+    final search = query.trim().toLowerCase();
+    if (search.isEmpty) {
+      return _reports;
+    }
+    return _reports.where((report) {
+      return report.studentName.toLowerCase().contains(search) ||
+          report.classroom.toLowerCase().contains(search);
+    }).toList();
+  }
+
+  void _openReport(ThreeMonthReportModel report) {
+    // Navigator.of(context).push(
+    //   MaterialPageRoute(
+    //     builder: (_) => StudentThreeMonthReportPage(
+    //       studentName: report.studentName,
+    //       report: report,
+    //     ),
+    //   ),
+    // );
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -145,119 +127,114 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-
-      // APP BAR
       appBar: AppBar(
         title: const Text(
-          '3 Month Reports',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          '3 Month Assessment',
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
         backgroundColor: colors.surface,
         foregroundColor: colors.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () => _loadReports(),
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
-
-      // BODY
-      body: SafeArea(
-        top: false,
+      body: RefreshIndicator(
+        onRefresh: () => _loadReports(),
         child: ValueListenableBuilder<TextEditingValue>(
           valueListenable: _searchController,
           builder: (context, value, child) {
-            final students = _filterStudents(value.text);
+            final filteredReports = _filterReports(value.text);
 
             return CustomScrollView(
               controller: _scrollController,
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-
               slivers: [
-                // ==
-                // COLLAPSING HEADER
-                // ==
-
-                SliverAppBar(
-                  automaticallyImplyLeading: false,
-                  backgroundColor: colors.surface,
-                  surfaceTintColor: colors.surface,
-                  elevation: 0,
-                  pinned: false,
-                  floating: true,
-                  snap: true,
-
-                  expandedHeight: 205,
-
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // TITLE
-                          Text(
-                            'Student Reports',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: colors.onSurface,
-                            ),
+                // Header Section
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '3 Month Assessment',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: colors.onSurface,
                           ),
-
-                          const SizedBox(height: 5),
-
-                          // DESCRIPTION
-                          Text(
-                            'Select a student to review their 3 month '
-                            'development report.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colors.onSurfaceVariant,
-                              height: 1.35,
-                            ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Select a student to review their 3 month development report.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            height: 1.35,
                           ),
-
-                          const SizedBox(height: 16),
-
-                          // SEARCH
-                          _SearchField(
-                            controller: _searchController,
-                            onClear: _clearSearch,
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
 
-                // ==
-                // STUDENT COUNT
-                // ==
+                // Search Bar
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _SearchField(
+                      controller: _searchController,
+                      onClear: _clearSearch,
+                    ),
+                  ),
+                ),
 
-                // ==
-                // EMPTY STATE
-                // ==
-                if (students.isEmpty)
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+                // Loading State
+                if (_isLoading)
                   const SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _EmptyStudents(),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
 
-                // ==
-                // STUDENT LIST
-                // ==
-                if (students.isNotEmpty)
+                // Error State
+                if (_isError)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _buildErrorWidget(theme, colors),
+                  ),
+
+                // Empty State
+                if (!_isLoading && !_isError && filteredReports.isEmpty)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _EmptyReports(),
+                  ),
+
+                // Report List
+                if (!_isLoading && !_isError && filteredReports.isNotEmpty)
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
-                        final student = students[index];
-
+                        final report = filteredReports[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
-                          child: StudentReportCard(
-                            key: ValueKey(student.id),
-                            student: student,
-                            onTap: () => _openStudent(student),
+                          child: _ReportCard(
+                            report: report,
+                            onTap: () => _openReport(report),
                           ),
                         );
-                      }, childCount: students.length),
+                      }, childCount: filteredReports.length),
                     ),
                   ),
               ],
@@ -267,10 +244,60 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
       ),
     );
   }
+
+  Widget _buildErrorWidget(ThemeData theme, ColorScheme colorScheme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 64,
+              color: colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load reports',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => _loadReports(),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // SEARCH FIELD
-
 class _SearchField extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onClear;
@@ -281,77 +308,56 @@ class _SearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return TextField(
-      controller: controller,
-      textInputAction: TextInputAction.search,
-
-      decoration: InputDecoration(
-        hintText: 'Search students...',
-        prefixIcon: const Icon(Icons.search_rounded),
-
-        suffixIcon: ValueListenableBuilder<TextEditingValue>(
-          valueListenable: controller,
-          builder: (context, value, child) {
-            if (value.text.isEmpty) {
-              return const SizedBox.shrink();
-            }
-
-            return IconButton(
-              tooltip: 'Clear search',
-              onPressed: onClear,
-              icon: const Icon(Icons.clear_rounded),
-            );
-          },
-        ),
-
-        filled: true,
-        fillColor: colors.surfaceContainerHighest.withValues(alpha: 0.55),
-
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 15,
-        ),
-
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: colors.outlineVariant.withValues(alpha: 0.5),
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surfaceVariant.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
+      ),
+      child: TextField(
+        controller: controller,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Search students...',
+          hintStyle: TextStyle(
+            color: colors.onSurfaceVariant.withValues(alpha: 0.7),
           ),
-        ),
-
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: colors.primary, width: 1.5),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: colors.onSurfaceVariant,
+          ),
+          suffixIcon: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              if (value.text.isEmpty) return const SizedBox.shrink();
+              return IconButton(
+                tooltip: 'Clear search',
+                onPressed: onClear,
+                icon: Icon(Icons.clear_rounded, color: colors.onSurfaceVariant),
+              );
+            },
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
       ),
     );
   }
 }
 
-// STUDENT CARD
-
-class StudentReportCard extends StatelessWidget {
-  final Student student;
+// REPORT CARD
+class _ReportCard extends StatelessWidget {
+  final ThreeMonthReportModel report;
   final VoidCallback onTap;
 
-  const StudentReportCard({
-    super.key,
-    required this.student,
-    required this.onTap,
-  });
+  const _ReportCard({required this.report, required this.onTap});
 
   String get _initial {
-    final name = student.name.trim();
-
-    if (name.isEmpty) {
-      return '?';
-    }
-
+    final name = report.studentName.trim();
+    if (name.isEmpty) return '?';
     return name.characters.first.toUpperCase();
   }
 
@@ -360,97 +366,76 @@ class StudentReportCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
+    final statusText = _getStatusText(report.status);
+    final statusColor = _getStatusColor(report.status, colors);
+
     return Material(
       color: colors.surface,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
-
       child: InkWell(
         onTap: onTap,
-
         child: Container(
-          padding: const EdgeInsets.all(15),
-
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: colors.outlineVariant.withValues(alpha: 0.45),
-            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colors.outline.withValues(alpha: 0.06)),
           ),
-
           child: Row(
             children: [
-              // AVATAR
-
+              // Avatar
               Container(
-                width: 52,
-                height: 52,
-
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
-                  color: colors.primaryContainer,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colors.primaryContainer,
+                      colors.primaryContainer.withValues(alpha: 0.5),
+                    ],
+                  ),
                   shape: BoxShape.circle,
                 ),
-
                 alignment: Alignment.center,
-
                 child: Text(
                   _initial,
                   style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
                     color: colors.onPrimaryContainer,
                   ),
                 ),
               ),
-
               const SizedBox(width: 14),
 
-              // STUDENT INFORMATION
+              // Student Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      student.name,
+                      report.studentName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colors.onSurface,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
                     Row(
                       children: [
-                        Icon(
-                          Icons.cake_outlined,
-                          size: 14,
-                          color: colors.onSurfaceVariant,
-                        ),
-
-                        const SizedBox(width: 4),
-
-                        Text(
-                          '${student.age} years',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-
-                        const SizedBox(width: 10),
-
                         Icon(
                           Icons.class_outlined,
                           size: 14,
                           color: colors.onSurfaceVariant,
                         ),
-
                         const SizedBox(width: 4),
-
                         Flexible(
                           child: Text(
-                            student.classroom,
+                            report.classroom,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -460,31 +445,49 @@ class StudentReportCard extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 8),
-
-                    ReportStatusBadge(status: student.status),
+                    // Status Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: statusColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
 
-              const SizedBox(width: 8),
-
-              // ARROW
-              Container(
-                width: 32,
-                height: 32,
-
-                decoration: BoxDecoration(
-                  color: colors.surfaceContainerHighest,
-                  shape: BoxShape.circle,
-                ),
-
-                child: Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: colors.onSurfaceVariant,
-                ),
+              // Chevron
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colors.onSurfaceVariant.withValues(alpha: 0.5),
+                size: 24,
               ),
             ],
           ),
@@ -492,98 +495,41 @@ class StudentReportCard extends StatelessWidget {
       ),
     );
   }
-}
 
-// STATUS BADGE
-
-class ReportStatusBadge extends StatelessWidget {
-  final ReportStatus status;
-
-  const ReportStatusBadge({super.key, required this.status});
-
-  String get label {
-    switch (status) {
-      case ReportStatus.pending:
-        return 'Pending';
-
-      case ReportStatus.inProgress:
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'submitted':
+        return 'Complete';
+      case 'saved':
         return 'In Progress';
-
-      case ReportStatus.completed:
-        return 'Completed';
+      case 'draft':
+        return 'Not Started';
+      case 'pending':
+        return 'Pending';
+      default:
+        return status;
     }
   }
 
-  IconData get icon {
-    switch (status) {
-      case ReportStatus.pending:
-        return Icons.schedule_rounded;
-
-      case ReportStatus.inProgress:
-        return Icons.edit_rounded;
-
-      case ReportStatus.completed:
-        return Icons.check_circle_rounded;
+  Color _getStatusColor(String status, ColorScheme colors) {
+    switch (status.toLowerCase()) {
+      case 'submitted':
+        return Colors.green;
+      case 'saved':
+        return Colors.orange;
+      case 'draft':
+        return Colors.grey;
+      case 'pending':
+        return Colors.amber;
+      default:
+        return colors.primary;
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    late final Color background;
-    late final Color foreground;
-
-    switch (status) {
-      case ReportStatus.pending:
-        background = colors.tertiaryContainer;
-        foreground = colors.onTertiaryContainer;
-        break;
-
-      case ReportStatus.inProgress:
-        background = colors.secondaryContainer;
-        foreground = colors.onSecondaryContainer;
-        break;
-
-      case ReportStatus.completed:
-        background = colors.primaryContainer;
-        foreground = colors.onPrimaryContainer;
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(20),
-      ),
-
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: foreground),
-
-          const SizedBox(width: 5),
-
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              color: foreground,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
 // EMPTY STATE
-
-class _EmptyStudents extends StatelessWidget {
-  const _EmptyStudents();
+class _EmptyReports extends StatelessWidget {
+  const _EmptyReports();
 
   @override
   Widget build(BuildContext context) {
@@ -592,44 +538,57 @@ class _EmptyStudents extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
-
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: 72,
               height: 72,
-
               decoration: BoxDecoration(
                 color: colors.surfaceContainerHighest,
                 shape: BoxShape.circle,
               ),
-
               child: Icon(
-                Icons.person_search_rounded,
+                Icons.assignment_outlined,
                 size: 34,
                 color: colors.onSurfaceVariant,
               ),
             ),
-
             const SizedBox(height: 16),
-
             Text(
-              'No students found',
+              'No reports found',
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
+                color: colors.onSurface,
               ),
             ),
-
-            const SizedBox(height: 6),
-
+            const SizedBox(height: 8),
             Text(
-              'Try searching with a different name or classroom.',
+              'Start creating 3 month assessments\nfor your students.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.onSurfaceVariant,
-                height: 1.4,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                // TODO: Navigate to create assessment
+              },
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Create Assessment'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onPrimary,
               ),
             ),
           ],
