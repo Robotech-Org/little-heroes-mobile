@@ -1,5 +1,3 @@
-
-
 import 'package:little_heroes_mobile/features/auth/data/datasources/auth_remote_data_source.dart';
 
 import '../../domain/entities/auth_user.dart';
@@ -39,12 +37,20 @@ class AuthRepositoryImpl implements AuthRepository {
     );
   }
 
-  // ============================================================
-  // LOGOUT
-  // ============================================================
+  @override
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) {
+    return remoteDataSource.changePassword(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+    );
+  }
 
   @override
   Future<void> logout() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    // Call remote logout (API + cookie clearing)
+    await remoteDataSource.logout();
   }
 }

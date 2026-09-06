@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/user_role.dart';
+import '../../../../core/router/app_routes.dart';
+import '../../../../core/utils/snackbar_utils.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 
 import '../widgets/account_settings_section.dart';
@@ -33,15 +37,38 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _reportRemindersEnabled = true;
   bool _systemAnnouncementsEnabled = true;
 
+  // ============================================================
+  // BUILD
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return BlocBuilder<AuthBloc, AuthState>(
+    // Use BlocConsumer to listen for state changes
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        // ======================================================
+        // UNAUTHENTICATED - Navigate to Login
+        // ======================================================
+        if (state is AuthUnauthenticated) {
+          // Show success message
+          SnackbarUtils.showSuccess(context, 'Logged out successfully');
+
+          // Navigate to login page
+          context.go(AppRoutes.login);
+        }
+
+        // ======================================================
+        // ERROR
+        // ======================================================
+        if (state is AuthError) {
+          SnackbarUtils.showError(context, state.message);
+        }
+      },
       builder: (context, authState) {
         final authUser = authState is AuthAuthenticated ? authState.user : null;
-
         final role = authUser?.role;
 
         return Scaffold(
@@ -204,21 +231,22 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // ============================================================
   // LOGOUT DIALOG
+  // ============================================================
 
   void _showLogoutDialog(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
     showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Logout'),
-
           content: const Text(
             'Are you sure you want to logout from your account?',
           ),
-
           actions: [
             TextButton(
               onPressed: () {
@@ -226,20 +254,16 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               child: const Text('Cancel'),
             ),
-
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: colors.error,
                 foregroundColor: colors.onError,
               ),
-
               onPressed: () {
                 Navigator.pop(dialogContext);
-
-                // TODO:
-                // context.read<AuthBloc>().add(LogoutRequested());
+                // Trigger logout
+                context.read<AuthBloc>().add(LogoutRequested());
               },
-
               child: const Text('Logout'),
             ),
           ],

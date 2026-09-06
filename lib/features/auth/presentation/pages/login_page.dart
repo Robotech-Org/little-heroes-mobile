@@ -159,12 +159,6 @@ class _LoginViewState extends State<_LoginView> {
                                 mainAxisSize: MainAxisSize.min,
 
                                 children: [
-                                  Icon(
-                                    Icons.auto_awesome,
-                                    size: 17,
-                                    color: colors.primary,
-                                  ),
-
                                   const SizedBox(width: 5),
 
                                   Text(
@@ -185,7 +179,7 @@ class _LoginViewState extends State<_LoginView> {
                             // WELCOME
                             //
                             AppText(
-                              'Welcome Back! 👋',
+                              'Welcome Back! ',
 
                               style: theme.textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w800,
@@ -298,41 +292,6 @@ class _LoginViewState extends State<_LoginView> {
                             //
                             // SIGN UP
                             //
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-
-                              children: [
-                                Text(
-                                  "Don't have an account?",
-
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colors.onSurfaceVariant,
-                                  ),
-                                ),
-
-                                TextButton(
-                                  onPressed: () {
-                                    context.push(AppRoutes.register);
-                                  },
-
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                    ),
-                                  ),
-
-                                  child: Text(
-                                    'Sign Up',
-
-                                    style: TextStyle(
-                                      color: colors.primary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
                             const Spacer(),
 
                             const SizedBox(height: 24),

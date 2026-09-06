@@ -140,11 +140,35 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       // LISTENER
       // ========================================================
 
-      listener: (context, state) async {
-        // ======================================================
-        // AUTHENTICATED
-        // ======================================================
+      // listener: (context, state) async {
+      //   // ======================================================
+      //   // AUTHENTICATED
+      //   // ======================================================
 
+      //   if (state is AuthAuthenticated) {
+      //     SnackbarUtils.showSuccess(
+      //       context,
+      //       'Phone number verified successfully.',
+      //     );
+
+      //     await Future.delayed(const Duration(milliseconds: 300));
+
+      //     if (!context.mounted) {
+      //       return;
+      //     }
+
+      //     context.go(AppRoutes.main);
+      //   }
+
+      //   // ======================================================
+      //   // ERROR
+      //   // ======================================================
+
+      //   if (state is AuthError) {
+      //     SnackbarUtils.showError(context, state.message);
+      //   }
+      // },
+      listener: (context, state) async {
         if (state is AuthAuthenticated) {
           SnackbarUtils.showSuccess(
             context,
@@ -159,10 +183,6 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
           context.go(AppRoutes.main);
         }
-
-        // ======================================================
-        // ERROR
-        // ======================================================
 
         if (state is AuthError) {
           SnackbarUtils.showError(context, state.message);

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:little_heroes_mobile/core/constants/user_role.dart';
+import 'package:little_heroes_mobile/core/router/app_routes.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/chats/presentation/pages/chat_page.dart';
@@ -27,10 +29,6 @@ class _MainPageState extends State<MainPage> {
 
   List<NavigationItem> _navigationItems(UserRole role) {
     switch (role) {
-      // ==
-      // TEACHER
-      // ==
-
       case UserRole.teacher:
         return const [
           NavigationItem(
@@ -55,10 +53,6 @@ class _MainPageState extends State<MainPage> {
           ),
         ];
 
-      // ==
-      // PARENT
-      // ==
-
       case UserRole.parent:
         return const [
           NavigationItem(
@@ -82,10 +76,6 @@ class _MainPageState extends State<MainPage> {
             activeIcon: Icons.settings_rounded,
           ),
         ];
-
-      // ==
-      // ADVISER
-      // ==
 
       case UserRole.adviser:
         return const [
@@ -117,10 +107,6 @@ class _MainPageState extends State<MainPage> {
 
   List<Widget> _pages(UserRole role) {
     switch (role) {
-      // ==
-      // TEACHER
-      // ==
-
       case UserRole.teacher:
         return [
           HomePage(role: role),
@@ -129,10 +115,6 @@ class _MainPageState extends State<MainPage> {
           const SettingsPage(),
         ];
 
-      // ==
-      // PARENT
-      // ==
-
       case UserRole.parent:
         return [
           HomePage(role: role),
@@ -140,10 +122,6 @@ class _MainPageState extends State<MainPage> {
           const ChatsPage(),
           const SettingsPage(),
         ];
-
-      // ==
-      // ADVISER
-      // ==
 
       case UserRole.adviser:
         return [
@@ -171,51 +149,83 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        // ======================================================
+        // UNAUTHENTICATED - Navigate to Login
+        // ======================================================
+        if (state is AuthUnauthenticated) {
+          // Use addPostFrameCallback to navigate after build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              context.go(AppRoutes.login);
+            }
+          });
+        }
+      },
       builder: (context, authState) {
         //
-        // USER NOT AUTHENTICATED
+        // LOADING STATE
         //
 
-        if (authState is! AuthAuthenticated) {
+        if (authState is AuthLoading || authState is AuthInitial) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
         //
-        // GET ROLE FROM AUTH
+        // UNAUTHENTICATED - Show loading while redirecting
         //
 
-        final role = authState.user.role;
-
-        //
-        // ROLE-BASED NAVIGATION
-        //
-
-        final items = _navigationItems(role);
-        final pages = _pages(role);
-
-        //
-        // SAFETY CHECK
-        //
-
-        if (_currentIndex >= items.length) {
-          _currentIndex = 0;
+        if (authState is AuthUnauthenticated) {
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Redirecting to login...'),
+                ],
+              ),
+            ),
+          );
         }
 
         //
-        // UI
+        // USER AUTHENTICATED
         //
 
-        return Scaffold(
-          body: IndexedStack(index: _currentIndex, children: pages),
-          bottomNavigationBar: MainBottomNavigation(
-            currentIndex: _currentIndex,
-            items: items,
-            onDestinationSelected: _onNavigationChanged,
-          ),
-        );
+        if (authState is AuthAuthenticated) {
+          final role = authState.user.role;
+          final items = _navigationItems(role);
+          final pages = _pages(role);
+
+          //
+          // SAFETY CHECK
+          //
+
+          if (_currentIndex >= items.length) {
+            _currentIndex = 0;
+          }
+
+          //
+          // UI
+          //
+
+          return Scaffold(
+            body: IndexedStack(index: _currentIndex, children: pages),
+            bottomNavigationBar: MainBottomNavigation(
+              currentIndex: _currentIndex,
+              items: items,
+              onDestinationSelected: _onNavigationChanged,
+            ),
+          );
+        }
+
+        // Fallback
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }

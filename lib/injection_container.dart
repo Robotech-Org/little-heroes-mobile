@@ -2,10 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 
 import 'core/constants/api_constants.dart';
+import 'core/network/dio_client.dart'; // ADD THIS IMPORT
 
 import 'package:little_heroes_mobile/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:little_heroes_mobile/features/auth/domain/repositories/auth_repository.dart';
+import 'package:little_heroes_mobile/features/auth/domain/usecases/change_password.dart';
+import 'package:little_heroes_mobile/features/auth/domain/usecases/logout.dart';
 import 'package:little_heroes_mobile/features/auth/domain/usecases/send_otp.dart';
 import 'package:little_heroes_mobile/features/auth/domain/usecases/verify_otp.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
@@ -21,45 +24,13 @@ final GetIt sl = GetIt.instance;
 
 Future<void> initDependencies() async {
   // ============================================================
-  // CORE - DIO
+  // CORE - DIO (Using DioClient with CookieManager)
   // ============================================================
 
   if (!sl.isRegistered<Dio>()) {
-    sl.registerLazySingleton<Dio>(() {
-      final baseUrl = ApiConstants.baseUrl;
-
-      if (baseUrl.isEmpty) {
-        throw Exception('API_BASE_URL is empty. Please check your .env file.');
-      }
-
-      final dio = Dio(
-        BaseOptions(
-          baseUrl: baseUrl,
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 30),
-          sendTimeout: const Duration(seconds: 30),
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-        ),
-      );
-
-      // API Request/Response Debugger
-      dio.interceptors.add(
-        LogInterceptor(
-          request: true,
-          requestHeader: true,
-          requestBody: true,
-          responseHeader: true,
-          responseBody: true,
-          error: true,
-          logPrint: (object) => print('🌐 DIO: $object'),
-        ),
-      );
-
-      return dio;
-    });
+    // Create DioClient which has CookieManager configured
+    final dioClient = await DioClient.create();
+    sl.registerLazySingleton<Dio>(() => dioClient.dio);
   }
 
   // ============================================================
@@ -148,6 +119,16 @@ Future<void> initDependencies() async {
     sl.registerLazySingleton<VerifyOtp>(() => VerifyOtp(sl<AuthRepository>()));
   }
 
+  if (!sl.isRegistered<Logout>()) {
+    sl.registerLazySingleton<Logout>(() => Logout(sl<AuthRepository>()));
+  }
+
+  if (!sl.isRegistered<ChangePassword>()) {
+    sl.registerLazySingleton<ChangePassword>(
+      () => ChangePassword(sl<AuthRepository>()),
+    );
+  }
+
   // ============================================================
   // AUTH BLOC
   // ============================================================
@@ -157,6 +138,8 @@ Future<void> initDependencies() async {
       () => AuthBloc(
         loginWithPhoneAndPassword: sl<LoginWithPhoneAndPassword>(),
         verifyOtp: sl<VerifyOtp>(),
+        logout: sl<Logout>(),
+        changePassword: sl<ChangePassword>(),
       ),
     );
   }

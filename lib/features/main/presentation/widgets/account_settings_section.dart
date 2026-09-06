@@ -1,6 +1,11 @@
+
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/user_role.dart';
+
+import 'change_password_dialog.dart';
 import 'settings_section.dart';
 import 'settings_tile.dart';
 
@@ -53,15 +58,32 @@ class AccountSettingsSection extends StatelessWidget {
               onTap: onLinkedChildrenTap ?? () {},
             ),
 
+          // Change Password - Moved here under Security
           SettingsTile(
             icon: Icons.lock_outline_rounded,
-            title: 'Security',
-            subtitle: 'Password and account security',
+            title: 'Change Password',
+            subtitle: 'Update your account password',
             showDivider: false,
-            onTap: onSecurityTap ?? () {},
+            onTap: () {
+              _showChangePasswordDialog(context);
+            },
           ),
         ],
       ),
+    );
+  }
+
+  // ============================================================
+  // CHANGE PASSWORD DIALOG
+  // ============================================================
+
+  void _showChangePasswordDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return const ChangePasswordDialog();
+      },
     );
   }
 }

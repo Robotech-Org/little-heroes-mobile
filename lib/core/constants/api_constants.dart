@@ -19,6 +19,9 @@ class ApiConstants {
   static const String resetPassword =
       '/api/method/little_heroes.api.v1.auth.reset_password';
 
+  static const String changePassword =
+      '/api/method/little_heroes.api.v1.auth.change_password';
+
   static const String logout = '/api/method/logout';
 
   // DAILY REPORT APIs
