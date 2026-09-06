@@ -1,11 +1,10 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:little_heroes_mobile/features/main/presentation/widgets/change_password_dialog.dart';
 
 import '../../../../core/constants/user_role.dart';
-
-import 'change_password_dialog.dart';
+import '../../../../core/router/app_routes.dart';
 import 'settings_section.dart';
 import 'settings_tile.dart';
 
@@ -58,32 +57,24 @@ class AccountSettingsSection extends StatelessWidget {
               onTap: onLinkedChildrenTap ?? () {},
             ),
 
-          // Change Password - Moved here under Security
+          // Change Password - Navigate to full page
           SettingsTile(
             icon: Icons.lock_outline_rounded,
             title: 'Change Password',
             subtitle: 'Update your account password',
             showDivider: false,
             onTap: () {
-              _showChangePasswordDialog(context);
+              // Navigate to Change Password Page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ChangePasswordPage(),
+                ),
+              );
             },
           ),
         ],
       ),
-    );
-  }
-
-  // ============================================================
-  // CHANGE PASSWORD DIALOG
-  // ============================================================
-
-  void _showChangePasswordDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return const ChangePasswordDialog();
-      },
     );
   }
 }
