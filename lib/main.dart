@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:little_heroes_mobile/core/services/notification_service.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/pages/login_page.dart';
@@ -21,6 +22,7 @@ Future<void> main() async {
 
   // Initialize local storage
   await StorageService.instance.init();
+  await dotenv.load(fileName: '.env');
 
   // Initialize FCM
   await NotificationService.initialize();
@@ -31,10 +33,7 @@ Future<void> main() async {
       providers: [
         // Theme
         BlocProvider<ThemeCubit>(create: (_) => ThemeCubit()),
-        BlocProvider(
-  create: (_) => sl<AuthBloc>(),
-  child: const LoginPage(),
-),
+        BlocProvider(create: (_) => sl<AuthBloc>(), child: const LoginPage()),
 
         // Notifications
         // BlocProvider<NotificationBloc>(create: (_) => NotificationBloc()),

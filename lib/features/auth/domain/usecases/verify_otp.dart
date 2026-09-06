@@ -1,3 +1,4 @@
+
 import '../entities/auth_user.dart';
 import '../repositories/auth_repository.dart';
 
@@ -6,7 +7,15 @@ class VerifyOtp {
 
   VerifyOtp(this.repository);
 
-  Future<AuthUser> call({required String phoneNumber, required String otp}) {
-    return repository.verifyOtp(phoneNumber: phoneNumber, otp: otp);
+  Future<AuthUser> call({
+    required String tmpId,
+    required String otp,
+    required String phoneNumber,
+  }) {
+    return repository.verifyOtp(
+      tmpId: tmpId,
+      otp: otp,
+      phoneNumber: phoneNumber,
+    );
   }
 }

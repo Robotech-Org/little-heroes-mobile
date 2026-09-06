@@ -1,6 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 
-import 'package:little_heroes_mobile/features/auth/data/datasources/auth_mock_data_source.dart';
+import 'core/constants/api_constants.dart';
+
+import 'package:little_heroes_mobile/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:little_heroes_mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:little_heroes_mobile/features/auth/domain/usecases/send_otp.dart';
@@ -17,9 +20,51 @@ import 'features/notifications/presentation/bloc/notification_bloc.dart';
 final GetIt sl = GetIt.instance;
 
 Future<void> initDependencies() async {
-  //
+  // ============================================================
+  // CORE - DIO
+  // ============================================================
+
+  if (!sl.isRegistered<Dio>()) {
+    sl.registerLazySingleton<Dio>(() {
+      final baseUrl = ApiConstants.baseUrl;
+
+      if (baseUrl.isEmpty) {
+        throw Exception('API_BASE_URL is empty. Please check your .env file.');
+      }
+
+      final dio = Dio(
+        BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 30),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      // API Request/Response Debugger
+      dio.interceptors.add(
+        LogInterceptor(
+          request: true,
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: true,
+          responseBody: true,
+          error: true,
+          logPrint: (object) => print('🌐 DIO: $object'),
+        ),
+      );
+
+      return dio;
+    });
+  }
+
+  // ============================================================
   // NOTIFICATION DATA SOURCE
-  //
+  // ============================================================
 
   if (!sl.isRegistered<NotificationLocalDataSource>()) {
     sl.registerLazySingleton<NotificationLocalDataSource>(
@@ -27,9 +72,9 @@ Future<void> initDependencies() async {
     );
   }
 
-  //
+  // ============================================================
   // NOTIFICATION REPOSITORY
-  //
+  // ============================================================
 
   if (!sl.isRegistered<NotificationRepository>()) {
     sl.registerLazySingleton<NotificationRepository>(
@@ -39,9 +84,9 @@ Future<void> initDependencies() async {
     );
   }
 
-  //
+  // ============================================================
   // NOTIFICATION USE CASES
-  //
+  // ============================================================
 
   if (!sl.isRegistered<GetNotifications>()) {
     sl.registerLazySingleton<GetNotifications>(
@@ -55,9 +100,9 @@ Future<void> initDependencies() async {
     );
   }
 
-  //
+  // ============================================================
   // NOTIFICATION BLOC
-  //
+  // ============================================================
 
   if (!sl.isRegistered<NotificationBloc>()) {
     sl.registerFactory<NotificationBloc>(
@@ -69,27 +114,29 @@ Future<void> initDependencies() async {
     );
   }
 
-  //
-  // AUTH DATA SOURCE
-  //
+  // ============================================================
+  // AUTH REMOTE DATA SOURCE
+  // ============================================================
 
-  if (!sl.isRegistered<AuthMockDataSource>()) {
-    sl.registerLazySingleton<AuthMockDataSource>(() => AuthMockDataSource());
-  }
-
-  //
-  // AUTH REPOSITORY
-  //
-
-  if (!sl.isRegistered<AuthRepository>()) {
-    sl.registerLazySingleton<AuthRepository>(
-      () => AuthRepositoryImpl(mockDataSource: sl<AuthMockDataSource>()),
+  if (!sl.isRegistered<AuthRemoteDataSource>()) {
+    sl.registerLazySingleton<AuthRemoteDataSource>(
+      () => AuthRemoteDataSourceImpl(sl<Dio>()),
     );
   }
 
-  //
+  // ============================================================
+  // AUTH REPOSITORY
+  // ============================================================
+
+  if (!sl.isRegistered<AuthRepository>()) {
+    sl.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryImpl(remoteDataSource: sl<AuthRemoteDataSource>()),
+    );
+  }
+
+  // ============================================================
   // AUTH USE CASES
-  //
+  // ============================================================
 
   if (!sl.isRegistered<LoginWithPhoneAndPassword>()) {
     sl.registerLazySingleton<LoginWithPhoneAndPassword>(
@@ -101,9 +148,9 @@ Future<void> initDependencies() async {
     sl.registerLazySingleton<VerifyOtp>(() => VerifyOtp(sl<AuthRepository>()));
   }
 
-  //
+  // ============================================================
   // AUTH BLOC
-  //
+  // ============================================================
 
   if (!sl.isRegistered<AuthBloc>()) {
     sl.registerFactory<AuthBloc>(

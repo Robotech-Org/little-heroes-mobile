@@ -15,8 +15,9 @@ abstract class AuthRemoteDataSource {
   Future<OtpResponse> requestOtp({required String phoneNumber});
 
   Future<AuthUser> verifyOtp({
-    required String phoneNumber,
+    required String tmpId,
     required String otp,
+    required String phoneNumber,
   });
 
   Future<void> resetPassword({
@@ -30,7 +31,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   AuthRemoteDataSourceImpl(this.dio);
 
+  // ============================================================
   // LOGIN
+  // ============================================================
 
   @override
   Future<OtpResponse> loginWithPhoneAndPassword({
@@ -43,19 +46,41 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: {'usr': phoneNumber, 'pwd': password},
       );
 
+      ;
+
       final data = _extractResponse(response);
 
+      final tmpId = data['tmp_id']?.toString();
+
+      print('TMP ID: $tmpId');
+
+      final verification = data['verification'];
+
+      String message = 'OTP sent successfully';
+
+      if (verification is Map<String, dynamic>) {
+        message = verification['prompt']?.toString() ?? message;
+      } else if (data['message'] != null) {
+        message = data['message'].toString();
+      }
+
       return OtpResponse(
-        success: data['success'] ?? true,
-        message: data['message'] ?? 'Login successful',
+        success: true,
+        message: message,
         phoneNumber: phoneNumber,
+        tmpId: tmpId,
       );
     } on DioException catch (e) {
       DioErrorHandler.handle(e);
+      rethrow;
+    } catch (e, stackTrace) {
+      throw Exception(e.toString());
     }
   }
 
+  // ============================================================
   // REQUEST OTP
+  // ============================================================
 
   @override
   Future<OtpResponse> requestOtp({required String phoneNumber}) async {
@@ -69,39 +94,46 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return OtpResponse(
         success: data['success'] ?? true,
-        message: data['message'] ?? 'OTP sent successfully',
+        message: data['message']?.toString() ?? 'OTP sent successfully',
         phoneNumber: phoneNumber,
+        tmpId: data['tmp_id']?.toString(),
       );
     } on DioException catch (e) {
       DioErrorHandler.handle(e);
+      rethrow;
     }
   }
 
-  // VERIFY OTP
-
   @override
   Future<AuthUser> verifyOtp({
-    required String phoneNumber,
+    required String tmpId,
     required String otp,
+    required String phoneNumber,
   }) async {
     try {
       final response = await dio.post(
         ApiConstants.verifyOtp,
-        data: {'usr': phoneNumber, 'otp': otp},
+        data: {'tmp_id': tmpId, 'otp': otp},
       );
 
       final data = _extractResponse(response);
 
-      return AuthUser(
-        phoneNumber: data['usr'] ?? phoneNumber,
-        role: _parseRole(data['role']),
-      );
+      final fullName = data['full_name']?.toString() ?? '';
+
+      final roles = data['roles'] ?? data['role'];
+
+      final role = _parseRole(roles);
+
+      return AuthUser(phoneNumber: phoneNumber, fullName: fullName, role: role);
     } on DioException catch (e) {
       DioErrorHandler.handle(e);
+      rethrow;
     }
   }
 
+  // ============================================================
   // RESET PASSWORD
+  // ============================================================
 
   @override
   Future<void> resetPassword({
@@ -115,30 +147,37 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
     } on DioException catch (e) {
       DioErrorHandler.handle(e);
+      rethrow;
     }
   }
 
+  // ============================================================
   // RESPONSE EXTRACTION
+  // ============================================================
 
   Map<String, dynamic> _extractResponse(Response<dynamic> response) {
     final responseData = response.data;
 
     if (responseData is Map<String, dynamic>) {
-      // Frappe custom APIs commonly return:
-      // { "message": { ... } }
       if (responseData['message'] is Map<String, dynamic>) {
         return Map<String, dynamic>.from(responseData['message']);
       }
 
-      return responseData;
+      return Map<String, dynamic>.from(responseData);
     }
 
     return {};
   }
 
+  // ============================================================
   // ROLE PARSER
+  // ============================================================
 
   UserRole _parseRole(dynamic role) {
+    if (role is List && role.isNotEmpty) {
+      role = role.first;
+    }
+
     final roleString = role?.toString().trim().toLowerCase();
 
     switch (roleString) {

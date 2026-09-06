@@ -18,7 +18,15 @@ import '../widgets/otp_input.dart';
 class OtpVerificationPage extends StatefulWidget {
   final String phoneNumber;
 
-  const OtpVerificationPage({super.key, required this.phoneNumber});
+  // IMPORTANT:
+  // This is the tmp_id returned by the login API.
+  final String tmpId;
+
+  const OtpVerificationPage({
+    super.key,
+    required this.phoneNumber,
+    required this.tmpId,
+  });
 
   @override
   State<OtpVerificationPage> createState() => _OtpVerificationPageState();
@@ -35,6 +43,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   @override
   void initState() {
     super.initState();
+
     _startTimer();
   }
 
@@ -43,8 +52,6 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     _timer?.cancel();
     super.dispose();
   }
-
-  // TIMER
 
   void _startTimer() {
     _timer?.cancel();
@@ -73,7 +80,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     });
   }
 
+  // ============================================================
   // VERIFY OTP
+  // ============================================================
 
   void _verifyOtp() {
     if (_otp.length != 6) {
@@ -86,13 +95,19 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
     FocusScope.of(context).unfocus();
 
-    // Send OTP verification request to AuthBloc.
+    // Send the tmp_id received from the login response.
     context.read<AuthBloc>().add(
-      VerifyOtpRequested(phoneNumber: widget.phoneNumber, otp: _otp),
+      VerifyOtpRequested(
+        tmpId: widget.tmpId,
+        otp: _otp,
+        phoneNumber: widget.phoneNumber,
+      ),
     );
   }
 
+  // ============================================================
   // RESEND OTP
+  // ============================================================
 
   void _resendOtp() {
     if (!_canResend) {
@@ -105,24 +120,15 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
     _startTimer();
 
-    // TODO:
-    // Connect this to your real SendOtp flow if needed.
-    //
-    // Example:
-    //
-    // context.read<AuthBloc>().add(
-    //   SendOtpRequested(
-    //     phoneNumber: widget.phoneNumber,
-    //   ),
-    // );
-
     SnackbarUtils.showSuccess(
       context,
-      'A new verification code has been sent.',
+      'Please request a new verification code.',
     );
   }
 
+  // ============================================================
   // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -130,14 +136,14 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     final colors = theme.colorScheme;
 
     return BlocConsumer<AuthBloc, AuthState>(
-      //
-      // AUTH STATE LISTENER
-      //
+      // ========================================================
+      // LISTENER
+      // ========================================================
 
       listener: (context, state) async {
-        // ==
+        // ======================================================
         // AUTHENTICATED
-        // ==
+        // ======================================================
 
         if (state is AuthAuthenticated) {
           SnackbarUtils.showSuccess(
@@ -151,31 +157,21 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
             return;
           }
 
-          // At this point AuthBloc contains:
-          //
-          // AuthAuthenticated(
-          //   user: user,
-          // )
-          //
-          // The MainPage will get the role from:
-          //
-          // authState.user.role
-
           context.go(AppRoutes.main);
         }
 
-        // ==
-        // AUTH ERROR
-        // ==
+        // ======================================================
+        // ERROR
+        // ======================================================
 
         if (state is AuthError) {
           SnackbarUtils.showError(context, state.message);
         }
       },
 
-      //
-      // UI BUILDER
-      //
+      // ========================================================
+      // BUILDER
+      // ========================================================
       builder: (context, authState) {
         final isLoading = authState is AuthLoading;
 
@@ -184,9 +180,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           body: SafeArea(
             child: Column(
               children: [
-                // =
+                // ==================================================
                 // TOP BAR
-                // =
+                // ==================================================
 
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -215,9 +211,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                   ),
                 ),
 
-                // =
+                // ==================================================
                 // CONTENT
-                // =
+                // ==================================================
                 Expanded(
                   child: SingleChildScrollView(
                     keyboardDismissBehavior:
@@ -233,9 +229,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                         children: [
                           const SizedBox(height: 16),
 
-                          // =
+                          // ========================================
                           // TITLE
-                          // =
+                          // ========================================
                           AppText(
                             'Enter verification code',
                             textAlign: TextAlign.center,
@@ -247,9 +243,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 10),
 
-                          // =
+                          // ========================================
                           // DESCRIPTION
-                          // =
+                          // ========================================
                           AppText(
                             'We sent a 6-digit verification code to your phone number.',
                             textAlign: TextAlign.center,
@@ -261,9 +257,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 14),
 
-                          // =
+                          // ========================================
                           // PHONE NUMBER
-                          // =
+                          // ========================================
                           Center(
                             child: TextButton.icon(
                               onPressed: isLoading
@@ -299,9 +295,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 42),
 
-                          // =
+                          // ========================================
                           // OTP LABEL
-                          // =
+                          // ========================================
                           Text(
                             'Verification Code',
                             textAlign: TextAlign.center,
@@ -312,9 +308,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 14),
 
-                          // =
+                          // ========================================
                           // OTP INPUT
-                          // =
+                          // ========================================
                           OtpInput(
                             onChanged: (otp) {
                               if (isLoading) {
@@ -334,7 +330,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                                 _otp = otp;
                               });
 
-                              // Optional automatic verification:
+                              // Automatically verify if you want:
                               //
                               // _verifyOtp();
                             },
@@ -352,9 +348,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 32),
 
-                          // =
+                          // ========================================
                           // VERIFY BUTTON
-                          // =
+                          // ========================================
                           AppButton(
                             text: 'Verify & Continue',
                             onPressed: _otp.length == 6 && !isLoading
@@ -365,9 +361,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 24),
 
-                          // =
-                          // RESEND SECTION
-                          // =
+                          // ========================================
+                          // RESEND
+                          // ========================================
                           Center(
                             child: Column(
                               children: [
@@ -387,7 +383,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                                   child: Text(
                                     _canResend
                                         ? 'Resend Code'
-                                        : 'Resend code in ${_remainingSeconds}s',
+                                        : 'Resend code in '
+                                              '${_remainingSeconds}s',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       color: _canResend
@@ -402,9 +399,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
                           const SizedBox(height: 8),
 
-                          // =
-                          // CHANGE NUMBER
-                          // =
+                          // ========================================
+                          // CHANGE PHONE NUMBER
+                          // ========================================
                           Center(
                             child: TextButton.icon(
                               onPressed: isLoading

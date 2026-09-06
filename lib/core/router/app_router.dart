@@ -53,13 +53,24 @@ class AppRouter {
         },
       ),
 
+      // GoRoute(
+      //   path: AppRoutes.otpVerification,
+      //   name: 'otpVerification',
+      //   builder: (context, state) {
+      //     final phoneNumber = state.extra as String;
+
+      //     return OtpVerificationPage(phoneNumber: phoneNumber);
+      //   },
+      // ),
       GoRoute(
         path: AppRoutes.otpVerification,
-        name: 'otpVerification',
         builder: (context, state) {
-          final phoneNumber = state.extra as String;
+          final extra = state.extra as Map<String, dynamic>;
 
-          return OtpVerificationPage(phoneNumber: phoneNumber);
+          return OtpVerificationPage(
+            phoneNumber: extra['phoneNumber'] as String,
+            tmpId: extra['tmpId'] as String,
+          );
         },
       ),
 

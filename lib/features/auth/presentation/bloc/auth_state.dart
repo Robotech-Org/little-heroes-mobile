@@ -1,3 +1,5 @@
+
+
 import '../../domain/entities/auth_user.dart';
 
 abstract class AuthState {}
@@ -9,10 +11,12 @@ class AuthLoading extends AuthState {}
 class OtpSent extends AuthState {
   final String phoneNumber;
   final String message;
+  final String tmpId;
 
   OtpSent({
     required this.phoneNumber,
     required this.message,
+    required this.tmpId,
   });
 }
 

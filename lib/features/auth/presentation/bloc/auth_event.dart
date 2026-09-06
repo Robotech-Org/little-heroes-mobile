@@ -1,36 +1,57 @@
+
 // abstract class AuthEvent {}
 
-// class SendOtpRequested extends AuthEvent {
-//   final String phoneNumber;
+// // ============================================================
+// // LOGIN WITH PHONE + PASSWORD
+// // ============================================================
 
-//   SendOtpRequested({required this.phoneNumber});
+// class LoginRequested extends AuthEvent {
+//   final String phoneNumber;
+//   final String password;
+
+//   LoginRequested({required this.phoneNumber, required this.password});
 // }
+
+// // ============================================================
+// // VERIFY OTP
+// // ============================================================
 
 // class VerifyOtpRequested extends AuthEvent {
-//   final String phoneNumber;
+//   final String tmpId;
 //   final String otp;
 
-//   VerifyOtpRequested({required this.phoneNumber, required this.otp});
+//   VerifyOtpRequested({required this.tmpId, required this.otp});
 // }
 
-// AUTH EVENTS
 
 abstract class AuthEvent {}
 
-// LOGIN WITH PHONE + PASSWORD
+// ============================================================
+// LOGIN
+// ============================================================
 
 class LoginRequested extends AuthEvent {
   final String phoneNumber;
   final String password;
 
-  LoginRequested({required this.phoneNumber, required this.password});
+  LoginRequested({
+    required this.phoneNumber,
+    required this.password,
+  });
 }
 
+// ============================================================
 // VERIFY OTP
+// ============================================================
 
 class VerifyOtpRequested extends AuthEvent {
-  final String phoneNumber;
+  final String tmpId;
   final String otp;
+  final String phoneNumber;
 
-  VerifyOtpRequested({required this.phoneNumber, required this.otp});
+  VerifyOtpRequested({
+    required this.tmpId,
+    required this.otp,
+    required this.phoneNumber,
+  });
 }

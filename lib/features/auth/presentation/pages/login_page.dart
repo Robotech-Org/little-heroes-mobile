@@ -78,6 +78,7 @@ class _LoginViewState extends State<_LoginView> {
         '${_selectedCountry.dialCode}${_phoneController.text.trim()}';
 
     final password = _passwordController.text.trim();
+    print('Login with phone: $phoneNumber, password: $password');
 
     context.read<AuthBloc>().add(
       LoginRequested(phoneNumber: phoneNumber, password: password),
@@ -95,8 +96,14 @@ class _LoginViewState extends State<_LoginView> {
         // OTP SENT SUCCESSFULLY
         //
 
+        // if (state is OtpSent) {
+        //   context.push(AppRoutes.otpVerification, extra: state.phoneNumber);
+        // }
         if (state is OtpSent) {
-          context.push(AppRoutes.otpVerification, extra: state.phoneNumber);
+          context.push(
+            AppRoutes.otpVerification,
+            extra: {'phoneNumber': state.phoneNumber, 'tmpId': state.tmpId},
+          );
         }
 
         //

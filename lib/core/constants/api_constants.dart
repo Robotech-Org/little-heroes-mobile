@@ -14,8 +14,7 @@ class ApiConstants {
   static const String requestOtp =
       '/api/method/little_heroes.api.v1.auth.request_otp';
 
-  static const String verifyOtp =
-      '/api/method/little_heroes.api.v1.auth.verify_otp';
+  static const String verifyOtp = '/api/method/little_heroes.api.v1.auth.login';
 
   static const String resetPassword =
       '/api/method/little_heroes.api.v1.auth.reset_password';
