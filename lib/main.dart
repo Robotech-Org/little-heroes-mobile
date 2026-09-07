@@ -5,7 +5,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:little_heroes_mobile/core/services/notification_service.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/pages/login_page.dart';
-import 'package:little_heroes_mobile/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:little_heroes_mobile/injection_container.dart';
 
 import 'core/router/app_router.dart';

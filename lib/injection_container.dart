@@ -39,9 +39,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 
 import 'features/notifications/data/datasources/notification_local_data_source.dart';
 
-import 'features/notifications/domain/usecases/get_notifications.dart';
-import 'features/notifications/domain/usecases/mark_notification_as_read.dart';
-import 'features/notifications/presentation/bloc/notification_bloc.dart';
+
 
 final GetIt sl = GetIt.instance;
 

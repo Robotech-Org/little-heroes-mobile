@@ -13,12 +13,10 @@ import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/weekly_planner_page.dart';
 import 'package:little_heroes_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:little_heroes_mobile/features/main/presentation/pages/settings_page.dart';
-import 'package:little_heroes_mobile/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:little_heroes_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:little_heroes_mobile/features/splash/presentation/pages/splash_page.dart';
 
-import 'package:little_heroes_mobile/injection_container.dart';
 
 import '../../core/services/storage_service.dart';
 import 'app_routes.dart';
