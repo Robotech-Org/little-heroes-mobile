@@ -16,40 +16,35 @@ class ChatListTile extends StatelessWidget {
     return Material(
       color: colors.surface,
       borderRadius: BorderRadius.circular(18),
-
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-
         child: Padding(
           padding: const EdgeInsets.all(13),
-
           child: Row(
             children: [
               Stack(
                 children: [
+                  // Avatar - Show initials if avatarUrl is empty or null
                   CircleAvatar(
                     radius: 27,
                     backgroundColor: colors.primaryContainer,
-
                     child: Text(
-                      chat.avatarUrl,
+                      _getInitials(chat.personName),
                       style: TextStyle(
                         color: colors.onPrimaryContainer,
                         fontWeight: FontWeight.w800,
+                        fontSize: 16,
                       ),
                     ),
                   ),
-
                   if (chat.isOnline)
                     Positioned(
                       right: 0,
                       bottom: 0,
-
                       child: Container(
                         width: 13,
                         height: 13,
-
                         decoration: BoxDecoration(
                           color: Colors.green,
                           shape: BoxShape.circle,
@@ -59,13 +54,10 @@ class ChatListTile extends StatelessWidget {
                     ),
                 ],
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-
                   children: [
                     Row(
                       children: [
@@ -74,63 +66,63 @@ class ChatListTile extends StatelessWidget {
                             chat.personName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
                             ),
                           ),
                         ),
-
-                        Text(
-                          chat.lastMessageTime,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: colors.onSurfaceVariant,
+                        if (chat.lastMessageTime.isNotEmpty)
+                          Text(
+                            chat.lastMessageTime,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colors.onSurfaceVariant,
+                            ),
                           ),
-                        ),
                       ],
                     ),
-
                     const SizedBox(height: 4),
-
                     Text(
                       chat.lastMessage,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-
                       style: TextStyle(
                         color: colors.onSurfaceVariant,
                         fontSize: 13,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
-                    Text(
-                      chat.role,
-                      style: TextStyle(
-                        color: colors.primary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primaryContainer.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        chat.role,
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-
               if (chat.unreadCount > 0) ...[
                 const SizedBox(width: 8),
-
                 Container(
                   width: 22,
                   height: 22,
-
                   decoration: BoxDecoration(
                     color: colors.primary,
                     shape: BoxShape.circle,
                   ),
-
                   child: Center(
                     child: Text(
                       '${chat.unreadCount}',
@@ -148,5 +140,22 @@ class ChatListTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Helper method to get initials from name
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
+
+    final parts = name.trim().split(' ');
+    if (parts.isEmpty) return '?';
+
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+
+    // Get first letter of first and last name
+    final first = parts[0][0];
+    final last = parts[parts.length - 1][0];
+    return '$first$last'.toUpperCase();
   }
 }

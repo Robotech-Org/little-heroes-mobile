@@ -191,53 +191,11 @@ class _ChatsPageState extends State<ChatsPage> {
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+          padding: const EdgeInsets.fromLTRB(18, 1, 18, 2),
           children: [
-            Text(
-              'Stay connected',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _getSubtitle(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
             const SizedBox(height: 18),
             ChatSearch(controller: _searchController, onChanged: _search),
-            const SizedBox(height: 22),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Recent Chats',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.primaryContainer,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${_filteredChats.length}',
-                    style: TextStyle(
-                      color: colors.onPrimaryContainer,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+
             const SizedBox(height: 12),
             if (_isLoading)
               const Padding(
@@ -259,24 +217,6 @@ class _ChatsPageState extends State<ChatsPage> {
         ),
       ),
     );
-  }
-
-  String _getSubtitle() {
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
-      final role = authState.user.role;
-      switch (role) {
-        case UserRole.teacher:
-          return 'Chat with parents.';
-        case UserRole.parent:
-          return 'Chat with teachers.';
-        case UserRole.adviser:
-          return 'Chat with parents and teachers.';
-        default:
-          return 'Chat with parents, teachers and advisors.';
-      }
-    }
-    return 'Chat with parents, teachers and advisors.';
   }
 
   Widget _buildErrorWidget(ThemeData theme, ColorScheme colors) {
