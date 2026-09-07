@@ -66,17 +66,25 @@ class ApiConstants {
   static const String createObservation =
       '/api/method/little_heroes.api.v1.observations.create_observation';
 
-  /// GET - Get single observation
+  /// GET - Get single observation by name
   static const String getObservation =
       '/api/method/little_heroes.api.v1.observations.get_observation';
 
-  /// GET - List observations
+  /// GET - List observations with pagination
   static const String listObservations =
       '/api/method/little_heroes.api.v1.observations.list_observations';
 
-  /// PUT/PATCH - Update observation
+  /// PUT/PATCH - Update observation by name
   static const String updateObservation =
       '/api/method/little_heroes.api.v1.observations.update_observation';
+
+  /// DELETE - Delete observation by name
+  static const String deleteObservation =
+      '/api/method/little_heroes.api.v1.observations.delete_observation';
+
+  /// POST - Upload observation file
+  static const String uploadObservationFile =
+      '/api/method/little_heroes.api.v1.observations.upload_observation_file';
 
   // OTHER APIs
 

@@ -1,3 +1,4 @@
+import 'package:little_heroes_mobile/features/home/data/models/three_month_report_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/hello.dart';
 
 import '../datasources/three_month_report_remote_data_source.dart';
@@ -25,4 +26,31 @@ class ThreeMonthReportRepositoryImpl implements ThreeMonthReportRepository {
       year: year,
     );
   }
+
+  @override
+  Future<ThreeMonthReportModel> getThreeMonthReport(String reportName) {
+    return remoteDataSource.getThreeMonthReport(reportName);
+  }
+
+  // NEW: Create three month report
+  @override
+  Future<ThreeMonthReportModel> createThreeMonthReport(
+    Map<String, dynamic> data,
+  ) {
+    return remoteDataSource.createThreeMonthReport(data);
+  }
+
+  // NEW: Update three month report
+  @override
+  Future<ThreeMonthReportModel> updateThreeMonthReport({
+    required String reportName,
+    required Map<String, dynamic> data,
+  }) {
+    return remoteDataSource.updateThreeMonthReport(
+      reportName: reportName,
+      data: data,
+    );
+  }
+
+  
 }

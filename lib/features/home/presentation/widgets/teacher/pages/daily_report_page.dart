@@ -5,6 +5,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/daily_report_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/daily_report_detail_page.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
 
 import '../daily_report_card.dart';
@@ -119,6 +120,15 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
     //     builder: (context) => CreateDailyReportPage(report: report),
     //   ),
     // ).then((_) => _loadReports());
+  }
+
+  void _navigateToReportDetail(DailyReportModel report) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DailyReportDetailPage(reportName: report.name),
+      ),
+    );
   }
 
   @override
@@ -237,7 +247,8 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
           padding: const EdgeInsets.only(bottom: 12),
           child: DailyReportCard(
             report: report,
-            onTap: () => _navigateToEditReport(report),
+            // onTap: () => _navigateToEditReport(report),
+            onTap: () => _navigateToReportDetail(report),
           ),
         );
       },

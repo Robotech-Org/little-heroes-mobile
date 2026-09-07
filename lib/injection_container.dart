@@ -1,10 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/daily_report_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/observation_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/three_month_report_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/daily_report_repository_impl.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/observation_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/three_month_report_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/observation_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
 import 'package:little_heroes_mobile/features/students/data/datasources/student_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/students/data/repositories/student_repository_impl.dart';
@@ -201,6 +204,25 @@ Future<void> initDependencies() async {
     sl.registerLazySingleton<StudentRepository>(
       () => StudentRepositoryImpl(
         remoteDataSource: sl<StudentRemoteDataSource>(),
+      ),
+    );
+  }
+
+  // Add this section after other repositories
+  // ============================================================
+  // OBSERVATION
+  // ============================================================
+
+  if (!sl.isRegistered<ObservationRemoteDataSource>()) {
+    sl.registerLazySingleton<ObservationRemoteDataSource>(
+      () => ObservationRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<ObservationRepository>()) {
+    sl.registerLazySingleton<ObservationRepository>(
+      () => ObservationRepositoryImpl(
+        remoteDataSource: sl<ObservationRemoteDataSource>(),
       ),
     );
   }

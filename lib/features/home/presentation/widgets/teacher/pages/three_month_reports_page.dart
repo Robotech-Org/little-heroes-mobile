@@ -5,6 +5,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/three_month_report_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/three_month_report_detail_page.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
 
 import 'student_three_month_report_page.dart';
@@ -105,14 +106,12 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
   }
 
   void _openReport(ThreeMonthReportModel report) {
-    // Navigator.of(context).push(
-    //   MaterialPageRoute(
-    //     builder: (_) => StudentThreeMonthReportPage(
-    //       studentName: report.studentName,
-    //       report: report,
-    //     ),
-    //   ),
-    // );
+    // Option 1: Navigate to Detail Page (Recommended)
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ThreeMonthReportDetailPage(reportName: report.name),
+      ),
+    );
   }
 
   void _clearSearch() {
