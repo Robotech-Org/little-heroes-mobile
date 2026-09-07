@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/chat.dart';
@@ -7,11 +6,7 @@ class ChatListTile extends StatelessWidget {
   final Chat chat;
   final VoidCallback onTap;
 
-  const ChatListTile({
-    super.key,
-    required this.chat,
-    required this.onTap,
-  });
+  const ChatListTile({super.key, required this.chat, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +33,7 @@ class ChatListTile extends StatelessWidget {
                     backgroundColor: colors.primaryContainer,
 
                     child: Text(
-                      chat.initials,
+                      chat.avatarUrl,
                       style: TextStyle(
                         color: colors.onPrimaryContainer,
                         fontWeight: FontWeight.w800,
@@ -58,10 +53,7 @@ class ChatListTile extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.green,
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: colors.surface,
-                            width: 2,
-                          ),
+                          border: Border.all(color: colors.surface, width: 2),
                         ),
                       ),
                     ),
@@ -72,8 +64,7 @@ class ChatListTile extends StatelessWidget {
 
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
                     Row(
@@ -82,8 +73,7 @@ class ChatListTile extends StatelessWidget {
                           child: Text(
                             chat.personName,
                             maxLines: 1,
-                            overflow:
-                                TextOverflow.ellipsis,
+                            overflow: TextOverflow.ellipsis,
 
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
@@ -96,8 +86,7 @@ class ChatListTile extends StatelessWidget {
                           chat.lastMessageTime,
                           style: TextStyle(
                             fontSize: 11,
-                            color:
-                                colors.onSurfaceVariant,
+                            color: colors.onSurfaceVariant,
                           ),
                         ),
                       ],

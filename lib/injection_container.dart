@@ -1,5 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:little_heroes_mobile/features/chats/data/datasources/chat_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/chats/data/repositories/chat_repository_impl.dart';
+import 'package:little_heroes_mobile/features/chats/domain/repositories/chat_repository.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/daily_report_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/observation_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/three_month_report_remote_data_source.dart';
@@ -224,6 +227,21 @@ Future<void> initDependencies() async {
       () => ObservationRepositoryImpl(
         remoteDataSource: sl<ObservationRemoteDataSource>(),
       ),
+    );
+  }
+
+  // CHAT
+  // ============================================================
+
+  if (!sl.isRegistered<ChatRemoteDataSource>()) {
+    sl.registerLazySingleton<ChatRemoteDataSource>(
+      () => ChatRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<ChatRepository>()) {
+    sl.registerLazySingleton<ChatRepository>(
+      () => ChatRepositoryImpl(remoteDataSource: sl<ChatRemoteDataSource>()),
     );
   }
 }

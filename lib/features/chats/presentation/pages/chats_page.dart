@@ -1,98 +1,148 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/user_role.dart';
+import '../../../../core/utils/snackbar_utils.dart';
+import '../../../../injection_container.dart' as di;
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../domain/entities/chat.dart';
+import '../../domain/repositories/chat_repository.dart';
+import 'chat_detail_page.dart';
+import '../widgets/chat_search.dart';
+import '../widgets/chat_list_tile.dart';
 
-class ChatPage extends StatefulWidget {
-  final Chat chat;
-
-  const ChatPage({super.key, required this.chat});
+class ChatsPage extends StatefulWidget {
+  const ChatsPage({super.key});
 
   @override
-  State<ChatPage> createState() => _ChatPageState();
+  State<ChatsPage> createState() => _ChatsPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
-  final TextEditingController _messageController = TextEditingController();
+class _ChatsPageState extends State<ChatsPage> {
+  final TextEditingController _searchController = TextEditingController();
 
-  final ScrollController _scrollController = ScrollController();
-
-  final List<_ChatMessage> _messages = [];
+  List<Chat> _chats = [];
+  List<Chat> _filteredChats = [];
+  bool _isLoading = true;
+  bool _isError = false;
+  String _errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-
-    _messages.add(
-      _ChatMessage(
-        text: widget.chat.lastMessage,
-        isMe: false,
-        time: '10:02 AM',
-      ),
-    );
+    _loadChats();
   }
 
   @override
   void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-
+    _searchController.dispose();
     super.dispose();
   }
 
-  // SEND MESSAGE
-
-  void _sendMessage() {
-    final text = _messageController.text.trim();
-
-    if (text.isEmpty) {
-      return;
-    }
-
+  Future<void> _loadChats() async {
     setState(() {
-      _messages.add(_ChatMessage(text: text, isMe: true, time: _currentTime()));
+      _isLoading = true;
+      _isError = false;
     });
 
-    _messageController.clear();
-
-    _scrollToBottom();
-
-    // ----------------------------------------------------------
-    // TODO:
-    // Connect your backend/chat API here later.
-    // ----------------------------------------------------------
-  }
-
-  // CURRENT TIME
-
-  String _currentTime() {
-    final now = TimeOfDay.now();
-
-    final hour = now.hourOfPeriod == 0 ? 12 : now.hourOfPeriod;
-
-    final minute = now.minute.toString().padLeft(2, '0');
-
-    final period = now.period == DayPeriod.am ? 'AM' : 'PM';
-
-    return '$hour:$minute $period';
-  }
-
-  // SCROLL
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) {
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = 'Please login to view messages';
+        });
         return;
       }
 
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      final role = authState.user.role;
+      final repository = di.sl<ChatRepository>();
+
+      List<Chat> chatList = [];
+
+      if (role == UserRole.teacher) {
+        // Teacher fetches parents
+        final response = await repository.getParents(page: 1, pageSize: 100);
+        chatList = response.items.map((participant) {
+          return Chat.fromParticipant({
+            'name': participant.name,
+            'full_name': participant.fullName,
+          }, 'Parent');
+        }).toList();
+      } else if (role == UserRole.parent) {
+        // Parent fetches teachers
+        final response = await repository.getTeachers(page: 1, pageSize: 100);
+        chatList = response.items.map((participant) {
+          return Chat.fromParticipant({
+            'name': participant.name,
+            'full_name': participant.fullName,
+          }, 'Teacher');
+        }).toList();
+      } else if (role == UserRole.adviser) {
+        // Adviser fetches both parents and teachers
+        final parentsResponse = await repository.getParents(
+          page: 1,
+          pageSize: 100,
+        );
+        final teachersResponse = await repository.getTeachers(
+          page: 1,
+          pageSize: 100,
+        );
+
+        final parents = parentsResponse.items.map((participant) {
+          return Chat.fromParticipant({
+            'name': participant.name,
+            'full_name': participant.fullName,
+          }, 'Parent');
+        }).toList();
+
+        final teachers = teachersResponse.items.map((participant) {
+          return Chat.fromParticipant({
+            'name': participant.name,
+            'full_name': participant.fullName,
+          }, 'Teacher');
+        }).toList();
+
+        chatList = [...parents, ...teachers];
+      }
+
+      setState(() {
+        _chats = chatList;
+        _filteredChats = chatList;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isError = true;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  void _search(String query) {
+    final value = query.trim().toLowerCase();
+
+    setState(() {
+      if (value.isEmpty) {
+        _filteredChats = _chats;
+      } else {
+        _filteredChats = _chats.where((chat) {
+          return chat.personName.toLowerCase().contains(value) ||
+              chat.role.toLowerCase().contains(value);
+        }).toList();
+      }
     });
   }
 
-  // BUILD
+  void _openChat(Chat chat) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ChatDetailPage(chat: chat)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,498 +151,193 @@ class _ChatPageState extends State<ChatPage> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-
-      //
-      // APP BAR
-      //
       appBar: AppBar(
+        title: const Text(
+          'Messages',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         backgroundColor: colors.surface,
         foregroundColor: colors.onSurface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-
-        titleSpacing: 0,
-
-        title: Row(
-          children: [
-            _Avatar(name: widget.chat.personName, size: 42),
-
-            const SizedBox(width: 12),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.chat.personName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-
-                  const SizedBox(height: 2),
-
-                  Text(
-                    widget.chat.role,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
         actions: [
           IconButton(
-            tooltip: 'More',
-            icon: const Icon(Icons.more_vert_rounded),
-            onPressed: () {
-              _showMoreOptions(context);
-            },
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _loadChats,
+            tooltip: 'Refresh',
           ),
         ],
       ),
-
-      //
-      // BODY
-      //
-      body: Column(
-        children: [
-          // ----------------------------------------------------
-          // CHAT AREA
-          // ----------------------------------------------------
-
-          Expanded(
-            child: _messages.isEmpty
-                ? _EmptyConversation(name: widget.chat.personName)
-                : ListView.builder(
-                    controller: _scrollController,
-
-                    physics: const BouncingScrollPhysics(),
-
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
-
-                    itemCount: _messages.length,
-
-                    itemBuilder: (context, index) {
-                      final message = _messages[index];
-
-                      return _MessageBubble(message: message);
-                    },
-                  ),
+      body: RefreshIndicator(
+        onRefresh: _loadChats,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
           ),
-
-          // ----------------------------------------------------
-          // MESSAGE INPUT
-          // ----------------------------------------------------
-          _MessageInput(controller: _messageController, onSend: _sendMessage),
-        ],
-      ),
-    );
-  }
-
-  // MORE OPTIONS
-
-  void _showMoreOptions(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.notifications_off_outlined),
-                  title: const Text('Mute notifications'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.search_rounded),
-                  title: const Text('Search in conversation'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.delete_outline_rounded),
-                  title: const Text('Delete conversation'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// MESSAGE INPUT
-
-class _MessageInput extends StatelessWidget {
-  final TextEditingController controller;
-  final VoidCallback onSend;
-
-  const _MessageInput({required this.controller, required this.onSend});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          border: Border(
-            top: BorderSide(color: colors.outlineVariant.withOpacity(0.4)),
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
           children: [
-            // --------------------------------------------------
-            // ATTACHMENT
-            // --------------------------------------------------
-
-            IconButton(
-              tooltip: 'Attach',
-              icon: Icon(
-                Icons.add_circle_outline_rounded,
-                color: colors.onSurfaceVariant,
-              ),
-              onPressed: () {
-                _showAttachmentOptions(context);
-              },
-            ),
-
-            // --------------------------------------------------
-            // TEXT FIELD
-            // --------------------------------------------------
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(
-                  minHeight: 46,
-                  maxHeight: 120,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: TextField(
-                  controller: controller,
-                  textCapitalization: TextCapitalization.sentences,
-                  minLines: 1,
-                  maxLines: 5,
-
-                  textInputAction: TextInputAction.newline,
-
-                  decoration: const InputDecoration(
-                    hintText: 'Write a message...',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 12,
-                    ),
-                  ),
-
-                  onSubmitted: (_) {
-                    onSend();
-                  },
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 6),
-
-            // --------------------------------------------------
-            // SEND
-            // --------------------------------------------------
-            Material(
-              color: colors.primary,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: onSend,
-                child: SizedBox(
-                  width: 46,
-                  height: 46,
-                  child: Icon(
-                    Icons.send_rounded,
-                    size: 21,
-                    color: colors.onPrimary,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showAttachmentOptions(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: Icon(Icons.photo_outlined, color: colors.primary),
-                  title: const Text('Photo'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.insert_drive_file_outlined,
-                    color: colors.primary,
-                  ),
-                  title: const Text('Document'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.camera_alt_outlined,
-                    color: colors.primary,
-                  ),
-                  title: const Text('Camera'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// MESSAGE BUBBLE
-
-class _MessageBubble extends StatelessWidget {
-  final _ChatMessage message;
-
-  const _MessageBubble({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    final alignment = message.isMe
-        ? CrossAxisAlignment.end
-        : CrossAxisAlignment.start;
-
-    final bubbleColor = message.isMe
-        ? colors.primary
-        : colors.surfaceContainerHighest;
-
-    final textColor = message.isMe ? colors.onPrimary : colors.onSurface;
-
-    return Column(
-      crossAxisAlignment: alignment,
-      children: [
-        Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.78,
-          ),
-
-          margin: const EdgeInsets.only(bottom: 5),
-
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
-
-          decoration: BoxDecoration(
-            color: bubbleColor,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(message.isMe ? 18 : 4),
-              bottomRight: Radius.circular(message.isMe ? 4 : 18),
-            ),
-          ),
-
-          child: Text(
-            message.text,
-            style: TextStyle(color: textColor, fontSize: 15, height: 1.35),
-          ),
-        ),
-
-        Padding(
-          padding: EdgeInsets.only(
-            left: message.isMe ? 0 : 4,
-            right: message.isMe ? 4 : 0,
-            bottom: 12,
-          ),
-          child: Text(
-            message.time,
-            style: TextStyle(fontSize: 10, color: colors.onSurfaceVariant),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// AVATAR
-
-class _Avatar extends StatelessWidget {
-  final String name;
-  final double size;
-
-  const _Avatar({required this.name, this.size = 44});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: colors.primaryContainer,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        _initials(name),
-        style: TextStyle(
-          color: colors.onPrimaryContainer,
-          fontWeight: FontWeight.w800,
-          fontSize: size * 0.32,
-        ),
-      ),
-    );
-  }
-
-  String _initials(String name) {
-    final parts = name
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .toList();
-
-    if (parts.isEmpty) {
-      return '?';
-    }
-
-    if (parts.length == 1) {
-      return parts.first.substring(0, 1).toUpperCase();
-    }
-
-    return '${parts.first.substring(0, 1)}'
-            '${parts.last.substring(0, 1)}'
-        .toUpperCase();
-  }
-}
-
-// EMPTY CONVERSATION
-
-class _EmptyConversation extends StatelessWidget {
-  final String name;
-
-  const _EmptyConversation({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(30),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: colors.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.chat_bubble_outline_rounded,
-                size: 34,
-                color: colors.onPrimaryContainer,
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
             Text(
-              'Start a conversation',
-              style: theme.textTheme.titleMedium?.copyWith(
+              'Stay connected',
+              style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
             ),
-
-            const SizedBox(height: 6),
-
+            const SizedBox(height: 4),
             Text(
-              'Send a message to $name.',
-              textAlign: TextAlign.center,
+              _getSubtitle(),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.onSurfaceVariant,
               ),
             ),
+            const SizedBox(height: 18),
+            ChatSearch(controller: _searchController, onChanged: _search),
+            const SizedBox(height: 22),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Recent Chats',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_filteredChats.length}',
+                    style: TextStyle(
+                      color: colors.onPrimaryContainer,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 70),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_isError)
+              _buildErrorWidget(theme, colors)
+            else if (_filteredChats.isEmpty)
+              _EmptyChats()
+            else
+              ..._filteredChats.map(
+                (chat) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: ChatListTile(chat: chat, onTap: () => _openChat(chat)),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
+
+  String _getSubtitle() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      final role = authState.user.role;
+      switch (role) {
+        case UserRole.teacher:
+          return 'Chat with parents.';
+        case UserRole.parent:
+          return 'Chat with teachers.';
+        case UserRole.adviser:
+          return 'Chat with parents and teachers.';
+        default:
+          return 'Chat with parents, teachers and advisors.';
+      }
+    }
+    return 'Chat with parents, teachers and advisors.';
+  }
+
+  Widget _buildErrorWidget(ThemeData theme, ColorScheme colors) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 50),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline_rounded, size: 50, color: colors.error),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load messages',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _errorMessage,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _loadChats,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// MESSAGE MODEL
+class _EmptyChats extends StatelessWidget {
+  const _EmptyChats();
 
-class _ChatMessage {
-  final String text;
-  final bool isMe;
-  final String time;
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
 
-  const _ChatMessage({
-    required this.text,
-    required this.isMe,
-    required this.time,
-  });
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 70),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 34,
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No conversations found',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Start a conversation with your contacts.',
+            style: TextStyle(color: colors.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
 }
