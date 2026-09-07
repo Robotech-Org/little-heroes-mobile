@@ -201,7 +201,7 @@ class AppRouter {
         path: AppRoutes.weeklyPlanner,
         name: 'weeklyPlanner',
         builder: (context, state) {
-          return const WeeklyPlansPage();
+          return const WeeklyPlannerPage();
         },
       ),
 

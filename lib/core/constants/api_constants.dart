@@ -113,4 +113,21 @@ class ApiConstants {
   static const String chats = '/chats';
 
   static const String reports = '/reports';
+
+  // LESSON PLAN APIs
+  static const String listLessonPlans =
+      '/api/method/little_heroes.api.v1.lesson_plans.list_lesson_plans';
+
+  static const String getLessonPlan =
+      '/api/method/little_heroes.api.v1.lesson_plans.get_lesson_plan';
+
+  static const String createLessonPlan =
+      '/api/method/little_heroes.api.v1.lesson_plans.create_lesson_plan';
+
+  static const String updateLessonPlan =
+      '/api/method/little_heroes.api.v1.lesson_plans.update_lesson_plan';
+
+  // FRAMEWORK DOMAIN APIs
+  static const String listFrameworkDomains =
+      '/api/method/little_heroes.api.v1.framework_domains.list_framework_domains';
 }

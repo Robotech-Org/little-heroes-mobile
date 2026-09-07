@@ -1,761 +1,412 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:little_heroes_mobile/features/home/data/models/lesson_plan_model.dart';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
+import 'package:little_heroes_mobile/features/home/data/models/lesson_plan_model.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/lesson_plan_repository.dart';
+import 'package:little_heroes_mobile/injection_container.dart' as di;
 
-// WEEKLY PLAN MODEL
+import 'create_lesson_plan_page.dart'; // ADD THIS IMPORT
 
-
-class WeeklyPlan {
-  final String id;
-  final DateTime date;
-  final String title;
-  // final String domain;
-  final String subDomain;
-  final String target;
-  final String objective;
-  final String materials;
-  final String status;
-
-  const WeeklyPlan({
-    required this.id,
-    required this.date,
-    required this.title,
-    // required this.domain,
-    required this.subDomain,
-    required this.target,
-    required this.objective,
-    required this.materials,
-    required this.status,
-  });
-}
-
-
-// WEEKLY PLANS PAGE
-
-
-class WeeklyPlansPage extends StatefulWidget {
-  const WeeklyPlansPage({super.key});
+class WeeklyPlannerPage extends StatefulWidget {
+  const WeeklyPlannerPage({super.key});
 
   @override
-  State<WeeklyPlansPage> createState() => _WeeklyPlansPageState();
+  State<WeeklyPlannerPage> createState() => _WeeklyPlannerPageState();
 }
 
-class _WeeklyPlansPageState extends State<WeeklyPlansPage> {
-  final List<WeeklyPlan> _plans = [
-    WeeklyPlan(
-      id: '1',
-      date: DateTime(2026, 9, 6),
-      title: 'Getting to Know Myself',
-      // domain: 'All About Me / My World',
-      subDomain: 'Self Identity',
-      target: 'Recognize personal information',
-      objective: 'Children will talk about themselves and identify their name.',
-      materials: 'Pictures, name cards, mirror',
-      status: 'Approved',
-    ),
-    WeeklyPlan(
-      id: '2',
-      date: DateTime(2026, 9, 7),
-      title: 'My Family',
-      // domain: 'All About Me / My World',
-      subDomain: 'Family and Relationships',
-      target: 'Identify family members',
-      objective:
-          'Children will identify and talk about members of their family.',
-      materials: 'Family pictures, drawing paper',
-      status: 'Pending Approval',
-    ),
-    WeeklyPlan(
-      id: '3',
-      date: DateTime(2026, 9, 8),
-      title: 'My Favorite Things',
-      // domain: 'All About Me / My World',
-      subDomain: 'Personal Preferences',
-      target: 'Express preferences',
-      objective: 'Children will express their likes and dislikes.',
-      materials: 'Picture cards, crayons',
-      status: 'Draft',
-    ),
-  ];
-
-
-
-  void _addPlan() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddWeeklyPlanPage(
-          onSave: (plan) {
-            setState(() {
-              _plans.insert(0, plan);
-            });
-          },
-        ),
-      ),
-    );
-  }
-
- 
-
-  String _dayName(DateTime date) {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[date.weekday - 1];
-  }
-
- 
+class _WeeklyPlannerPageState extends State<WeeklyPlannerPage> {
+  List<LessonPlanModel> _lessonPlans = [];
+  bool _isLoading = true;
+  bool _isError = false;
+  String _errorMessage = '';
+  int _currentPage = 1;
+  int _totalPages = 0;
+  int _totalPlans = 0;
+  final int _pageSize = 20;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Weekly Plans',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
-
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 100),
-        children: [
-          Text(
-            'Weekly Lesson Planner',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-
-          const SizedBox(height: 5),
-
-          Text(
-            'Plan lessons and submit them to the admin for approval.',
-            style: TextStyle(color: colors.onSurfaceVariant),
-          ),
-
-          const SizedBox(height: 22),
-
-          ..._plans.map(
-            (plan) => _WeeklyPlanCard(plan: plan, dayName: _dayName(plan.date)),
-          ),
-        ],
-      ),
-
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addPlan,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'Add Weekly Plan',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
-    );
-  }
-}
-
-
-// WEEKLY PLAN CARD
-
-
-class _WeeklyPlanCard extends StatelessWidget {
-  final WeeklyPlan plan;
-  final String dayName;
-
-  const _WeeklyPlanCard({required this.plan, required this.dayName});
-
-  Color _statusColor(ColorScheme colors) {
-    switch (plan.status) {
-      case 'Approved':
-        return Colors.green;
-      case 'Rejected':
-        return Colors.red;
-      case 'Pending Approval':
-        return Colors.orange;
-      default:
-        return colors.primary;
-    }
+  void initState() {
+    super.initState();
+    _loadLessonPlans();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final statusColor = _statusColor(colors);
+  Future<void> _loadLessonPlans({int page = 1}) async {
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+    });
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colors.outlineVariant.withValues(alpha: .45)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          
-          // DAY / DATE
-          
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = 'Please login to view lesson plans';
+        });
+        return;
+      }
 
-          Container(
-            width: 58,
-            padding: const EdgeInsets.symmetric(vertical: 9),
-            decoration: BoxDecoration(
-              color: colors.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  dayName,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    color: colors.onPrimaryContainer,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${plan.date.day}',
-                  style: TextStyle(
-                    fontSize: 23,
-                    fontWeight: FontWeight.w900,
-                    color: colors.onPrimaryContainer,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          
-          // PLAN INFORMATION
-          
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        plan.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: Text(
-                        plan.status,
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          color: statusColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 7),
-
-                const SizedBox(height: 3),
-
-                Text(
-                  plan.subDomain,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  plan.objective,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    height: 1.4,
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-// ADD WEEKLY PLAN PAGE
-
-
-class AddWeeklyPlanPage extends StatefulWidget {
-  final ValueChanged<WeeklyPlan> onSave;
-
-  const AddWeeklyPlanPage({super.key, required this.onSave});
-
-  @override
-  State<AddWeeklyPlanPage> createState() => _AddWeeklyPlanPageState();
-}
-
-class _AddWeeklyPlanPageState extends State<AddWeeklyPlanPage> {
-  final _titleController = TextEditingController();
-  final _targetController = TextEditingController();
-  final _objectiveController = TextEditingController();
-  final _materialsController = TextEditingController();
-
-  DateTime _selectedDate = DateTime.now();
-
-  String _domain = 'All About Me / My World';
-  String _subDomain = 'Self Identity';
-
-  final List<String> _domains = [
-    'All About Me / My World',
-    'Communication & Language',
-    'Physical Development',
-    'Social & Emotional Development',
-    'Cognitive Development',
-    'Creative Development',
-    'Early Mathematics',
-    'Understanding the World',
-  ];
-
-  final Map<String, List<String>> _subDomains = {
-    'All About Me / My World': [
-      'Self Identity',
-      'Family and Relationships',
-      'Personal Preferences',
-      'My Body',
-    ],
-    'Communication & Language': [
-      'Listening',
-      'Speaking',
-      'Story Telling',
-      'Early Literacy',
-    ],
-    'Physical Development': [
-      'Gross Motor',
-      'Fine Motor',
-      'Health and Movement',
-    ],
-    'Social & Emotional Development': [
-      'Self Awareness',
-      'Relationships',
-      'Emotional Regulation',
-    ],
-    'Cognitive Development': ['Problem Solving', 'Memory', 'Exploration'],
-    'Creative Development': ['Art', 'Music', 'Drama'],
-    'Early Mathematics': ['Numbers', 'Shapes', 'Measurement'],
-    'Understanding the World': ['Nature', 'Community', 'Environment'],
-  };
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _targetController.dispose();
-    _objectiveController.dispose();
-    _materialsController.dispose();
-    super.dispose();
-  }
-
- 
-
-  void _save(String status) {
-    if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter the lesson title.')),
+      final repository = di.sl<LessonPlanRepository>();
+      final response = await repository.getLessonPlans(
+        page: page,
+        pageSize: _pageSize,
       );
-      return;
-    }
 
-    final plan = WeeklyPlan(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      date: _selectedDate,
-      title: _titleController.text.trim(),
-      // domain: _domain,
-      subDomain: _subDomain,
-      target: _targetController.text.trim(),
-      objective: _objectiveController.text.trim(),
-      materials: _materialsController.text.trim(),
-      status: status,
-    );
-
-    widget.onSave(plan);
-
-    Navigator.pop(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          status == 'Draft'
-              ? 'Weekly plan saved as draft.'
-              : 'Weekly plan submitted to admin.',
-        ),
-      ),
-    );
-  }
-
- 
-
-  Future<void> _pickDate() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2026),
-      lastDate: DateTime(2030),
-    );
-
-    if (date != null) {
       setState(() {
-        _selectedDate = date;
+        _lessonPlans = response.items;
+        _totalPlans = response.total;
+        _totalPages = response.totalPages;
+        _currentPage = response.page;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isError = true;
+        _errorMessage = e.toString();
       });
     }
   }
 
- 
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    final subDomains = _subDomains[_domain] ?? [];
-
-    if (!subDomains.contains(_subDomain) && subDomains.isNotEmpty) {
-      _subDomain = subDomains.first;
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Add Weekly Plan',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
-
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-        children: [
-          
-          // DATE
-          
-
-          _SectionTitle(
-            title: 'Lesson Day',
-            subtitle: 'Select the day for this lesson.',
-          ),
-
-          const SizedBox(height: 10),
-
-          InkWell(
-            onTap: _pickDate,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colors.outlineVariant.withValues(alpha: .5),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.calendar_today_outlined, color: colors.primary),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.chevron_right_rounded),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 22),
-
-          
-          // FRAMEWORK DOMAIN
-          
-          _SectionTitle(
-            title: 'Framework Domain',
-            subtitle: 'Select the learning framework domain.',
-          ),
-
-          const SizedBox(height: 10),
-
-          DropdownButtonFormField<String>(
-            initialValue: _domain,
-            isExpanded: true,
-            decoration: _inputDecoration(context, Icons.category_outlined),
-            items: _domains.map((domain) {
-              return DropdownMenuItem(
-                value: domain,
-                child: Text(domain, overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value == null) return;
-
-              setState(() {
-                _domain = value;
-                _subDomain = _subDomains[value]!.first;
-              });
-            },
-          ),
-
-          const SizedBox(height: 18),
-
-          
-          // SUB DOMAIN
-          
-          _SectionTitle(
-            title: 'Framework Sub-domain',
-            subtitle: 'Select the specific learning area.',
-          ),
-
-          const SizedBox(height: 10),
-
-          DropdownButtonFormField<String>(
-            initialValue: subDomains.isEmpty ? null : _subDomain,
-            isExpanded: true,
-            decoration: _inputDecoration(context, Icons.account_tree_outlined),
-            items: subDomains.map((subDomain) {
-              return DropdownMenuItem(
-                value: subDomain,
-                child: Text(subDomain, overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  _subDomain = value;
-                });
-              }
-            },
-          ),
-
-          const SizedBox(height: 18),
-
-          
-          // TARGET
-          
-          _SectionTitle(
-            title: 'Framework Target',
-            subtitle: 'What should the child work toward?',
-          ),
-
-          const SizedBox(height: 10),
-
-          TextField(
-            controller: _targetController,
-            decoration: _inputDecoration(
-              context,
-              Icons.flag_outlined,
-              hint: 'Example: Recognize personal information',
-            ),
-          ),
-
-          const SizedBox(height: 22),
-
-          
-          // LESSON TITLE
-          
-          _SectionTitle(
-            title: 'Lesson Title',
-            subtitle: 'Give the lesson a clear title.',
-          ),
-
-          const SizedBox(height: 10),
-
-          TextField(
-            controller: _titleController,
-            decoration: _inputDecoration(
-              context,
-              Icons.menu_book_outlined,
-              hint: 'Example: Getting to Know Myself',
-            ),
-          ),
-
-          const SizedBox(height: 22),
-
-          
-          // OBJECTIVE
-          
-          _SectionTitle(
-            title: 'Objective of the Lesson',
-            subtitle: 'What should children learn or achieve?',
-          ),
-
-          const SizedBox(height: 10),
-
-          TextField(
-            controller: _objectiveController,
-            minLines: 4,
-            maxLines: 6,
-            decoration: _inputDecoration(
-              context,
-              Icons.lightbulb_outline_rounded,
-              hint: 'Write the lesson objective...',
-            ),
-          ),
-
-          const SizedBox(height: 22),
-
-          
-          // MATERIALS
-          
-          _SectionTitle(
-            title: 'Materials Needed',
-            subtitle: 'List the materials required for the lesson.',
-          ),
-
-          const SizedBox(height: 10),
-
-          TextField(
-            controller: _materialsController,
-            minLines: 3,
-            maxLines: 5,
-            decoration: _inputDecoration(
-              context,
-              Icons.inventory_2_outlined,
-              hint: 'Example: Pictures, crayons, books...',
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          
-          // ACTION BUTTONS
-          
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _save('Draft'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(54),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  child: const Text(
-                    'Save Draft',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: FilledButton(
-                  onPressed: () => _save('Pending Approval'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(54),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  child: const Text(
-                    'Submit to Admin',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+  void _openLessonPlanDetail(LessonPlanModel plan) {
+    // TODO: Navigate to lesson plan detail page
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Opening: ${plan.titleOfLesson ?? plan.name}'),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
+  // ============================================================
+  // NAVIGATE TO CREATE LESSON PLAN
+  // ============================================================
 
+  void _navigateToCreateLessonPlan() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CreateLessonPlanPage()),
+    ).then((_) => _loadLessonPlans());
+  }
 
-  InputDecoration _inputDecoration(
-    BuildContext context,
-    IconData icon, {
-    String? hint,
-  }) {
-    final colors = Theme.of(context).colorScheme;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return InputDecoration(
-      hintText: hint,
-      prefixIcon: Icon(icon),
-      filled: true,
-      fillColor: colors.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colors.outlineVariant),
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text(
+          'Weekly Planner',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () => _loadLessonPlans(),
+            tooltip: 'Refresh',
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_rounded),
+            onPressed: _navigateToCreateLessonPlan, // UPDATED
+            tooltip: 'Create Lesson Plan',
+          ),
+        ],
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: colors.outlineVariant.withValues(alpha: .5),
+      body: RefreshIndicator(
+        onRefresh: () => _loadLessonPlans(),
+        child: _buildContent(theme, colorScheme),
+      ),
+    );
+  }
+
+  Widget _buildContent(ThemeData theme, ColorScheme colorScheme) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_isError) {
+      return _buildErrorWidget(theme, colorScheme);
+    }
+
+    if (_lessonPlans.isEmpty) {
+      return _buildEmptyWidget(theme, colorScheme);
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+      physics: const BouncingScrollPhysics(),
+      itemCount: _lessonPlans.length,
+      itemBuilder: (context, index) {
+        final plan = _lessonPlans[index];
+        return _LessonPlanCard(
+          plan: plan,
+          onTap: () => _openLessonPlanDetail(plan),
+        );
+      },
+    );
+  }
+
+  Widget _buildErrorWidget(ThemeData theme, ColorScheme colorScheme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 64,
+              color: colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load lesson plans',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => _loadLessonPlans(),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+              ),
+            ),
+          ],
         ),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colors.primary, width: 1.5),
+    );
+  }
+
+  Widget _buildEmptyWidget(ThemeData theme, ColorScheme colorScheme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Icon(
+                Icons.calendar_month_outlined,
+                size: 34,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No Lesson Plans',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Start creating your weekly lesson plans.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _navigateToCreateLessonPlan, // UPDATED
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Create Lesson Plan'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+// LESSON PLAN CARD
+class _LessonPlanCard extends StatelessWidget {
+  final LessonPlanModel plan;
+  final VoidCallback onTap;
 
-// SECTION TITLE
-
-
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  final String subtitle;
-
-  const _SectionTitle({required this.title, required this.subtitle});
+  const _LessonPlanCard({required this.plan, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    final colorScheme = theme.colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w900,
+    final statusColor = _getStatusColor(plan.status);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.08)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title and Status
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      plan.titleOfLesson ?? 'Lesson Plan',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      plan.statusText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              // Subject
+              if (plan.subject != null)
+                Text(
+                  plan.subject!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 13,
+                  ),
+                ),
+              const SizedBox(height: 6),
+              // Classroom and Date
+              Row(
+                children: [
+                  Icon(
+                    Icons.class_rounded,
+                    size: 14,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    plan.classroom,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 14,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    plan.lessonPlanDate ?? 'No date',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              // Objective preview
+              if (plan.objective != null)
+                Text(
+                  plan.objective!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
           ),
         ),
-        const SizedBox(height: 3),
-        Text(
-          subtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: colors.onSurfaceVariant,
-          ),
-        ),
-      ],
+      ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'draft':
+        return Colors.grey;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }

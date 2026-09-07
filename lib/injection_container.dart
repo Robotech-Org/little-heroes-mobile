@@ -4,12 +4,18 @@ import 'package:little_heroes_mobile/features/chats/data/datasources/chat_remote
 import 'package:little_heroes_mobile/features/chats/data/repositories/chat_repository_impl.dart';
 import 'package:little_heroes_mobile/features/chats/domain/repositories/chat_repository.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/daily_report_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/framework_domain_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/lesson_plan_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/observation_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/three_month_report_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/daily_report_repository_impl.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/framework_domain_repository_impl.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/lesson_plan_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/observation_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/three_month_report_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/framework_domain_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/lesson_plan_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/observation_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
 import 'package:little_heroes_mobile/features/notifications/data/datasources/announcement_remote_data_source.dart';
@@ -219,6 +225,38 @@ Future<void> initDependencies() async {
     sl.registerLazySingleton<AnnouncementRepository>(
       () => AnnouncementRepositoryImpl(
         remoteDataSource: sl<AnnouncementRemoteDataSource>(),
+      ),
+    );
+  }
+
+  if (!sl.isRegistered<LessonPlanRemoteDataSource>()) {
+    sl.registerLazySingleton<LessonPlanRemoteDataSource>(
+      () => LessonPlanRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<LessonPlanRepository>()) {
+    sl.registerLazySingleton<LessonPlanRepository>(
+      () => LessonPlanRepositoryImpl(
+        remoteDataSource: sl<LessonPlanRemoteDataSource>(),
+      ),
+    );
+  }
+
+  // ============================================================
+  // FRAMEWORK DOMAIN
+  // ============================================================
+
+  if (!sl.isRegistered<FrameworkDomainRemoteDataSource>()) {
+    sl.registerLazySingleton<FrameworkDomainRemoteDataSource>(
+      () => FrameworkDomainRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<FrameworkDomainRepository>()) {
+    sl.registerLazySingleton<FrameworkDomainRepository>(
+      () => FrameworkDomainRepositoryImpl(
+        remoteDataSource: sl<FrameworkDomainRemoteDataSource>(),
       ),
     );
   }

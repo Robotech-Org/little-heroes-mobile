@@ -107,10 +107,10 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
   }
 
   void _navigateToCreateReport() {
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(builder: (context) => const CreateDailyReportPage()),
-    // ).then((_) => _loadReports());
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CreateDailyReportPage()),
+    ).then((_) => _loadReports());
   }
 
   void _navigateToEditReport(DailyReportModel report) {
