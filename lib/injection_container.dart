@@ -12,6 +12,9 @@ import 'package:little_heroes_mobile/features/home/data/repositories/three_month
 import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/observation_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
+import 'package:little_heroes_mobile/features/notifications/data/datasources/announcement_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/notifications/data/repositories/announcement_repository_impl.dart';
+import 'package:little_heroes_mobile/features/notifications/domain/repositories/announcement_repository.dart';
 import 'package:little_heroes_mobile/features/students/data/datasources/student_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/students/data/repositories/student_repository_impl.dart';
 import 'package:little_heroes_mobile/features/students/domain/repositories/student_repository.dart';
@@ -29,8 +32,7 @@ import 'package:little_heroes_mobile/features/auth/domain/usecases/verify_otp.da
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 
 import 'features/notifications/data/datasources/notification_local_data_source.dart';
-import 'features/notifications/data/repositories/notification_repository_impl.dart';
-import 'features/notifications/domain/repositories/notification_repository.dart';
+
 import 'features/notifications/domain/usecases/get_notifications.dart';
 import 'features/notifications/domain/usecases/mark_notification_as_read.dart';
 import 'features/notifications/presentation/bloc/notification_bloc.dart';
@@ -55,48 +57,6 @@ Future<void> initDependencies() async {
   if (!sl.isRegistered<NotificationLocalDataSource>()) {
     sl.registerLazySingleton<NotificationLocalDataSource>(
       () => NotificationLocalDataSourceImpl(),
-    );
-  }
-
-  // ============================================================
-  // NOTIFICATION REPOSITORY
-  // ============================================================
-
-  if (!sl.isRegistered<NotificationRepository>()) {
-    sl.registerLazySingleton<NotificationRepository>(
-      () => NotificationRepositoryImpl(
-        localDataSource: sl<NotificationLocalDataSource>(),
-      ),
-    );
-  }
-
-  // ============================================================
-  // NOTIFICATION USE CASES
-  // ============================================================
-
-  if (!sl.isRegistered<GetNotifications>()) {
-    sl.registerLazySingleton<GetNotifications>(
-      () => GetNotifications(repository: sl<NotificationRepository>()),
-    );
-  }
-
-  if (!sl.isRegistered<MarkNotificationAsRead>()) {
-    sl.registerLazySingleton<MarkNotificationAsRead>(
-      () => MarkNotificationAsRead(repository: sl<NotificationRepository>()),
-    );
-  }
-
-  // ============================================================
-  // NOTIFICATION BLOC
-  // ============================================================
-
-  if (!sl.isRegistered<NotificationBloc>()) {
-    sl.registerFactory<NotificationBloc>(
-      () => NotificationBloc(
-        getNotifications: sl<GetNotifications>(),
-        markNotificationAsRead: sl<MarkNotificationAsRead>(),
-        repository: sl<NotificationRepository>(),
-      ),
     );
   }
 
@@ -242,6 +202,24 @@ Future<void> initDependencies() async {
   if (!sl.isRegistered<ChatRepository>()) {
     sl.registerLazySingleton<ChatRepository>(
       () => ChatRepositoryImpl(remoteDataSource: sl<ChatRemoteDataSource>()),
+    );
+  }
+
+  // ============================================================
+  // ANNOUNCEMENT
+  // ============================================================
+
+  if (!sl.isRegistered<AnnouncementRemoteDataSource>()) {
+    sl.registerLazySingleton<AnnouncementRemoteDataSource>(
+      () => AnnouncementRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<AnnouncementRepository>()) {
+    sl.registerLazySingleton<AnnouncementRepository>(
+      () => AnnouncementRepositoryImpl(
+        remoteDataSource: sl<AnnouncementRemoteDataSource>(),
+      ),
     );
   }
 }

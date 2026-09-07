@@ -119,7 +119,7 @@ class _MainPageState extends State<MainPage> {
       case UserRole.parent:
         return [
           HomePage(role: role),
-          const NotificationsPage(),
+          const NotificationsPage(isFullPage: true),
           const ChatsPage(),
           const SettingsPage(),
         ];

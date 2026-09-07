@@ -134,15 +134,25 @@ class AppRouter {
         },
       ),
 
+      // // NOTIFICATIONS
+      // GoRoute(
+      //   path: AppRoutes.notifications,
+      //   name: 'notifications',
+      //   builder: (context, state) {
+      //     return BlocProvider<NotificationBloc>(
+      //       create: (_) => sl<NotificationBloc>(),
+      //       child: const NotificationsPage(),
+      //     );
+      //   },
+      // ),
+
       // NOTIFICATIONS
+      // NOTIFICATIONS - Full page mode
       GoRoute(
         path: AppRoutes.notifications,
         name: 'notifications',
         builder: (context, state) {
-          return BlocProvider<NotificationBloc>(
-            create: (_) => sl<NotificationBloc>(),
-            child: const NotificationsPage(),
-          );
+          return const NotificationsPage(isFullPage: true);
         },
       ),
 

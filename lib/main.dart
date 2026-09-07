@@ -37,7 +37,7 @@ Future<void> main() async {
 
         // Notifications
         // BlocProvider<NotificationBloc>(create: (_) => NotificationBloc()),
-        BlocProvider<NotificationBloc>(create: (_) => sl<NotificationBloc>()),
+        // BlocProvider<NotificationBloc>(create: (_) => sl<NotificationBloc>()),
       ],
       child: const LittleHeroesApp(),
     ),

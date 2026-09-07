@@ -88,6 +88,16 @@ class ApiConstants {
 
   // OTHER APIs
 
+  // ANNOUNCEMENT APIs
+  static const String listAnnouncements =
+      '/api/method/little_heroes.api.v1.announcements.list_announcements';
+
+  static const String getAnnouncement =
+      '/api/method/little_heroes.api.v1.announcements.get_announcement';
+
+  static const String updateAnnouncement =
+      '/api/method/little_heroes.api.v1.announcements.update_announcement';
+
   // CHAT APIs
   static const String listTeachers =
       '/api/method/little_heroes.api.v1.teachers.list_teachers';

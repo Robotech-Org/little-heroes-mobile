@@ -1,7 +1,16 @@
+
+
 import 'package:flutter/material.dart';
 
 class NotificationEmpty extends StatelessWidget {
-  const NotificationEmpty({super.key});
+  final String title;
+  final String message;
+
+  const NotificationEmpty({
+    super.key,
+    required this.title,
+    required this.message,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -10,38 +19,34 @@ class NotificationEmpty extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                shape: BoxShape.circle,
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(22),
               ),
               child: Icon(
                 Icons.notifications_none_rounded,
-                size: 40,
-                color: colorScheme.onPrimaryContainer,
+                size: 34,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
-
-            const SizedBox(height: 20),
-
+            const SizedBox(height: 16),
             Text(
-              'No notifications',
-              style: theme.textTheme.titleLarge?.copyWith(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: colorScheme.onSurface,
               ),
             ),
-
-            const SizedBox(height: 8),
-
+            const SizedBox(height: 6),
             Text(
-              'You are all caught up!',
+              message,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,

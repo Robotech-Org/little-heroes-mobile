@@ -1,3 +1,6 @@
+
+import 'package:little_heroes_mobile/features/chats/data/models/chat_participant_model.dart';
+
 class Chat {
   final String id;
   final String personName;
@@ -19,6 +22,24 @@ class Chat {
     this.isOnline = false,
   });
 
+  // Create Chat from ChatParticipantModel (Recommended)
+  factory Chat.fromParticipantModel(
+    ChatParticipantModel participant,
+    String role,
+  ) {
+    return Chat(
+      id: participant.name,
+      personName: participant.fullName,
+      role: role,
+      lastMessage: 'Start a conversation',
+      lastMessageTime: '',
+      avatarUrl: participant.initials,
+      unreadCount: 0,
+      isOnline: false,
+    );
+  }
+
+  // Legacy: Create Chat from Map
   factory Chat.fromParticipant(Map<String, dynamic> participant, String role) {
     return Chat(
       id: participant['name']?.toString() ?? '',
@@ -26,6 +47,7 @@ class Chat {
       role: role,
       lastMessage: 'Start a conversation',
       lastMessageTime: '',
+      avatarUrl: '',
       unreadCount: 0,
       isOnline: false,
     );

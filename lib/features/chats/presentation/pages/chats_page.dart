@@ -63,21 +63,30 @@ class _ChatsPageState extends State<ChatsPage> {
       List<Chat> chatList = [];
 
       if (role == UserRole.teacher) {
-        // Teacher fetches parents
+        // Teacher fetches parents - parents have full_name
         final response = await repository.getParents(page: 1, pageSize: 100);
         chatList = response.items.map((participant) {
           return Chat.fromParticipant({
             'name': participant.name,
             'full_name': participant.fullName,
+            'relationship_type': participant.relationshipType ?? 'Parent',
           }, 'Parent');
         }).toList();
       } else if (role == UserRole.parent) {
-        // Parent fetches teachers
+        // Parent fetches teachers - teachers have first_name and last_name
         final response = await repository.getTeachers(page: 1, pageSize: 100);
         chatList = response.items.map((participant) {
+          // Build full name from first and last name
+          final fullName =
+              '${participant.teacherFirstName ?? ''} ${participant.teacherLastName ?? ''}'
+                  .trim();
+          // If no first/last name, use the name field
+          final displayName = fullName.isNotEmpty
+              ? fullName
+              : participant.fullName;
           return Chat.fromParticipant({
             'name': participant.name,
-            'full_name': participant.fullName,
+            'full_name': displayName,
           }, 'Teacher');
         }).toList();
       } else if (role == UserRole.adviser) {
@@ -95,13 +104,21 @@ class _ChatsPageState extends State<ChatsPage> {
           return Chat.fromParticipant({
             'name': participant.name,
             'full_name': participant.fullName,
+            'relationship_type': participant.relationshipType ?? 'Parent',
           }, 'Parent');
         }).toList();
 
         final teachers = teachersResponse.items.map((participant) {
+          // Build full name from first and last name
+          final fullName =
+              '${participant.teacherFirstName ?? ''} ${participant.teacherLastName ?? ''}'
+                  .trim();
+          final displayName = fullName.isNotEmpty
+              ? fullName
+              : participant.fullName;
           return Chat.fromParticipant({
             'name': participant.name,
-            'full_name': participant.fullName,
+            'full_name': displayName,
           }, 'Teacher');
         }).toList();
 
