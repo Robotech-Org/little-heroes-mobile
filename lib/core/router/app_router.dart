@@ -17,7 +17,6 @@ import 'package:little_heroes_mobile/features/notifications/presentation/pages/n
 import 'package:little_heroes_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:little_heroes_mobile/features/splash/presentation/pages/splash_page.dart';
 
-
 import '../../core/services/storage_service.dart';
 import 'app_routes.dart';
 
@@ -173,11 +172,23 @@ class AppRouter {
       ),
 
       // TEACHER TOOLS
+      // In your router file
       GoRoute(
         path: AppRoutes.dailyReport,
         name: 'dailyReport',
         builder: (context, state) {
-          return const DailyReportPage();
+          // Get parameters from state
+          final studentName = state.uri.queryParameters['studentName'] ?? '';
+          final studentId = state.uri.queryParameters['studentId'] ?? '';
+
+          // If using path parameters instead of query parameters
+          // final studentName = state.pathParameters['studentName'] ?? '';
+          // final studentId = state.pathParameters['studentId'] ?? '';
+
+          return DailyReportPage(
+            studentName: studentName,
+            studentId: studentId,
+          );
         },
       ),
       GoRoute(

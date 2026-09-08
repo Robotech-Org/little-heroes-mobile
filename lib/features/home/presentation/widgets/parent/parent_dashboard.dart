@@ -161,6 +161,22 @@ class _ParentDashboardState extends State<ParentDashboard> {
         const SizedBox(height: 12),
 
         // Children List
+        // ...data.children.map((child) {
+        //   return Padding(
+        //     padding: const EdgeInsets.only(bottom: 10),
+        //     child: _ChildCard(
+        //       initials: child.initials.isNotEmpty
+        //           ? child.initials
+        //           : _getInitials(child.name),
+        //       name: child.name,
+        //       className: child.classroom,
+        //       status: child.status,
+        //       statusType: child.status.toLowerCase().contains('ready')
+        //           ? _ChildStatus.ready
+        //           : _ChildStatus.inProgress,
+        //     ),
+        //   );
+        // }).toList(),
         ...data.children.map((child) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -174,6 +190,16 @@ class _ParentDashboardState extends State<ParentDashboard> {
               statusType: child.status.toLowerCase().contains('ready')
                   ? _ChildStatus.ready
                   : _ChildStatus.inProgress,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => DailyReportPage(
+                      studentName: child.name,
+                      studentId: child.id,
+                    ),
+                  ),
+                );
+              },
             ),
           );
         }).toList(),
@@ -184,6 +210,40 @@ class _ParentDashboardState extends State<ParentDashboard> {
         const _SectionTitle(title: 'Quick Access'),
         const SizedBox(height: 12),
 
+        // Row(
+        //   crossAxisAlignment: CrossAxisAlignment.start,
+        //   children: [
+        //     Expanded(
+        //       child: _QuickAccessCard(
+        //         icon: Icons.description_outlined,
+        //         title: data.quickAccess.dailyReport.label,
+        //         subtitle: data.quickAccess.dailyReport.lastUpdated ?? 'Updated',
+        //         onTap: () {
+        //           Navigator.of(context).push(
+        //             MaterialPageRoute(builder: (_) => const DailyReportPage()),
+        //           );
+        //         },
+        //       ),
+        //     ),
+        //     const SizedBox(width: 10),
+        //     Expanded(
+        //       child: _QuickAccessCard(
+        //         icon: Icons.history_edu_outlined,
+        //         title: data.quickAccess.threeMonthReport.label,
+        //         subtitle:
+        //             data.quickAccess.threeMonthReport.lastUpdated ??
+        //             'Last: Jun 2026',
+        //         onTap: () {
+        //           Navigator.of(context).push(
+        //             MaterialPageRoute(
+        //               builder: (_) => const ThreeMonthReportPage(),
+        //             ),
+        //           );
+        //         },
+        //       ),
+        //     ),
+        //   ],
+        // ),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -193,9 +253,26 @@ class _ParentDashboardState extends State<ParentDashboard> {
                 title: data.quickAccess.dailyReport.label,
                 subtitle: data.quickAccess.dailyReport.lastUpdated ?? 'Updated',
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DailyReportPage()),
-                  );
+                  // Get the first child if available
+                  if (data.children.isNotEmpty) {
+                    final firstChild = data.children.first;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => DailyReportPage(
+                          studentName: firstChild.name,
+                          studentId: firstChild.id,
+                        ),
+                      ),
+                    );
+                  } else {
+                    // Show a snackbar if no children
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No children found to view report'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
                 },
               ),
             ),
@@ -208,11 +285,25 @@ class _ParentDashboardState extends State<ParentDashboard> {
                     data.quickAccess.threeMonthReport.lastUpdated ??
                     'Last: Jun 2026',
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const ThreeMonthReportPage(),
-                    ),
-                  );
+                  // For three month report, you might want to pass the first child too
+                  if (data.children.isNotEmpty) {
+                    final firstChild = data.children.first;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ThreeMonthReportPage(
+                          studentName: firstChild.name,
+                          studentId: firstChild.id,
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No children found'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
                 },
               ),
             ),
@@ -565,12 +656,111 @@ enum _ChildStatus { ready, inProgress }
 // CHILD CARD
 // ============================================================
 
+// class _ChildCard extends StatelessWidget {
+//   final String initials;
+//   final String name;
+//   final String className;
+//   final String status;
+//   final _ChildStatus statusType;
+
+//   const _ChildCard({
+//     required this.initials,
+//     required this.name,
+//     required this.className,
+//     required this.status,
+//     required this.statusType,
+//   });
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final theme = Theme.of(context);
+
+//     final statusColor = statusType == _ChildStatus.ready
+//         ? Colors.green
+//         : Colors.orange;
+
+//     return Container(
+//       width: double.infinity,
+//       padding: const EdgeInsets.all(13),
+//       decoration: BoxDecoration(
+//         color: theme.cardColor,
+//         borderRadius: BorderRadius.circular(16),
+//         border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
+//       ),
+//       child: Row(
+//         children: [
+//           Container(
+//             width: 42,
+//             height: 42,
+//             alignment: Alignment.center,
+//             decoration: BoxDecoration(
+//               color: theme.colorScheme.primary.withValues(alpha: 0.10),
+//               shape: BoxShape.circle,
+//             ),
+//             child: Text(
+//               initials,
+//               style: theme.textTheme.labelMedium?.copyWith(
+//                 color: theme.colorScheme.primary,
+//                 fontWeight: FontWeight.w800,
+//               ),
+//             ),
+//           ),
+//           const SizedBox(width: 12),
+//           Expanded(
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               mainAxisSize: MainAxisSize.min,
+//               children: [
+//                 Text(
+//                   name,
+//                   style: theme.textTheme.bodyMedium?.copyWith(
+//                     fontWeight: FontWeight.w700,
+//                   ),
+//                   maxLines: 1,
+//                   overflow: TextOverflow.ellipsis,
+//                 ),
+//                 const SizedBox(height: 3),
+//                 Text(
+//                   className,
+//                   style: theme.textTheme.bodySmall?.copyWith(
+//                     color: theme.colorScheme.onSurfaceVariant,
+//                   ),
+//                   maxLines: 1,
+//                   overflow: TextOverflow.ellipsis,
+//                 ),
+//               ],
+//             ),
+//           ),
+//           const SizedBox(width: 8),
+//           Container(
+//             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+//             decoration: BoxDecoration(
+//               color: statusColor.withValues(alpha: 0.10),
+//               borderRadius: BorderRadius.circular(20),
+//             ),
+//             child: Text(
+//               status,
+//               style: theme.textTheme.labelSmall?.copyWith(
+//                 color: statusColor,
+//                 fontWeight: FontWeight.w700,
+//               ),
+//               maxLines: 1,
+//               overflow: TextOverflow.ellipsis,
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
 class _ChildCard extends StatelessWidget {
   final String initials;
   final String name;
   final String className;
   final String status;
   final _ChildStatus statusType;
+  final VoidCallback onTap; // NEW
 
   const _ChildCard({
     required this.initials,
@@ -578,6 +768,7 @@ class _ChildCard extends StatelessWidget {
     required this.className,
     required this.status,
     required this.statusType,
+    required this.onTap, // NEW
   });
 
   @override
@@ -588,76 +779,79 @@ class _ChildCard extends StatelessWidget {
         ? Colors.green
         : Colors.orange;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.10),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              initials,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w800,
+    return GestureDetector(
+      onTap: onTap, // NEW - Navigate to daily report
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                initials,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  name,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  className,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 3),
+                  Text(
+                    className,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              status,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: statusColor,
-                fontWeight: FontWeight.w700,
+                ],
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                status,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: statusColor,
+                  fontWeight: FontWeight.w700,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

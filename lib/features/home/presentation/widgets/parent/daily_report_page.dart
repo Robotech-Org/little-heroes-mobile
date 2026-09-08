@@ -1,7 +1,413 @@
+// import 'package:flutter/material.dart';
+
+// class DailyReportPage extends StatefulWidget {
+//   const DailyReportPage({super.key});
+
+//   @override
+//   State<DailyReportPage> createState() => _DailyReportPageState();
+// }
+
+// class _DailyReportPageState extends State<DailyReportPage> {
+//   final TextEditingController _noteController = TextEditingController();
+
+//   @override
+//   void dispose() {
+//     _noteController.dispose();
+//     super.dispose();
+//   }
+
+//   void _sendNote() {
+//     final note = _noteController.text.trim();
+
+//     if (note.isEmpty) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(
+//           content: Text('Please write a note first.'),
+//           behavior: SnackBarBehavior.floating,
+//         ),
+//       );
+//       return;
+//     }
+
+//     FocusScope.of(context).unfocus();
+
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       const SnackBar(
+//         content: Text('Note sent to teacher.'),
+//         behavior: SnackBarBehavior.floating,
+//       ),
+//     );
+
+//     _noteController.clear();
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final theme = Theme.of(context);
+//     final colors = theme.colorScheme;
+
+//     return Scaffold(
+//       backgroundColor: theme.scaffoldBackgroundColor,
+
+//       body: SafeArea(
+//         child: CustomScrollView(
+//           physics: const BouncingScrollPhysics(),
+
+//           slivers: [
+//             SliverToBoxAdapter(
+//               child: Padding(
+//                 padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
+
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+
+//                   children: [
+//                     // =
+//                     // BACK BUTTON
+//                     // =
+
+//                     SizedBox(
+//                       height: 42,
+
+//                       child: Material(
+//                         color: Colors.transparent,
+
+//                         child: InkWell(
+//                           borderRadius: BorderRadius.circular(12),
+
+//                           onTap: () => Navigator.pop(context),
+
+//                           child: Padding(
+//                             padding: const EdgeInsets.symmetric(horizontal: 4),
+
+//                             child: Row(
+//                               mainAxisSize: MainAxisSize.min,
+
+//                               children: [
+//                                 Icon(
+//                                   Icons.arrow_back_ios_new_rounded,
+//                                   size: 17,
+//                                   color: colors.primary,
+//                                 ),
+
+//                                 const SizedBox(width: 6),
+
+//                                 Text(
+//                                   'Back',
+//                                   style: TextStyle(
+//                                     color: colors.primary,
+//                                     fontSize: 14,
+//                                     fontWeight: FontWeight.w600,
+//                                   ),
+//                                 ),
+//                               ],
+//                             ),
+//                           ),
+//                         ),
+//                       ),
+//                     ),
+
+//                     const SizedBox(height: 5),
+
+//                     // =
+//                     // HEADER
+//                     // =
+//                     Row(
+//                       crossAxisAlignment: CrossAxisAlignment.center,
+
+//                       children: [
+//                         Expanded(
+//                           child: Text(
+//                             'Daily Report',
+
+//                             style: theme.textTheme.titleLarge?.copyWith(
+//                               fontSize: 24,
+//                               fontWeight: FontWeight.w800,
+//                               color: colors.onSurface,
+//                             ),
+//                           ),
+//                         ),
+
+//                         StatusPill(
+//                           text: 'Saved',
+//                           backgroundColor: colors.primaryContainer,
+//                           textColor: colors.onPrimaryContainer,
+//                         ),
+//                       ],
+//                     ),
+
+//                     const SizedBox(height: 6),
+
+//                     Text(
+//                       'Today, Sep 4',
+
+//                       style: theme.textTheme.bodySmall?.copyWith(
+//                         fontSize: 13,
+//                         color: colors.onSurfaceVariant,
+//                         fontWeight: FontWeight.w500,
+//                       ),
+//                     ),
+
+//                     const SizedBox(height: 30),
+
+//                     // =
+//                     // MEALS
+//                     // =
+//                     const ReportItem(
+//                       title: 'MEALS & SNACKS',
+//                       values: ['Ate Most'],
+//                     ),
+
+//                     const SizedBox(height: 26),
+
+//                     // =
+//                     // NAP
+//                     // =
+//                     const ReportItem(title: 'NAP TIME', values: ['Short Nap']),
+
+//                     const SizedBox(height: 26),
+
+//                     // =
+//                     // MOOD
+//                     // =
+//                     const ReportItem(
+//                       title: 'MOOD & BEHAVIOR',
+//                       values: ['Happy', 'Playful'],
+//                     ),
+
+//                     const SizedBox(height: 26),
+
+//                     // =
+//                     // HEALTH
+//                     // =
+//                     const ReportItem(
+//                       title: 'HEALTH & HYGIENE',
+//                       values: ['No Concerns'],
+//                     ),
+
+//                     const SizedBox(height: 32),
+
+//                     // =
+//                     // NOTE TO TEACHER
+//                     // =
+//                     Text(
+//                       'NOTE TO TEACHER',
+
+//                       style: theme.textTheme.labelSmall?.copyWith(
+//                         fontSize: 11,
+//                         letterSpacing: 0.8,
+//                         color: colors.onSurfaceVariant,
+//                         fontWeight: FontWeight.w800,
+//                       ),
+//                     ),
+
+//                     const SizedBox(height: 10),
+
+//                     Container(
+//                       width: double.infinity,
+
+//                       decoration: BoxDecoration(
+//                         color: colors.surface,
+//                         borderRadius: BorderRadius.circular(14),
+
+//                         border: Border.all(
+//                           color: colors.outlineVariant,
+//                           width: 1,
+//                         ),
+
+//                         boxShadow: [
+//                           BoxShadow(
+//                             color: colors.shadow.withValues(alpha: 0.05),
+//                             blurRadius: 8,
+//                             offset: const Offset(0, 2),
+//                           ),
+//                         ],
+//                       ),
+
+//                       child: TextField(
+//                         controller: _noteController,
+
+//                         minLines: 4,
+//                         maxLines: 6,
+
+//                         textInputAction: TextInputAction.newline,
+//                         keyboardType: TextInputType.multiline,
+
+//                         style: theme.textTheme.bodyMedium?.copyWith(
+//                           fontSize: 14,
+//                           height: 1.4,
+//                           color: colors.onSurface,
+//                           fontWeight: FontWeight.w500,
+//                         ),
+
+//                         decoration: InputDecoration(
+//                           hintText: 'Write a note to the teacher...',
+
+//                           hintStyle: TextStyle(
+//                             color: colors.onSurfaceVariant.withValues(
+//                               alpha: 0.65,
+//                             ),
+//                             fontSize: 13,
+//                           ),
+
+//                           border: InputBorder.none,
+
+//                           enabledBorder: InputBorder.none,
+//                           focusedBorder: InputBorder.none,
+
+//                           fillColor: Colors.transparent,
+
+//                           contentPadding: const EdgeInsets.all(15),
+//                         ),
+//                       ),
+//                     ),
+
+//                     const SizedBox(height: 14),
+
+//                     // =
+//                     // SEND NOTE BUTTON
+//                     // =
+//                     SizedBox(
+//                       width: double.infinity,
+//                       height: 50,
+
+//                       child: FilledButton.icon(
+//                         onPressed: _sendNote,
+
+//                         icon: const Icon(Icons.send_rounded, size: 18),
+
+//                         label: const Text(
+//                           'Send Note',
+//                           style: TextStyle(
+//                             fontSize: 14,
+//                             fontWeight: FontWeight.w700,
+//                           ),
+//                         ),
+
+//                         style: FilledButton.styleFrom(
+//                           backgroundColor: colors.primary,
+//                           foregroundColor: colors.onPrimary,
+
+//                           elevation: 0,
+
+//                           shape: RoundedRectangleBorder(
+//                             borderRadius: BorderRadius.circular(12),
+//                           ),
+//                         ),
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+// // REPORT ITEM
+
+// class ReportItem extends StatelessWidget {
+//   final String title;
+//   final List<String> values;
+
+//   const ReportItem({super.key, required this.title, required this.values});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final theme = Theme.of(context);
+//     final colors = theme.colorScheme;
+
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+
+//       children: [
+//         Text(
+//           title,
+
+//           style: theme.textTheme.labelSmall?.copyWith(
+//             fontSize: 11,
+//             letterSpacing: 0.8,
+//             color: colors.onSurfaceVariant,
+//             fontWeight: FontWeight.w800,
+//           ),
+//         ),
+
+//         const SizedBox(height: 10),
+
+//         Wrap(
+//           spacing: 8,
+//           runSpacing: 8,
+
+//           children: values.map((value) {
+//             return StatusPill(
+//               text: value,
+//               backgroundColor: colors.secondaryContainer,
+//               textColor: colors.onSecondaryContainer,
+//             );
+//           }).toList(),
+//         ),
+//       ],
+//     );
+//   }
+// }
+
+// // STATUS PILL
+
+// class StatusPill extends StatelessWidget {
+//   final String text;
+//   final Color backgroundColor;
+//   final Color textColor;
+
+//   const StatusPill({
+//     super.key,
+//     required this.text,
+//     required this.backgroundColor,
+//     required this.textColor,
+//   });
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+
+//       decoration: BoxDecoration(
+//         color: backgroundColor,
+//         borderRadius: BorderRadius.circular(20),
+//       ),
+
+//       child: Text(
+//         text,
+
+//         style: TextStyle(
+//           color: textColor,
+//           fontSize: 12,
+//           fontWeight: FontWeight.w700,
+//         ),
+//       ),
+//     );
+//   }
+// }
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
+import 'package:little_heroes_mobile/features/home/data/models/daily_report_model.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
+import 'package:little_heroes_mobile/injection_container.dart' as di;
 
 class DailyReportPage extends StatefulWidget {
-  const DailyReportPage({super.key});
+  final String studentName;
+  final String studentId;
+
+  const DailyReportPage({
+    super.key,
+    required this.studentName,
+    required this.studentId,
+  });
 
   @override
   State<DailyReportPage> createState() => _DailyReportPageState();
@@ -9,11 +415,75 @@ class DailyReportPage extends StatefulWidget {
 
 class _DailyReportPageState extends State<DailyReportPage> {
   final TextEditingController _noteController = TextEditingController();
+  DailyReportModel? _report;
+  bool _isLoading = true;
+  bool _isError = false;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReport();
+  }
 
   @override
   void dispose() {
     _noteController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadReport() async {
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+    });
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = 'Please login to view report';
+        });
+        return;
+      }
+
+      final repository = di.sl<DailyReportRepository>();
+
+      // Get today's date in the format used by the API
+      final today = DateTime.now();
+      final reportDate =
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+      // Search for reports by student and date
+      final response = await repository.getDailyReports(
+        page: 1,
+        pageSize: 20,
+        student: widget.studentId,
+        startDate: reportDate,
+        endDate: reportDate,
+      );
+
+      if (response.items.isNotEmpty) {
+        setState(() {
+          _report = response.items.first;
+          _isLoading = false;
+        });
+      } else {
+        // No report found for today
+        setState(() {
+          _report = null;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isError = true;
+        _errorMessage = e.toString();
+      });
+    }
   }
 
   void _sendNote() {
@@ -48,50 +518,35 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
-
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
-
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-
                   children: [
-                    // =
-                    // BACK BUTTON
-                    // =
-
+                    // Back Button
                     SizedBox(
                       height: 42,
-
                       child: Material(
                         color: Colors.transparent,
-
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-
                           onTap: () => Navigator.pop(context),
-
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4),
-
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
-
                               children: [
                                 Icon(
                                   Icons.arrow_back_ios_new_rounded,
                                   size: 17,
                                   color: colors.primary,
                                 ),
-
                                 const SizedBox(width: 6),
-
                                 Text(
                                   'Back',
                                   style: TextStyle(
@@ -106,196 +561,181 @@ class _DailyReportPageState extends State<DailyReportPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 5),
 
-                    // =
-                    // HEADER
-                    // =
+                    // Header
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
-
                       children: [
                         Expanded(
-                          child: Text(
-                            'Daily Report',
-
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              color: colors.onSurface,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Daily Report',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: colors.onSurface,
+                                ),
+                              ),
+                              Text(
+                                widget.studentName,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-
-                        StatusPill(
-                          text: 'Saved',
-                          backgroundColor: colors.primaryContainer,
-                          textColor: colors.onPrimaryContainer,
-                        ),
+                        if (_report != null)
+                          StatusPill(
+                            text: _report!.dailyReportStatus,
+                            backgroundColor: colors.primaryContainer,
+                            textColor: colors.onPrimaryContainer,
+                          ),
                       ],
                     ),
-
                     const SizedBox(height: 6),
-
                     Text(
-                      'Today, Sep 4',
-
+                      _formatDate(DateTime.now()),
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 13,
                         color: colors.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-
                     const SizedBox(height: 30),
 
-                    // =
-                    // MEALS
-                    // =
-                    const ReportItem(
-                      title: 'MEALS & SNACKS',
-                      values: ['Ate Most'],
-                    ),
-
-                    const SizedBox(height: 26),
-
-                    // =
-                    // NAP
-                    // =
-                    const ReportItem(title: 'NAP TIME', values: ['Short Nap']),
-
-                    const SizedBox(height: 26),
-
-                    // =
-                    // MOOD
-                    // =
-                    const ReportItem(
-                      title: 'MOOD & BEHAVIOR',
-                      values: ['Happy', 'Playful'],
-                    ),
-
-                    const SizedBox(height: 26),
-
-                    // =
-                    // HEALTH
-                    // =
-                    const ReportItem(
-                      title: 'HEALTH & HYGIENE',
-                      values: ['No Concerns'],
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // =
-                    // NOTE TO TEACHER
-                    // =
-                    Text(
-                      'NOTE TO TEACHER',
-
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontSize: 11,
-                        letterSpacing: 0.8,
-                        color: colors.onSurfaceVariant,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    Container(
-                      width: double.infinity,
-
-                      decoration: BoxDecoration(
-                        color: colors.surface,
-                        borderRadius: BorderRadius.circular(14),
-
-                        border: Border.all(
-                          color: colors.outlineVariant,
-                          width: 1,
+                    // Loading State
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: CircularProgressIndicator(),
                         ),
+                      )
+                    // Error State
+                    else if (_isError)
+                      _buildErrorWidget(theme, colors)
+                    // No Report Found
+                    else if (_report == null)
+                      _buildEmptyWidget(theme, colors)
+                    // Report Content
+                    else ...[
+                      // Meals
+                      const ReportItem(
+                        title: 'MEALS & SNACKS',
+                        values: ['Ate Most'],
+                      ),
+                      const SizedBox(height: 26),
 
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.shadow.withValues(alpha: 0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                      // Nap
+                      const ReportItem(
+                        title: 'NAP TIME',
+                        values: ['Short Nap'],
+                      ),
+                      const SizedBox(height: 26),
+
+                      // Mood
+                      const ReportItem(
+                        title: 'MOOD & BEHAVIOR',
+                        values: ['Happy', 'Playful'],
+                      ),
+                      const SizedBox(height: 26),
+
+                      // Health
+                      const ReportItem(
+                        title: 'HEALTH & HYGIENE',
+                        values: ['No Concerns'],
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Note to Teacher
+                      Text(
+                        'NOTE TO TEACHER',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontSize: 11,
+                          letterSpacing: 0.8,
+                          color: colors.onSurfaceVariant,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: colors.outlineVariant,
+                            width: 1,
                           ),
-                        ],
-                      ),
-
-                      child: TextField(
-                        controller: _noteController,
-
-                        minLines: 4,
-                        maxLines: 6,
-
-                        textInputAction: TextInputAction.newline,
-                        keyboardType: TextInputType.multiline,
-
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
-                          height: 1.4,
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.w500,
-                        ),
-
-                        decoration: InputDecoration(
-                          hintText: 'Write a note to the teacher...',
-
-                          hintStyle: TextStyle(
-                            color: colors.onSurfaceVariant.withValues(
-                              alpha: 0.65,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.shadow.withValues(alpha: 0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
-                            fontSize: 13,
-                          ),
-
-                          border: InputBorder.none,
-
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-
-                          fillColor: Colors.transparent,
-
-                          contentPadding: const EdgeInsets.all(15),
+                          ],
                         ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // =
-                    // SEND NOTE BUTTON
-                    // =
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-
-                      child: FilledButton.icon(
-                        onPressed: _sendNote,
-
-                        icon: const Icon(Icons.send_rounded, size: 18),
-
-                        label: const Text(
-                          'Send Note',
-                          style: TextStyle(
+                        child: TextField(
+                          controller: _noteController,
+                          minLines: 4,
+                          maxLines: 6,
+                          textInputAction: TextInputAction.newline,
+                          keyboardType: TextInputType.multiline,
+                          style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                            height: 1.4,
+                            color: colors.onSurface,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ),
-
-                        style: FilledButton.styleFrom(
-                          backgroundColor: colors.primary,
-                          foregroundColor: colors.onPrimary,
-
-                          elevation: 0,
-
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          decoration: InputDecoration(
+                            hintText: 'Write a note to the teacher...',
+                            hintStyle: TextStyle(
+                              color: colors.onSurfaceVariant.withValues(
+                                alpha: 0.65,
+                              ),
+                              fontSize: 13,
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            fillColor: Colors.transparent,
+                            contentPadding: const EdgeInsets.all(15),
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 14),
+
+                      // Send Note Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: FilledButton.icon(
+                          onPressed: _sendNote,
+                          icon: const Icon(Icons.send_rounded, size: 18),
+                          label: const Text(
+                            'Send Note',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colors.primary,
+                            foregroundColor: colors.onPrimary,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -305,9 +745,95 @@ class _DailyReportPageState extends State<DailyReportPage> {
       ),
     );
   }
+
+  Widget _buildErrorWidget(ThemeData theme, ColorScheme colors) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline_rounded, size: 48, color: colors.error),
+            const SizedBox(height: 12),
+            Text(
+              'Failed to load report',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _loadReport,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyWidget(ThemeData theme, ColorScheme colors) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Column(
+          children: [
+            Icon(
+              Icons.description_outlined,
+              size: 48,
+              color: colors.onSurfaceVariant,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No Report Found',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No daily report found for ${widget.studentName} today.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
 }
 
+// ============================================================
 // REPORT ITEM
+// ============================================================
 
 class ReportItem extends StatelessWidget {
   final String title;
@@ -322,11 +848,9 @@ class ReportItem extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-
       children: [
         Text(
           title,
-
           style: theme.textTheme.labelSmall?.copyWith(
             fontSize: 11,
             letterSpacing: 0.8,
@@ -334,13 +858,10 @@ class ReportItem extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-
         const SizedBox(height: 10),
-
         Wrap(
           spacing: 8,
           runSpacing: 8,
-
           children: values.map((value) {
             return StatusPill(
               text: value,
@@ -354,7 +875,9 @@ class ReportItem extends StatelessWidget {
   }
 }
 
+// ============================================================
 // STATUS PILL
+// ============================================================
 
 class StatusPill extends StatelessWidget {
   final String text;
@@ -372,15 +895,12 @@ class StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(20),
       ),
-
       child: Text(
         text,
-
         style: TextStyle(
           color: textColor,
           fontSize: 12,

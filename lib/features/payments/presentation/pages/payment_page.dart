@@ -167,7 +167,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Payment for ${plan.planName} initiated.',
+                            'Payment for ${plan.planName} initiated. comming soon',
                           ),
                         ),
                       );
