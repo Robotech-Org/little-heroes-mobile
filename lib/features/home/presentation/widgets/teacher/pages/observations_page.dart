@@ -20,6 +20,7 @@ class ObservationsPage extends StatefulWidget {
 class _ObservationsPageState extends State<ObservationsPage> {
   List<ObservationModel> _observations = [];
   List<Student> _students = [];
+  List<Student> _filteredStudents = [];
   bool _isLoading = true;
   bool _isError = false;
   String _errorMessage = '';
@@ -28,10 +29,19 @@ class _ObservationsPageState extends State<ObservationsPage> {
   int _totalObservations = 0;
   final int _pageSize = 20;
 
+  // Search
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -58,6 +68,7 @@ class _ObservationsPageState extends State<ObservationsPage> {
         pageSize: 100,
       );
       _students = studentResponse.items;
+      _filteredStudents = _students;
 
       // Load observations
       final observationRepository = di.sl<ObservationRepository>();
@@ -81,8 +92,20 @@ class _ObservationsPageState extends State<ObservationsPage> {
     }
   }
 
+  void _filterStudents(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredStudents = _students;
+      } else {
+        _filteredStudents = _students.where((student) {
+          return student.name.toLowerCase().contains(query.toLowerCase());
+        }).toList();
+      }
+    });
+  }
+
   int _observationCount(Student student) {
-    return _observations.where((item) => item.student == student.name).length;
+    return _observations.where((item) => item.student == student.id).length;
   }
 
   void _openObservationForm(Student student) {
@@ -130,11 +153,10 @@ class _ObservationsPageState extends State<ObservationsPage> {
             onPressed: _loadData,
             tooltip: 'Refresh',
           ),
-          SizedBox(width: 10),
           IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _opennewObservationForm(),
-            tooltip: 'Refresh',
+            icon: const Icon(Icons.add_rounded),
+            onPressed: _opennewObservationForm,
+            tooltip: 'Add Observation',
           ),
         ],
       ),
@@ -147,7 +169,7 @@ class _ObservationsPageState extends State<ObservationsPage> {
 
   Widget _buildContent(ThemeData theme, ColorScheme colorScheme) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildSkeletonLoading(theme, colorScheme);
     }
 
     if (_isError) {
@@ -158,40 +180,205 @@ class _ObservationsPageState extends State<ObservationsPage> {
       return _buildEmptyWidget(theme, colorScheme);
     }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
-      physics: const BouncingScrollPhysics(),
+    return Column(
       children: [
-        // Header
-        Text(
-          'Student Observations',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: colorScheme.onSurface,
+        // Search Bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+          child: _buildSearchBar(theme, colorScheme),
+        ),
+        // Stats
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              const Spacer(),
+              if (_searchController.text.isNotEmpty)
+                Text(
+                  '${_filteredStudents.length} of ${_students.length}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    fontSize: 11,
+                  ),
+                ),
+            ],
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Select a student to add or view observations',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 20),
-
+        const SizedBox(height: 8),
         // Student List
-        ..._students.map(
-          (student) => _StudentCard(
-            student: student,
-            count: _observationCount(student),
-            onTap: () => _openObservationForm(student),
-            colorScheme: colorScheme,
-            theme: theme,
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              ..._filteredStudents.map(
+                (student) => _StudentCard(
+                  student: student,
+                  count: _observationCount(student),
+                  onTap: () => _openObservationForm(student),
+                  colorScheme: colorScheme,
+                  theme: theme,
+                ),
+              ),
+              if (_filteredStudents.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.search_off_rounded,
+                          size: 48,
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No students found',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ],
     );
   }
+
+  // ============================================================
+  // SEARCH BAR
+  // ============================================================
+
+  Widget _buildSearchBar(ThemeData theme, ColorScheme colorScheme) {
+    return TextField(
+      controller: _searchController,
+      onChanged: _filterStudents,
+      decoration: InputDecoration(
+        hintText: 'Search students...',
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+                icon: Icon(
+                  Icons.clear_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                onPressed: () {
+                  _searchController.clear();
+                  _filterStudents('');
+                },
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.primary),
+        ),
+        filled: true,
+        fillColor: colorScheme.surfaceVariant.withValues(alpha: 0.3),
+        contentPadding: const EdgeInsets.symmetric(vertical: 4),
+      ),
+    );
+  }
+
+  // ============================================================
+  // SKELETON LOADING
+  // ============================================================
+
+  Widget _buildSkeletonLoading(ThemeData theme, ColorScheme colorScheme) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        // Search bar skeleton
+        Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceVariant.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Stats skeleton
+        _buildSkeletonLine(width: 120, height: 14),
+        const SizedBox(height: 12),
+        // Student cards skeletons
+        ...List.generate(5, (index) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.08),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceVariant,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSkeletonLine(width: 120, height: 18),
+                      const SizedBox(height: 4),
+                      _buildSkeletonLine(width: 80, height: 14),
+                      const SizedBox(height: 6),
+                      _buildSkeletonLine(width: 100, height: 20),
+                    ],
+                  ),
+                ),
+                _buildSkeletonLine(width: 24, height: 24),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildSkeletonLine({double? width, double height = 16}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+
+  // ============================================================
+  // ERROR WIDGET
+  // ============================================================
 
   Widget _buildErrorWidget(ThemeData theme, ColorScheme colorScheme) {
     return Center(
@@ -244,6 +431,10 @@ class _ObservationsPageState extends State<ObservationsPage> {
     );
   }
 
+  // ============================================================
+  // EMPTY WIDGET
+  // ============================================================
+
   Widget _buildEmptyWidget(ThemeData theme, ColorScheme colorScheme) {
     return Center(
       child: Padding(
@@ -264,11 +455,22 @@ class _ObservationsPageState extends State<ObservationsPage> {
                 color: colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Please add students first to create observations',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _opennewObservationForm,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add Observation'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
               ),
             ),
           ],
@@ -278,7 +480,10 @@ class _ObservationsPageState extends State<ObservationsPage> {
   }
 }
 
+// ============================================================
 // STUDENT CARD
+// ============================================================
+
 class _StudentCard extends StatelessWidget {
   final Student student;
   final int count;

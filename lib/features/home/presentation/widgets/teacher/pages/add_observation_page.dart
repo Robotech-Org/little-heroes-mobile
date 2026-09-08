@@ -7,6 +7,10 @@ import 'package:little_heroes_mobile/core/constants/api_constants.dart';
 import 'package:little_heroes_mobile/core/utils/snackbar_utils.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
+import 'package:little_heroes_mobile/features/home/data/models/classroom_model.dart';
+import 'package:little_heroes_mobile/features/home/data/models/classroom_schedule_model.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/classroom_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/classroom_schedule_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/observation_repository.dart';
 import 'package:little_heroes_mobile/features/students/domain/entities/student.dart';
 import 'package:little_heroes_mobile/features/students/domain/repositories/student_repository.dart';
@@ -33,6 +37,16 @@ class _AddObservationPageState extends State<AddObservationPage> {
   List<Student> _students = [];
   Student? _selectedStudent;
   bool _isLoadingStudents = true;
+
+  // Classroom selection
+  ClassroomModel? _selectedClassroom;
+  bool _isLoadingClassrooms = true;
+  List<ClassroomModel> _classrooms = [];
+
+  // Classroom Schedule selection
+  List<ClassroomScheduleModel> _classSchedules = [];
+  ClassroomScheduleModel? _selectedClassSchedule;
+  bool _isLoadingSchedules = true;
 
   // File upload
   File? _selectedFile;
@@ -64,6 +78,8 @@ class _AddObservationPageState extends State<AddObservationPage> {
     super.initState();
     _setDefaultTimes();
     _loadStudents();
+    _loadClassrooms();
+    _loadClassSchedules();
 
     // If student is passed from widget, pre-select it
     if (widget.student != null) {
@@ -103,6 +119,71 @@ class _AddObservationPageState extends State<AddObservationPage> {
     }
   }
 
+  Future<void> _loadClassrooms() async {
+    setState(() => _isLoadingClassrooms = true);
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() => _isLoadingClassrooms = false);
+        return;
+      }
+
+      final repository = di.sl<ClassroomRepository>();
+      final response = await repository.getClassrooms(page: 1, pageSize: 20);
+
+      setState(() {
+        _classrooms = response.items;
+        _isLoadingClassrooms = false;
+
+        if (_classrooms.isNotEmpty && _selectedClassroom == null) {
+          _selectedClassroom = _classrooms.first;
+        }
+      });
+    } catch (e) {
+      setState(() => _isLoadingClassrooms = false);
+    }
+  }
+
+  Future<void> _loadClassSchedules() async {
+    setState(() => _isLoadingSchedules = true);
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() => _isLoadingSchedules = false);
+        return;
+      }
+
+      final repository = di.sl<ClassroomScheduleRepository>();
+      final response = await repository.getClassroomSchedules(
+        page: 1,
+        pageSize: 50,
+      );
+
+      setState(() {
+        _classSchedules = response.items;
+        _isLoadingSchedules = false;
+
+        if (_classSchedules.isNotEmpty && _selectedClassSchedule == null) {
+          _selectedClassSchedule = _classSchedules.first;
+          _updateActivityFromSchedule(_selectedClassSchedule!);
+        }
+      });
+    } catch (e) {
+      setState(() => _isLoadingSchedules = false);
+      print('Failed to load class schedules: $e');
+    }
+  }
+
+  void _updateActivityFromSchedule(ClassroomScheduleModel schedule) {
+    setState(() {
+      _selectedActivity = schedule.activity;
+      _startTime = schedule.startTime.substring(0, 5);
+      _endTime = schedule.endTime.substring(0, 5);
+    });
+  }
+
   void _setDefaultTimes() {
     final now = DateTime.now();
     final end = now.add(const Duration(minutes: 44));
@@ -116,7 +197,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
 
   Future<void> _pickFile() async {
     try {
-      // Call pickFiles directly as a static method
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: [
@@ -132,7 +212,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
         allowMultiple: false,
       );
 
-      // In v12+, result is a List<PlatformFile>? directly
       if (result == null || result.isEmpty) return;
 
       final filePath = result.first.path;
@@ -183,6 +262,11 @@ class _AddObservationPageState extends State<AddObservationPage> {
       return;
     }
 
+    if (_selectedClassSchedule == null) {
+      SnackbarUtils.showError(context, 'Please select a class schedule');
+      return;
+    }
+
     if (note.isEmpty) {
       SnackbarUtils.showError(context, 'Please enter an observation note');
       return;
@@ -205,24 +289,18 @@ class _AddObservationPageState extends State<AddObservationPage> {
       if (_selectedFile != null && _fileName != null) {
         setState(() => _isUploading = true);
 
-        // Upload the file
         final uploadResult = await repository.uploadObservationFile(
           fileName: _fileName!,
           filePath: _selectedFile!.path,
         );
 
-        // The uploadResult might be a relative path like "/file/xxx.png"
-        // If it doesn't start with http, prepend the base URL
         String fileUrlResult = uploadResult;
         if (!fileUrlResult.startsWith('http://') &&
             !fileUrlResult.startsWith('https://')) {
-          // Get base URL from ApiConstants
           final baseUrl = ApiConstants.baseUrl;
-          // Ensure baseUrl doesn't end with '/'
           final cleanBaseUrl = baseUrl.endsWith('/')
               ? baseUrl.substring(0, baseUrl.length - 1)
               : baseUrl;
-          // Ensure fileUrl doesn't start with '/' if baseUrl doesn't end with '/'
           final cleanFileUrl = fileUrlResult.startsWith('/')
               ? fileUrlResult
               : '/$fileUrlResult';
@@ -237,30 +315,24 @@ class _AddObservationPageState extends State<AddObservationPage> {
           _isUploading = false;
         });
       } else if (_uploadedFileUrl != null) {
-        // Use previously uploaded file
         fileUrl = _uploadedFileUrl;
       }
 
-      // ============================================================
-      // DEBUG PRINTS - STUDENT AND TAGGED STUDENTS
-      // ============================================================
-
-      // 2. Create observation with all data
       final data = {
-        'student': "fej2rtpth8",
+        'student': _selectedStudent!.id,
         'student_name': _selectedStudent!.name,
         'observation_date': DateTime.now().toIso8601String().split('T').first,
-        'observation_class_schedule': 'i0sv3kpume',
+        'observation_class_schedule': _selectedClassSchedule!.name,
         'observation_notes': note,
         'activity': _selectedActivity,
         'start_time': _startTime,
         'end_time': _endTime,
+        // FIXED: Use student ID, NOT the name
         'tagged_students': _taggedStudents
-            .map((s) => {'student': s.name})
+            .map((s) => {'student': s.id, 'student_name': s.name})
             .toList(),
       };
 
-      // Add observation_photo only if file was uploaded successfully
       if (fileUrl != null && fileUrl.isNotEmpty) {
         data['observation_photo'] = fileUrl;
       }
@@ -323,6 +395,10 @@ class _AddObservationPageState extends State<AddObservationPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Classroom Schedule Selector - HORIZONTAL SCROLLABLE
+            _buildClassScheduleSelector(theme, colorScheme),
+            const SizedBox(height: 16),
+
             // Student Selector
             _buildStudentSelector(theme, colorScheme),
             const SizedBox(height: 20),
@@ -336,7 +412,7 @@ class _AddObservationPageState extends State<AddObservationPage> {
             const SizedBox(height: 20),
 
             // Tagged Students
-            _buildTaggedStudents(theme, colorScheme),
+            // _buildTaggedStudents(theme, colorScheme),
             const SizedBox(height: 20),
 
             // File Upload
@@ -347,16 +423,152 @@ class _AddObservationPageState extends State<AddObservationPage> {
     );
   }
 
+  // ============================================================
+  // HORIZONTAL SCROLLABLE CLASS SCHEDULE SELECTOR
+  // ============================================================
+  Widget _buildClassScheduleSelector(ThemeData theme, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.schedule_rounded, size: 20, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Class Schedule',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        if (_isLoadingSchedules)
+          const Center(child: CircularProgressIndicator())
+        else if (_classSchedules.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: Text(
+                'No class schedules available',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 42,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _classSchedules.length,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              itemBuilder: (context, index) {
+                final schedule = _classSchedules[index];
+                final isSelected = _selectedClassSchedule == schedule;
+
+                return GestureDetector(
+                  onTap: _isSaving
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedClassSchedule = schedule;
+                            _updateActivityFromSchedule(schedule);
+                          });
+                        },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.surfaceVariant.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.outline.withValues(alpha: 0.1),
+                        width: isSelected ? 2 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.2,
+                                ),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 14,
+                          color: isSelected
+                              ? colorScheme.onPrimary
+                              : colorScheme.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          schedule.activity,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurface,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            size: 14,
+                            color: colorScheme.onPrimary,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildStudentSelector(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Select Student',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: colorScheme.onSurface,
-          ),
+        Row(
+          children: [
+            Icon(Icons.person_rounded, size: 20, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Select Student',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         if (_isLoadingStudents)
@@ -445,7 +657,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
       ),
       child: Row(
         children: [
-          // Previous Button
           InkWell(
             onTap: !_isSaving && hasPrevious
                 ? () {
@@ -467,8 +678,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
               ),
             ),
           ),
-
-          // Activity Information
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
@@ -501,8 +710,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
               ),
             ),
           ),
-
-          // Next Button
           InkWell(
             onTap: !_isSaving && hasNext
                 ? () {
@@ -555,82 +762,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
             fillColor: colorScheme.surfaceVariant.withValues(alpha: 0.3),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildTaggedStudents(ThemeData theme, ColorScheme colorScheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Tagged Students',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${_taggedStudents.length}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (_students.isEmpty)
-          const Text(
-            'No students available to tag',
-            style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _students.map((student) {
-              final isTagged = _taggedStudents.contains(student);
-              return FilterChip(
-                label: Text(student.name),
-                selected: isTagged,
-                onSelected: _isSaving
-                    ? null
-                    : (_) => _toggleTaggedStudent(student),
-                backgroundColor: colorScheme.surfaceVariant.withValues(
-                  alpha: 0.3,
-                ),
-                selectedColor: colorScheme.primaryContainer,
-                side: BorderSide(
-                  color: isTagged
-                      ? colorScheme.primary
-                      : colorScheme.outline.withValues(alpha: 0.2),
-                ),
-                checkmarkColor: colorScheme.primary,
-              );
-            }).toList(),
-          ),
-        if (_taggedStudents.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(
-            'Tagged: ${_taggedStudents.map((s) => s.name).join(', ')}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 12,
-            ),
-          ),
-        ],
       ],
     );
   }

@@ -19,7 +19,7 @@ class ParentHomePage extends StatelessWidget {
           slivers: [
             // HEADER
 
-            const SliverToBoxAdapter(child: HomeHeader()),
+            // const SliverToBoxAdapter(child: HomeHeader()),
 
             // CONTENT
             SliverPadding(

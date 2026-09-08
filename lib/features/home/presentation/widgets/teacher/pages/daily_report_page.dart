@@ -23,6 +23,7 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
   List<DailyReportModel> _filteredReports = [];
   bool _isLoading = true;
   bool _isError = false;
+  bool _isRefreshing = false;
   String _errorMessage = '';
   int _currentPage = 1;
   int _totalPages = 0;
@@ -32,6 +33,12 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
   // Calendar selection
   DateTime? _selectedDate;
   List<DateTime> _availableDates = [];
+
+  // Cache
+  List<DailyReportModel>? _cachedReports;
+  List<DateTime>? _cachedAvailableDates;
+  DateTime? _lastCacheTime;
+  static const Duration _cacheDuration = Duration(minutes: 5);
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -47,9 +54,26 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
     super.dispose();
   }
 
-  Future<void> _loadReports({int page = 1}) async {
+  Future<void> _loadReports({int page = 1, bool useCache = true}) async {
+    // Check cache
+    if (useCache && _cachedReports != null && _lastCacheTime != null) {
+      final cacheAge = DateTime.now().difference(_lastCacheTime!);
+      if (cacheAge < _cacheDuration) {
+        setState(() {
+          _reports = _cachedReports!;
+          _filteredReports = _cachedReports!;
+          _availableDates = _cachedAvailableDates ?? [];
+          _isLoading = false;
+          _isError = false;
+          _applyDateFilter();
+        });
+        return;
+      }
+    }
+
     setState(() {
-      _isLoading = true;
+      _isLoading = _cachedReports == null;
+      _isRefreshing = _cachedReports != null;
       _isError = false;
     });
 
@@ -58,6 +82,7 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
       if (authState is! AuthAuthenticated) {
         setState(() {
           _isLoading = false;
+          _isRefreshing = false;
           _isError = true;
           _errorMessage = 'Please login to view reports';
         });
@@ -68,6 +93,7 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
       if (role != UserRole.teacher) {
         setState(() {
           _isLoading = false;
+          _isRefreshing = false;
           _isError = true;
           _errorMessage = 'You do not have permission to view reports';
         });
@@ -94,20 +120,45 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
         _reports = response.items;
         _filteredReports = response.items;
         _availableDates = dates;
+        _cachedReports = response.items;
+        _cachedAvailableDates = dates;
+        _lastCacheTime = DateTime.now();
         _totalReports = response.total;
         _totalPages = (response.total / response.pageSize).ceil();
         _currentPage = response.page;
         _isLoading = false;
+        _isRefreshing = false;
+        _isError = false;
       });
 
       // Apply date filter if selected
       _applyDateFilter();
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _isError = true;
-        _errorMessage = e.toString();
-      });
+      // Use cached data if available
+      if (_cachedReports != null) {
+        setState(() {
+          _reports = _cachedReports!;
+          _filteredReports = _cachedReports!;
+          _availableDates = _cachedAvailableDates ?? [];
+          _isLoading = false;
+          _isRefreshing = false;
+          _isError = false;
+          _applyDateFilter();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to refresh: ${e.toString()}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+          _isError = true;
+          _errorMessage = e.toString();
+        });
+      }
     }
   }
 
@@ -146,14 +197,12 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
     setState(() {
       if (searchQuery.isEmpty) {
         _filteredReports = _reports;
-        _applyDateFilter(); // Re-apply date filter
+        _applyDateFilter();
         return;
       }
 
-      // Apply both search and date filter
       List<DailyReportModel> filtered = _reports;
 
-      // Apply date filter first
       if (_selectedDate != null) {
         final filterDate = DateTime(
           _selectedDate!.year,
@@ -172,7 +221,6 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
         }).toList();
       }
 
-      // Apply search filter
       _filteredReports = filtered.where((report) {
         return report.studentName.toLowerCase().contains(searchQuery);
       }).toList();
@@ -183,7 +231,7 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const CreateDailyReportPage()),
-    ).then((_) => _loadReports());
+    ).then((_) => _loadReports(useCache: false));
   }
 
   void _navigateToReportDetail(DailyReportModel report) {
@@ -195,26 +243,78 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
     );
   }
 
-  // ============================================================
-  // DATE FORMATTING
-  // ============================================================
-
-  String _formatDateShort(DateTime date) {
+  String _formatDateFull(DateTime date) {
     final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
+      'January',
+      'February',
+      'March',
+      'April',
       'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
-    return '${months[date.month - 1]} ${date.day}';
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final diff = now.difference(time);
+
+    if (diff.inMinutes < 1) {
+      return 'Just now';
+    } else if (diff.inMinutes < 60) {
+      return '${diff.inMinutes}m ago';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours}h ago';
+    } else {
+      return '${diff.inDays}d ago';
+    }
+  }
+
+  List<DailyReportModel> _getReportsForDate(DateTime date) {
+    return _reports.where((report) {
+      final reportDate = DateTime.tryParse(report.reportDate);
+      if (reportDate == null) return false;
+      return reportDate.year == date.year &&
+          reportDate.month == date.month &&
+          reportDate.day == date.day;
+    }).toList();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: _availableDates.first,
+      lastDate: _availableDates.last,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context)
+              .copyWith(colorScheme: Theme.of(context).colorScheme),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      final closestDate = _availableDates.reduce((a, b) {
+        final diffA = (picked.difference(a).inDays).abs();
+        final diffB = (picked.difference(b).inDays).abs();
+        return diffA < diffB ? a : b;
+      });
+
+      setState(() {
+        _selectedDate = closestDate;
+        _applyDateFilter();
+        if (_searchController.text.isNotEmpty) {
+          _searchReports(_searchController.text);
+        }
+      });
+    }
   }
 
   @override
@@ -243,21 +343,22 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
             onPressed: _navigateToCreateReport,
             tooltip: 'Create New Report',
           ),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () => _loadReports(useCache: false),
+            tooltip: 'Refresh',
+          ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => _loadReports(),
+        onRefresh: () => _loadReports(useCache: false),
         child: Column(
           children: [
-            // Search Bar
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
               child: _buildSearchBar(theme, colorScheme),
             ),
-            // Calendar
             _buildCalendar(theme, colorScheme),
-            // Stats
-
             Expanded(child: _buildContent(theme, colorScheme)),
           ],
         ),
@@ -270,7 +371,6 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
       return const SizedBox.shrink();
     }
 
-    // Get the current selected date or first available date
     DateTime currentDisplayDate = _selectedDate ?? _availableDates.first;
 
     return Container(
@@ -278,7 +378,6 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          // Left Arrow - Previous Day
           GestureDetector(
             onTap: () {
               setState(() {
@@ -310,16 +409,10 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
               ),
             ),
           ),
-
           const SizedBox(width: 12),
-
-          // Date Display
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                // Show date picker
-                _selectDate(context);
-              },
+              onTap: () => _selectDate(context),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -349,16 +442,39 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
                     ),
                     const SizedBox(width: 8),
 
-                    // Report count badge
+                    if (_selectedDate != null) ...[
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedDate = null;
+                            _applyDateFilter();
+                            if (_searchController.text.isNotEmpty) {
+                              _searchReports(_searchController.text);
+                            }
+                          });
+                        },
+                        child: Container(
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade100,
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 12,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
           ),
-
           const SizedBox(width: 12),
-
-          // Right Arrow - Next Day
           GestureDetector(
             onTap: () {
               setState(() {
@@ -394,72 +510,6 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
       ),
     );
   }
-
-  String _formatDateFull(DateTime date) {
-    final months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
-
-  // Helper method to get reports for a specific date
-  List<DailyReportModel> _getReportsForDate(DateTime date) {
-    return _reports.where((report) {
-      final reportDate = DateTime.tryParse(report.reportDate);
-      if (reportDate == null) return false;
-      return reportDate.year == date.year &&
-          reportDate.month == date.month &&
-          reportDate.day == date.day;
-    }).toList();
-  }
-
-  // Helper method to show date picker
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: _availableDates.first,
-      lastDate: _availableDates.last,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context)
-              .copyWith(colorScheme: Theme.of(context).colorScheme),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      // Find the closest available date
-      final closestDate = _availableDates.reduce((a, b) {
-        final diffA = (picked.difference(a).inDays).abs();
-        final diffB = (picked.difference(b).inDays).abs();
-        return diffA < diffB ? a : b;
-      });
-
-      setState(() {
-        _selectedDate = closestDate;
-        _applyDateFilter();
-        if (_searchController.text.isNotEmpty) {
-          _searchReports(_searchController.text);
-        }
-      });
-    }
-  }
-
-  // ============================================================
-  // SEARCH BAR
-  // ============================================================
 
   Widget _buildSearchBar(ThemeData theme, ColorScheme colorScheme) {
     return TextField(
@@ -506,61 +556,9 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
     );
   }
 
-  // ============================================================
-  // STATS
-  // ============================================================
-
-  Widget _buildStats(ThemeData theme, ColorScheme colorScheme) {
-    return Row(
-      children: [
-        Text(
-          '${_filteredReports.length} reports',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const Spacer(),
-        if (_selectedDate != null)
-          Row(
-            children: [
-              Text(
-                '📅 ${_formatDateFull(_selectedDate!)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedDate = null;
-                    _applyDateFilter();
-                    if (_searchController.text.isNotEmpty) {
-                      _searchReports(_searchController.text);
-                    }
-                  });
-                },
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 14,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-
-  // ============================================================
-  // CONTENT
-  // ============================================================
-
   Widget _buildContent(ThemeData theme, ColorScheme colorScheme) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildSkeletonLoading(theme, colorScheme);
     }
 
     if (_isError) {
@@ -588,9 +586,70 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
     );
   }
 
-  // ============================================================
-  // ERROR & EMPTY WIDGETS
-  // ============================================================
+  Widget _buildSkeletonLoading(ThemeData theme, ColorScheme colorScheme) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      physics: const NeverScrollableScrollPhysics(),
+      children: List.generate(5, (index) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.08),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildSkeletonLine(width: 40, height: 40, isCircle: true),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSkeletonLine(width: 140, height: 16),
+                        const SizedBox(height: 4),
+                        _buildSkeletonLine(width: 100, height: 12),
+                      ],
+                    ),
+                  ),
+                  _buildSkeletonLine(width: 60, height: 20),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildSkeletonLine(width: double.infinity, height: 14),
+              const SizedBox(height: 4),
+              _buildSkeletonLine(width: 200, height: 14),
+              const SizedBox(height: 4),
+              _buildSkeletonLine(width: 150, height: 14),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildSkeletonLine({
+    double? width,
+    double height = 16,
+    bool isCircle = false,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: isCircle
+            ? BorderRadius.circular(height / 2)
+            : BorderRadius.circular(4),
+      ),
+    );
+  }
 
   Widget _buildErrorWidget(ThemeData theme, ColorScheme colorScheme) {
     return Center(
@@ -622,7 +681,7 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => _loadReports(),
+              onPressed: () => _loadReports(useCache: false),
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(

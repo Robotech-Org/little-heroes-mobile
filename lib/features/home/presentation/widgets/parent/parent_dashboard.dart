@@ -5,6 +5,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/dashboard_response_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/dashboard_repository.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/common/home_header.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/three_month_report_page.dart';
@@ -22,7 +23,13 @@ class _ParentDashboardState extends State<ParentDashboard> {
   ParentData? _dashboardData;
   bool _isLoading = true;
   bool _isError = false;
+  bool _isRefreshing = false;
   String _errorMessage = '';
+
+  // Cache for data
+  ParentData? _cachedData;
+  DateTime? _lastCacheTime;
+  static const Duration _cacheDuration = Duration(minutes: 5);
 
   @override
   void initState() {
@@ -30,17 +37,40 @@ class _ParentDashboardState extends State<ParentDashboard> {
     _loadDashboard();
   }
 
-  Future<void> _loadDashboard() async {
-    setState(() {
-      _isLoading = true;
-      _isError = false;
-    });
+  Future<void> _loadDashboard({bool useCache = true}) async {
+    // Check if we have valid cached data
+    if (useCache && _cachedData != null && _lastCacheTime != null) {
+      final cacheAge = DateTime.now().difference(_lastCacheTime!);
+      if (cacheAge < _cacheDuration) {
+        setState(() {
+          _dashboardData = _cachedData;
+          _isLoading = false;
+          _isError = false;
+        });
+        return;
+      }
+    }
+
+    // Don't show loading if we have cached data to show
+    final hasCachedData = _cachedData != null;
+    if (!hasCachedData) {
+      setState(() {
+        _isLoading = true;
+        _isError = false;
+      });
+    } else {
+      setState(() {
+        _isRefreshing = true;
+        _isError = false;
+      });
+    }
 
     try {
       final authState = context.read<AuthBloc>().state;
       if (authState is! AuthAuthenticated) {
         setState(() {
           _isLoading = false;
+          _isRefreshing = false;
           _isError = true;
           _errorMessage = 'Please login to view dashboard';
         });
@@ -52,30 +82,55 @@ class _ParentDashboardState extends State<ParentDashboard> {
 
       // Check if the response data is for parent
       if (response.data is ParentData) {
+        final data = response.data as ParentData;
         setState(() {
-          _dashboardData = response.data as ParentData;
+          _dashboardData = data;
+          _cachedData = data;
+          _lastCacheTime = DateTime.now();
           _isLoading = false;
+          _isRefreshing = false;
+          _isError = false;
         });
       } else {
         setState(() {
           _isLoading = false;
+          _isRefreshing = false;
           _isError = true;
           _errorMessage = 'Invalid dashboard data for parent';
         });
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _isError = true;
-        _errorMessage = e.toString();
-      });
+      // If we have cached data, keep showing it even on error
+      if (_cachedData != null) {
+        setState(() {
+          _dashboardData = _cachedData;
+          _isLoading = false;
+          _isRefreshing = false;
+          _isError = false;
+        });
+        // Show a toast or snackbar for the error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to refresh: ${e.toString()}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+          _isError = true;
+          _errorMessage = e.toString();
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Show skeleton loading only on first load
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildSkeletonLoading();
     }
 
     if (_isError) {
@@ -89,9 +144,14 @@ class _ParentDashboardState extends State<ParentDashboard> {
     final data = _dashboardData!;
     final theme = Theme.of(context);
 
+    // REMOVED: RefreshIndicator and SingleChildScrollView - no nested scroll
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
+        HomeHeader(),
+        const SizedBox(height: 12),
+
         // Weekly Theme Card
         _WeeklyThemeCard(theme: data.theme),
         const SizedBox(height: 24),
@@ -225,7 +285,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _loadDashboard,
+              onPressed: () => _loadDashboard(useCache: false),
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
@@ -250,9 +310,167 @@ class _ParentDashboardState extends State<ParentDashboard> {
     if (parts.length == 1) return parts[0][0].toUpperCase();
     return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
   }
+
+  // ============================================================
+  // SKELETON LOADING WIDGET
+  // ============================================================
+
+  Widget _buildSkeletonLoading() {
+    final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Weekly Theme Skeleton
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(isSmallScreen ? 14 : 18),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildSkeletonLine(width: 120, height: 12),
+              const SizedBox(height: 10),
+              _buildSkeletonLine(width: 200, height: isSmallScreen ? 20 : 24),
+              const SizedBox(height: 10),
+              _buildSkeletonLine(width: double.infinity, height: 14),
+              const SizedBox(height: 4),
+              _buildSkeletonLine(width: 150, height: 14),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Section Title Skeleton
+        _buildSkeletonLine(width: 150, height: 20),
+        const SizedBox(height: 12),
+
+        // Children List Skeletons
+        ...List.generate(2, (index) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.dividerColor.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Avatar Skeleton
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceVariant,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSkeletonLine(width: 120, height: 16),
+                      const SizedBox(height: 4),
+                      _buildSkeletonLine(width: 80, height: 12),
+                    ],
+                  ),
+                ),
+                // Status Skeleton
+                _buildSkeletonLine(width: 60, height: 24),
+              ],
+            ),
+          );
+        }),
+
+        const SizedBox(height: 24),
+
+        // Quick Access Section Skeleton
+        _buildSkeletonLine(width: 150, height: 20),
+        const SizedBox(height: 12),
+
+        // Quick Access Cards Row 1
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildQuickAccessSkeleton(theme)),
+            const SizedBox(width: 10),
+            Expanded(child: _buildQuickAccessSkeleton(theme)),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Quick Access Cards Row 2
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildQuickAccessSkeleton(theme)),
+            const SizedBox(width: 10),
+            Expanded(child: _buildQuickAccessSkeleton(theme)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSkeletonLine({double? width, double height = 16}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+
+  Widget _buildQuickAccessSkeleton(ThemeData theme) {
+    return Container(
+      height: 105,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icon Skeleton
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceVariant,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          const Spacer(),
+          // Title Skeleton
+          _buildSkeletonLine(width: 80, height: 14),
+          const SizedBox(height: 3),
+          // Subtitle Skeleton
+          _buildSkeletonLine(width: 60, height: 12),
+        ],
+      ),
+    );
+  }
 }
 
-// WEEKLY THEME CARD
+// ============================================================
+// WEEKLY THEME CARD - FIXED OVERFLOW
+// ============================================================
+
 class _WeeklyThemeCard extends StatelessWidget {
   final ThemeInfo theme;
 
@@ -261,16 +479,22 @@ class _WeeklyThemeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeData = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final padding = isSmallScreen ? 14.0 : 18.0;
+    final titleSize = isSmallScreen ? 18.0 : 24.0;
+    final goalSize = isSmallScreen ? 12.0 : 14.0;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: themeData.colorScheme.primary,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             "THIS WEEK'S THEME",
@@ -278,6 +502,7 @@ class _WeeklyThemeCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.85),
               fontWeight: FontWeight.w700,
               letterSpacing: 0.7,
+              fontSize: isSmallScreen ? 10 : 11,
             ),
           ),
           const SizedBox(height: 6),
@@ -286,7 +511,10 @@ class _WeeklyThemeCard extends StatelessWidget {
             style: themeData.textTheme.titleLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w800,
+              fontSize: titleSize,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 10),
           Text(
@@ -296,7 +524,10 @@ class _WeeklyThemeCard extends StatelessWidget {
             style: themeData.textTheme.bodySmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.9),
               height: 1.4,
+              fontSize: goalSize,
             ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -304,7 +535,10 @@ class _WeeklyThemeCard extends StatelessWidget {
   }
 }
 
+// ============================================================
 // SECTION TITLE
+// ============================================================
+
 class _SectionTitle extends StatelessWidget {
   final String title;
 
@@ -321,10 +555,16 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+// ============================================================
 // CHILD STATUS
+// ============================================================
+
 enum _ChildStatus { ready, inProgress }
 
+// ============================================================
 // CHILD CARD
+// ============================================================
+
 class _ChildCard extends StatelessWidget {
   final String initials;
   final String name;
@@ -385,6 +625,8 @@ class _ChildCard extends StatelessWidget {
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -392,6 +634,8 @@ class _ChildCard extends StatelessWidget {
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -409,6 +653,8 @@ class _ChildCard extends StatelessWidget {
                 color: statusColor,
                 fontWeight: FontWeight.w700,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -417,7 +663,10 @@ class _ChildCard extends StatelessWidget {
   }
 }
 
+// ============================================================
 // QUICK ACCESS CARD
+// ============================================================
+
 class _QuickAccessCard extends StatelessWidget {
   final IconData icon;
   final String title;

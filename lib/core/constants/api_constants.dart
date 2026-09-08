@@ -140,7 +140,7 @@ class ApiConstants {
 
   // DASHBOARD APIs
   static const String dashboard =
-      '/api/method/little_heroes.api.v1.dashboards.get_teacher_dashboard';
+      '/api/method/little_heroes.api.v1.dashboards.get_dashboard';
   // static const String dashboard =
   // '/api/method/little_heroes.api.v1.dashboards.get_parent_dashboard';
 
@@ -149,4 +149,14 @@ class ApiConstants {
       '/api/method/little_heroes.api.v1.classrooms.list_classrooms';
   static const String getClassroom =
       '/api/method/little_heroes.api.v1.classrooms.get_classroom';
+
+  // In ApiConstants
+  static const String listClassroomSchedules =
+      '/api/method/little_heroes.api.v1.classroom_schedules.list_classroom_schedules';
+  static const String getClassroomSchedule =
+      '/api/method/little_heroes.api.v1.classroom_schedules.get_classroom_schedule';
+
+  // In ApiConstants
+  static const String listSubscriptionPlans =
+      '/api/method/little_heroes.api.v1.subscription_plans.list_subscription_plans';
 }

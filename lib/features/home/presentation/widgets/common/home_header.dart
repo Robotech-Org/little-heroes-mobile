@@ -120,7 +120,7 @@ class _HomeHeaderState extends State<HomeHeader> {
         final userName = role != null ? _getUserName(role) : '';
 
         return Container(
-          padding: const EdgeInsets.fromLTRB(23, 20, 16, 18),
+          padding: const EdgeInsets.fromLTRB(10, 2, 16, 18),
           decoration: BoxDecoration(
             color: colors.surface,
             borderRadius: const BorderRadius.only(

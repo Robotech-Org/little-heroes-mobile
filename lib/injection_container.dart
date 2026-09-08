@@ -11,7 +11,9 @@ import 'package:little_heroes_mobile/features/home/data/datasources/framework_do
 import 'package:little_heroes_mobile/features/home/data/datasources/lesson_plan_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/observation_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/three_month_report_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/models/classroom_schedule_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/classroom_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/classroom_schedule_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/competency_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/daily_report_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/dashboard_repository_impl.dart';
@@ -20,6 +22,7 @@ import 'package:little_heroes_mobile/features/home/data/repositories/lesson_plan
 import 'package:little_heroes_mobile/features/home/data/repositories/observation_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/three_month_report_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/classroom_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/classroom_schedule_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/competency_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/dashboard_repository.dart';
@@ -30,6 +33,9 @@ import 'package:little_heroes_mobile/features/home/domain/repositories/three_mon
 import 'package:little_heroes_mobile/features/notifications/data/datasources/announcement_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/notifications/data/repositories/announcement_repository_impl.dart';
 import 'package:little_heroes_mobile/features/notifications/domain/repositories/announcement_repository.dart';
+import 'package:little_heroes_mobile/features/payments/data/datasources/payment_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/payments/data/repositories/payment_repository_impl.dart';
+import 'package:little_heroes_mobile/features/payments/domain/repositories/payment_repository.dart';
 import 'package:little_heroes_mobile/features/students/data/datasources/student_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/students/data/repositories/student_repository_impl.dart';
 import 'package:little_heroes_mobile/features/students/domain/repositories/student_repository.dart';
@@ -312,6 +318,39 @@ Future<void> initDependencies() async {
     sl.registerLazySingleton<ClassroomRepository>(
       () => ClassroomRepositoryImpl(
         remoteDataSource: sl<ClassroomRemoteDataSource>(),
+      ),
+    );
+  }
+
+  // In injection_container.dart
+  // Classroom Schedule Remote Data Source
+  if (!sl.isRegistered<ClassroomScheduleRemoteDataSource>()) {
+    sl.registerLazySingleton<ClassroomScheduleRemoteDataSource>(
+      () => ClassroomScheduleRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  // Classroom Schedule Repository
+  if (!sl.isRegistered<ClassroomScheduleRepository>()) {
+    sl.registerLazySingleton<ClassroomScheduleRepository>(
+      () => ClassroomScheduleRepositoryImpl(
+        remoteDataSource: sl<ClassroomScheduleRemoteDataSource>(),
+      ),
+    );
+  }
+
+  // Payment Remote Data Source
+  if (!sl.isRegistered<PaymentRemoteDataSource>()) {
+    sl.registerLazySingleton<PaymentRemoteDataSource>(
+      () => PaymentRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  // Payment Repository
+  if (!sl.isRegistered<PaymentRepository>()) {
+    sl.registerLazySingleton<PaymentRepository>(
+      () => PaymentRepositoryImpl(
+        remoteDataSource: sl<PaymentRemoteDataSource>(),
       ),
     );
   }

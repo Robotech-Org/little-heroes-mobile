@@ -6,6 +6,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/dashboard_response_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/dashboard_repository.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/common/home_header.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
 
 class TeacherDashboard extends StatefulWidget {
@@ -19,7 +20,13 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   TeacherData? _dashboardData;
   bool _isLoading = true;
   bool _isError = false;
+  bool _isRefreshing = false;
   String _errorMessage = '';
+
+  // Cache for data
+  TeacherData? _cachedData;
+  DateTime? _lastCacheTime;
+  static const Duration _cacheDuration = Duration(minutes: 5);
 
   @override
   void initState() {
@@ -27,17 +34,40 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     _loadDashboard();
   }
 
-  Future<void> _loadDashboard() async {
-    setState(() {
-      _isLoading = true;
-      _isError = false;
-    });
+  Future<void> _loadDashboard({bool useCache = true}) async {
+    // Check if we have valid cached data
+    if (useCache && _cachedData != null && _lastCacheTime != null) {
+      final cacheAge = DateTime.now().difference(_lastCacheTime!);
+      if (cacheAge < _cacheDuration) {
+        setState(() {
+          _dashboardData = _cachedData;
+          _isLoading = false;
+          _isError = false;
+        });
+        return;
+      }
+    }
+
+    // Don't show loading if we have cached data to show
+    final hasCachedData = _cachedData != null;
+    if (!hasCachedData) {
+      setState(() {
+        _isLoading = true;
+        _isError = false;
+      });
+    } else {
+      setState(() {
+        _isRefreshing = true;
+        _isError = false;
+      });
+    }
 
     try {
       final authState = context.read<AuthBloc>().state;
       if (authState is! AuthAuthenticated) {
         setState(() {
           _isLoading = false;
+          _isRefreshing = false;
           _isError = true;
           _errorMessage = 'Please login to view dashboard';
         });
@@ -49,36 +79,62 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
       // Check if the response data is for teacher
       if (response.data is TeacherData) {
+        final data = response.data as TeacherData;
         setState(() {
-          _dashboardData = response.data as TeacherData;
+          _dashboardData = data;
+          _cachedData = data;
+          _lastCacheTime = DateTime.now();
           _isLoading = false;
+          _isRefreshing = false;
+          _isError = false;
         });
       } else if (response.data is ParentData) {
         setState(() {
           _isLoading = false;
+          _isRefreshing = false;
           _isError = true;
           _errorMessage = 'Teacher dashboard not available for parent role';
         });
       } else {
         setState(() {
           _isLoading = false;
+          _isRefreshing = false;
           _isError = true;
           _errorMessage = 'Invalid dashboard data';
         });
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _isError = true;
-        _errorMessage = e.toString();
-      });
+      // If we have cached data, keep showing it even on error
+      if (_cachedData != null) {
+        setState(() {
+          _dashboardData = _cachedData;
+          _isLoading = false;
+          _isRefreshing = false;
+          _isError = false;
+        });
+        // Show a toast or snackbar for the error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to refresh: ${e.toString()}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        setState(() {
+          _isLoading = false;
+          _isRefreshing = false;
+          _isError = true;
+          _errorMessage = e.toString();
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Show skeleton loading only on first load
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildSkeletonLoading();
     }
 
     if (_isError) {
@@ -91,9 +147,14 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
     final data = _dashboardData!;
 
+    // REMOVED: RefreshIndicator and SingleChildScrollView - no nested scroll
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
+        HomeHeader(),
+        const SizedBox(height: 12),
+
         // Weekly Theme
         _WeeklyThemeCard(themeData: data.theme),
         const SizedBox(height: 24),
@@ -112,6 +173,120 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       ],
     );
   }
+
+  // ============================================================
+  // SKELETON LOADING WIDGET
+  // ============================================================
+
+  Widget _buildSkeletonLoading() {
+    final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Weekly Theme Skeleton
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(isSmallScreen ? 14 : 18),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildSkeletonLine(width: 120, height: 12),
+              const SizedBox(height: 10),
+              _buildSkeletonLine(width: 200, height: isSmallScreen ? 20 : 24),
+              const SizedBox(height: 10),
+              _buildSkeletonLine(width: double.infinity, height: 14),
+              const SizedBox(height: 4),
+              _buildSkeletonLine(width: 150, height: 14),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Section Title Skeleton
+        _buildSkeletonLine(width: 150, height: 20),
+        const SizedBox(height: 12),
+
+        // Grid Skeleton - Responsive
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 4,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: isSmallScreen ? 1 : 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: isSmallScreen ? 2.2 : 1.8,
+          ),
+          itemBuilder: (context, index) {
+            return Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.35,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Icon Skeleton
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceVariant,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Text content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildSkeletonLine(width: 80, height: 14),
+                        const SizedBox(height: 4),
+                        _buildSkeletonLine(width: 60, height: 12),
+                      ],
+                    ),
+                  ),
+                  // Count Skeleton
+                  _buildSkeletonLine(width: 40, height: 20),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSkeletonLine({double? width, double height = 16}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+
+  // ============================================================
+  // ERROR WIDGET
+  // ============================================================
 
   Widget _buildErrorWidget() {
     return Center(
@@ -141,7 +316,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: _loadDashboard,
+              onPressed: () => _loadDashboard(useCache: false),
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
@@ -161,7 +336,10 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   }
 }
 
+// ============================================================
 // WEEKLY THEME
+// ============================================================
+
 class _WeeklyThemeCard extends StatelessWidget {
   final ThemeInfo themeData;
 
@@ -181,6 +359,7 @@ class _WeeklyThemeCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             "THIS WEEK'S THEME",
@@ -197,6 +376,8 @@ class _WeeklyThemeCard extends StatelessWidget {
               color: colors.onPrimary,
               fontWeight: FontWeight.w800,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 10),
           Text(
@@ -205,6 +386,8 @@ class _WeeklyThemeCard extends StatelessWidget {
               color: colors.onPrimary.withValues(alpha: 0.9),
               height: 1.4,
             ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -212,7 +395,10 @@ class _WeeklyThemeCard extends StatelessWidget {
   }
 }
 
+// ============================================================
 // SECTION TITLE
+// ============================================================
+
 class _SectionTitle extends StatelessWidget {
   final String title;
 
@@ -229,7 +415,10 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+// ============================================================
 // TEACHER TOOLS / DASHBOARD
+// ============================================================
+
 class TeacherTools extends StatelessWidget {
   final DashboardMetrics dashboardData;
   final ValueChanged<TeacherTool>? onToolTap;
@@ -318,7 +507,10 @@ class TeacherTools extends StatelessWidget {
   }
 }
 
+// ============================================================
 // TOOL MODEL
+// ============================================================
+
 class TeacherTool {
   final String title;
   final String description;
@@ -337,7 +529,10 @@ class TeacherTool {
   });
 }
 
+// ============================================================
 // TOOL CARD
+// ============================================================
+
 class TeacherToolCard extends StatelessWidget {
   final TeacherTool tool;
   final VoidCallback? onTap;
