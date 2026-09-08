@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:little_heroes_mobile/core/constants/api_constants.dart';
 import 'package:little_heroes_mobile/core/utils/snackbar_utils.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/moment_repository.dart';
 import 'package:little_heroes_mobile/features/students/domain/entities/student.dart';
 import 'package:little_heroes_mobile/features/students/domain/repositories/student_repository.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
@@ -158,8 +160,55 @@ class _AddMomentPageState extends State<AddMomentPage> {
         return;
       }
 
-      // TODO: Implement actual API call
-      await Future.delayed(const Duration(seconds: 1));
+      final repository = di.sl<MomentRepository>();
+
+      // 1. Upload file first
+      String? fileUrl;
+      if (_selectedFile != null && _fileName != null) {
+        setState(() => _isUploading = true);
+
+        final uploadResult = await repository.uploadMomentFile(
+          fileName: _fileName!,
+          filePath: _selectedFile!.path,
+        );
+
+        fileUrl = uploadResult;
+        if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
+          final baseUrl = ApiConstants.baseUrl;
+          final cleanBaseUrl = baseUrl.endsWith('/')
+              ? baseUrl.substring(0, baseUrl.length - 1)
+              : baseUrl;
+          final cleanFileUrl = fileUrl.startsWith('/') ? fileUrl : '/$fileUrl';
+          fileUrl = '$cleanBaseUrl$cleanFileUrl';
+        }
+
+        setState(() {
+          _uploadedFileUrl = fileUrl;
+          _uploadedFileName = _fileName;
+          _isUploading = false;
+        });
+      }
+
+      // 2. Get current date and time
+      final now = DateTime.now();
+      final momentDate =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final momentTime =
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:00';
+
+      // 3. Prepare data for API
+      final data = {
+        'moment_date': momentDate,
+        'moment_time': momentTime,
+        'moment_photo': fileUrl,
+        'moment_notes': notes,
+        'tagged_students': _selectedStudents
+            .map((s) => {'student': s.id})
+            .toList(),
+      };
+
+      // 4. Create moment
+      await repository.createMoment(data);
 
       setState(() => _isSaving = false);
 
@@ -171,7 +220,8 @@ class _AddMomentPageState extends State<AddMomentPage> {
         Navigator.pop(context);
       }
     } catch (e) {
-      setState(() => _isSaving = false);
+      setState(() => {_isSaving = false, _isUploading = false});
+      print('❌ Save error: $e');
       SnackbarUtils.showError(context, 'Failed to submit: ${e.toString()}');
     }
   }
@@ -219,7 +269,34 @@ class _AddMomentPageState extends State<AddMomentPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Breadcrumb
-
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Text(
+                    '‹ Home',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '/',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Moments',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
 
             // Title
@@ -235,6 +312,25 @@ class _AddMomentPageState extends State<AddMomentPage> {
             // Image Upload
             _buildImageUploadSection(theme, colors),
             const SizedBox(height: 24),
+
+            // Student Selection
+            Text(
+              'Select main character child',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Select one or more child',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildStudentSelection(theme, colors),
+            const SizedBox(height: 24),
+
             // Notes
             Text(
               'NOTES',
@@ -261,17 +357,6 @@ class _AddMomentPageState extends State<AddMomentPage> {
               ),
               style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
             ),
-            const SizedBox(height: 24),
-
-            const SizedBox(height: 4),
-            Text(
-              'Select one or more child',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildStudentSelection(theme, colors),
             const SizedBox(height: 24),
 
             // Submit Button
@@ -308,6 +393,12 @@ class _AddMomentPageState extends State<AddMomentPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          'Upload Photo Reference',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 8),
         if (_selectedFile == null)
           GestureDetector(

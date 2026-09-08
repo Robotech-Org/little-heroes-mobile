@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:little_heroes_mobile/core/constants/user_role.dart';
 import 'package:little_heroes_mobile/core/router/app_routes.dart';
+import 'package:little_heroes_mobile/core/widgets/little_heroes_loading.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/chats/presentation/pages/chat_detail_page.dart';
@@ -171,7 +172,8 @@ class _MainPageState extends State<MainPage> {
 
         if (authState is AuthLoading || authState is AuthInitial) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            // body: Center(child: CircularProgressIndicator()
+            body: LittleHeroesLoading(message: 'Loading your account...'),
           );
         }
 
@@ -181,16 +183,16 @@ class _MainPageState extends State<MainPage> {
 
         if (authState is AuthUnauthenticated) {
           return const Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Redirecting to login...'),
-                ],
-              ),
-            ),
+            // body: Center(
+            //   child: Column(
+            //     mainAxisAlignment: MainAxisAlignment.center,
+            //     children: [
+            //       CircularProgressIndicator(),
+            //       SizedBox(height: 16),
+            //       Text('Redirecting to login...'),
+            //     ],
+            //   ),
+            body: LittleHeroesLoading(message: 'Redirecting to login...'),
           );
         }
 
@@ -226,7 +228,12 @@ class _MainPageState extends State<MainPage> {
         }
 
         // Fallback
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        return const Scaffold(
+          // body: Center(child: CircularProgressIndicator()),
+          // );
+
+          body: LittleHeroesLoading(message: 'Loading...'),
+        );
       },
     );
   }

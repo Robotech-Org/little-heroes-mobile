@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
-        android:label="little_heroes_mobile"
+        android:label="Little Heroes"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

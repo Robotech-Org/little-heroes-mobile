@@ -159,4 +159,30 @@ class ApiConstants {
   // In ApiConstants
   static const String listSubscriptionPlans =
       '/api/method/little_heroes.api.v1.subscription_plans.list_subscription_plans';
+
+  // Gallery endpoints
+  static const String listGallery =
+      '/api/method/little_heroes.api.v1.galleries.list_gallery';
+  static const String getGallery =
+      '/api/method/little_heroes.api.v1.galleries.get_gallery';
+
+  // lib/core/constants/api_constants.dart
+
+  // Moments
+  static const String listMoments =
+      '/api/method/little_heroes.api.v1.moments.list_moments';
+  static const String getMoment =
+      '/api/method/little_heroes.api.v1.moments.get_moment';
+  static const String createMoment =
+      '/api/method/little_heroes.api.v1.moments.create_moment';
+  static const String updateMoment =
+      '/api/method/little_heroes.api.v1.moments.update_moment';
+  static const String deleteMoment =
+      '/api/method/little_heroes.api.v1.moments.delete_moment';
+  static const String approveMoment =
+      '/api/method/little_heroes.api.v1.moments.approve_moment';
+  static const String denyMoment =
+      '/api/method/little_heroes.api.v1.moments.deny_moment';
+  static const String uploadMomentFile =
+      '/api/method/little_heroes.api.v1.moments.upload_moment_file';
 }

@@ -8,7 +8,9 @@ import 'package:little_heroes_mobile/features/home/data/datasources/competency_r
 import 'package:little_heroes_mobile/features/home/data/datasources/daily_report_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/dashboard_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/framework_domain_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/gallery_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/lesson_plan_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/moment_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/observation_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/three_month_report_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/models/classroom_schedule_remote_data_source.dart';
@@ -18,7 +20,9 @@ import 'package:little_heroes_mobile/features/home/data/repositories/competency_
 import 'package:little_heroes_mobile/features/home/data/repositories/daily_report_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/dashboard_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/framework_domain_repository_impl.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/gallery_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/lesson_plan_repository_impl.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/moment_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/observation_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/three_month_report_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/classroom_repository.dart';
@@ -27,9 +31,13 @@ import 'package:little_heroes_mobile/features/home/domain/repositories/competenc
 import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/dashboard_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/framework_domain_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/gallery_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/lesson_plan_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/moment_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/observation_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/usecases/get_gallery_items.dart';
+import 'package:little_heroes_mobile/features/home/presentation/bloc/gallery_bloc.dart';
 import 'package:little_heroes_mobile/features/notifications/data/datasources/announcement_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/notifications/data/repositories/announcement_repository_impl.dart';
 import 'package:little_heroes_mobile/features/notifications/domain/repositories/announcement_repository.dart';
@@ -352,6 +360,51 @@ Future<void> initDependencies() async {
       () => PaymentRepositoryImpl(
         remoteDataSource: sl<PaymentRemoteDataSource>(),
       ),
+    );
+  }
+
+  // Gallery Remote Data Source
+  if (!sl.isRegistered<GalleryRemoteDataSource>()) {
+    sl.registerLazySingleton<GalleryRemoteDataSource>(
+      () => GalleryRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  // Gallery Repository
+  if (!sl.isRegistered<GalleryRepository>()) {
+    sl.registerLazySingleton<GalleryRepository>(
+      () => GalleryRepositoryImpl(
+        remoteDataSource: sl<GalleryRemoteDataSource>(),
+      ),
+    );
+  }
+
+  // Gallery Use Cases
+  if (!sl.isRegistered<GetGalleryItems>()) {
+    sl.registerLazySingleton<GetGalleryItems>(
+      () => GetGalleryItems(sl<GalleryRepository>()),
+    );
+  }
+
+  // Gallery Bloc
+  if (!sl.isRegistered<GalleryBloc>()) {
+    sl.registerFactory<GalleryBloc>(
+      () => GalleryBloc(getGalleryItems: sl<GetGalleryItems>()),
+    );
+  }
+
+  // Moment Remote Data Source
+  if (!sl.isRegistered<MomentRemoteDataSource>()) {
+    sl.registerLazySingleton<MomentRemoteDataSource>(
+      () => MomentRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  // Moment Repository
+  if (!sl.isRegistered<MomentRepository>()) {
+    sl.registerLazySingleton<MomentRepository>(
+      () =>
+          MomentRepositoryImpl(remoteDataSource: sl<MomentRemoteDataSource>()),
     );
   }
 }

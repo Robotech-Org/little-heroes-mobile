@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background - Warm and friendly -->
+  <rect width="512" height="512" rx="112" fill="#FF6B6B"/>
+  
+  <!-- Cape -->
+  <path d="M256 120 L180 280 L220 300 L256 220 L292 300 L332 280 L256 120Z" 
+        fill="#FFD93D" opacity="0.8"/>
+  
+  <!-- Head -->
+  <circle cx="256" cy="180" r="50" fill="white"/>
+  
+  <!-- Hair -->
+  <path d="M206 170 Q210 130 256 130 Q302 130 306 170 Q300 160 256 160 Q212 160 206 170Z" 
+        fill="#4A4A4A"/>
+  
+  <!-- Eyes -->
+  <circle cx="238" cy="180" r="6" fill="#4A4A4A"/>
+  <circle cx="274" cy="180" r="6" fill="#4A4A4A"/>
+  
+  <!-- Eye shine -->
+  <circle cx="236" cy="178" r="2" fill="white"/>
+  <circle cx="272" cy="178" r="2" fill="white"/>
+  
+  <!-- Smile -->
+  <path d="M240 198 Q256 210 272 198" stroke="#4A4A4A" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Cheeks -->
+  <ellipse cx="228" cy="195" rx="10" ry="6" fill="#FFB3B3" opacity="0.6"/>
+  <ellipse cx="284" cy="195" rx="10" ry="6" fill="#FFB3B3" opacity="0.6"/>
+  
+  <!-- Body -->
+  <path d="M220 230 L292 230 L280 310 L232 310 Z" fill="white"/>
+  
+  <!-- Star on chest -->
+  <polygon points="256,250 260,265 276,265 264,274 268,290 256,282 244,290 248,274 236,265 252,265" 
+           fill="#FF6B6B"/>
+  
+  <!-- Tiny hands -->
+  <circle cx="215" cy="240" r="8" fill="#FDDCB5"/>
+  <circle cx="297" cy="240" r="8" fill="#FDDCB5"/>
+  
+  <!-- Feet -->
+  <ellipse cx="238" cy="315" rx="15" ry="8" fill="#FDDCB5"/>
+  <ellipse cx="274" cy="315" rx="15" ry="8" fill="#FDDCB5"/>
+  
+  <!-- "Little Heroes" text -->
+  <text x="256" y="380" text-anchor="middle" font-family="Arial, sans-serif" 
+        font-size="36" font-weight="bold" fill="white" letter-spacing="2">
+    Little Heroes
+  </text>
+  
+  <!-- Small stars decoration -->
+  <circle cx="140" cy="120" r="6" fill="white" opacity="0.4"/>
+  <circle cx="372" cy="120" r="6" fill="white" opacity="0.4"/>
+  <circle cx="120" cy="260" r="5" fill="white" opacity="0.3"/>
+  <circle cx="392" cy="260" r="5" fill="white" opacity="0.3"/>
+  <circle cx="256" cy="70" r="5" fill="white" opacity="0.4"/>
+</svg>
