@@ -5,21 +5,101 @@ import 'package:little_heroes_mobile/core/constants/user_role.dart';
 import 'package:little_heroes_mobile/core/router/app_routes.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
+import 'package:little_heroes_mobile/features/home/data/models/dashboard_response_model.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/dashboard_repository.dart';
+import 'package:little_heroes_mobile/injection_container.dart' as di;
 
-class HomeHeader extends StatelessWidget {
+class HomeHeader extends StatefulWidget {
   const HomeHeader({super.key});
+
+  @override
+  State<HomeHeader> createState() => _HomeHeaderState();
+}
+
+class _HomeHeaderState extends State<HomeHeader> {
+  TeacherInfo? _teacherInfo;
+  ParentInfo? _parentInfo;
+  bool _isLoading = true;
+  bool _isError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+    });
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+        });
+        return;
+      }
+
+      final repository = di.sl<DashboardRepository>();
+      final response = await repository.getDashboard();
+
+      // Extract user info based on role
+      if (response.data is TeacherData) {
+        final teacherData = response.data as TeacherData;
+        setState(() {
+          _teacherInfo = teacherData.teacher;
+          _isLoading = false;
+        });
+      } else if (response.data is ParentData) {
+        final parentData = response.data as ParentData;
+        setState(() {
+          _parentInfo = parentData.parent;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isError = true;
+      });
+      print('Failed to load user data: $e');
+    }
+  }
 
   String _roleName(UserRole role) {
     switch (role) {
       case UserRole.teacher:
         return 'Teacher';
-
       case UserRole.parent:
         return 'Parent';
-
       case UserRole.adviser:
         return 'Adviser';
     }
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  String _getUserName(UserRole role) {
+    if (_teacherInfo != null) {
+      return _teacherInfo!.firstName;
+    } else if (_parentInfo != null) {
+      return _parentInfo!.name;
+    }
+    return '';
   }
 
   @override
@@ -36,6 +116,8 @@ class HomeHeader extends StatelessWidget {
         }
 
         final roleText = role != null ? _roleName(role) : 'User';
+        final greeting = _getGreeting();
+        final userName = role != null ? _getUserName(role) : '';
 
         return Container(
           padding: const EdgeInsets.fromLTRB(23, 20, 16, 18),
@@ -58,7 +140,6 @@ class HomeHeader extends StatelessWidget {
               // ==
               // PROFILE
               // ==
-
               Material(
                 color: colors.primaryContainer,
                 borderRadius: BorderRadius.circular(16),
@@ -78,7 +159,6 @@ class HomeHeader extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(width: 12),
 
               // ==
@@ -89,7 +169,7 @@ class HomeHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Good afternoon 👋',
+                      '$greeting 👋',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -97,11 +177,11 @@ class HomeHeader extends StatelessWidget {
                         color: colors.onSurfaceVariant,
                       ),
                     ),
-
                     const SizedBox(height: 2),
-
                     Text(
-                      'Welcome back!',
+                      _isLoading
+                          ? 'Loading...'
+                          : 'Welcome${userName.isNotEmpty ? ', $userName' : ''}!',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -110,12 +190,11 @@ class HomeHeader extends StatelessWidget {
                         color: colors.onSurface,
                       ),
                     ),
-
                     const SizedBox(height: 2),
 
-                    //
+                    // ==
                     // ROLE CHIP
-                    //
+                    // ==
                     Row(
                       children: [
                         Container(
@@ -126,9 +205,7 @@ class HomeHeader extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                         ),
-
                         const SizedBox(width: 5),
-
                         Text(
                           roleText,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -142,7 +219,6 @@ class HomeHeader extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(width: 10),
 
               // ==
@@ -164,7 +240,6 @@ class HomeHeader extends StatelessWidget {
 }
 
 // HEADER BUTTON
-
 class _HeaderButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -194,7 +269,6 @@ class _HeaderButton extends StatelessWidget {
               Center(
                 child: Icon(icon, color: colors.onSurfaceVariant, size: 22),
               ),
-
               // ==
               // NOTIFICATION BADGE
               // ==

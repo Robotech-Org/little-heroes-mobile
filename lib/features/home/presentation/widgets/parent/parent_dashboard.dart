@@ -1,48 +1,127 @@
 import 'package:flutter/material.dart';
-import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart'
-    show DailyReportPage;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
+import 'package:little_heroes_mobile/features/home/data/models/dashboard_response_model.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/dashboard_repository.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/three_month_report_page.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/pages/payment_page.dart';
+import 'package:little_heroes_mobile/injection_container.dart' as di;
 
-class ParentDashboard extends StatelessWidget {
+class ParentDashboard extends StatefulWidget {
   const ParentDashboard({super.key});
 
   @override
+  State<ParentDashboard> createState() => _ParentDashboardState();
+}
+
+class _ParentDashboardState extends State<ParentDashboard> {
+  ParentData? _dashboardData;
+  bool _isLoading = true;
+  bool _isError = false;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+    });
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = 'Please login to view dashboard';
+        });
+        return;
+      }
+
+      final repository = di.sl<DashboardRepository>();
+      final response = await repository.getDashboard();
+
+      // Check if the response data is for parent
+      if (response.data is ParentData) {
+        setState(() {
+          _dashboardData = response.data as ParentData;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = 'Invalid dashboard data for parent';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isError = true;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_isError) {
+      return _buildErrorWidget();
+    }
+
+    if (_dashboardData == null) {
+      return const SizedBox.shrink();
+    }
+
+    final data = _dashboardData!;
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _WeeklyThemeCard(),
-
+        // Weekly Theme Card
+        _WeeklyThemeCard(theme: data.theme),
         const SizedBox(height: 24),
 
+        // Your Children Section
         const _SectionTitle(title: 'Your Children'),
-
         const SizedBox(height: 12),
 
-        const _ChildCard(
-          initials: 'AF',
-          name: 'Abeebech Fekadu',
-          className: 'Sunbeam Room',
-          status: 'Report Ready',
-          statusType: _ChildStatus.ready,
-        ),
-
-        const SizedBox(height: 10),
-
-        const _ChildCard(
-          initials: 'KT',
-          name: 'Kebede Tadesse',
-          className: 'Sunbeam Room',
-          status: 'In Progress',
-          statusType: _ChildStatus.inProgress,
-        ),
+        // Children List
+        ...data.children.map((child) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _ChildCard(
+              initials: child.initials.isNotEmpty
+                  ? child.initials
+                  : _getInitials(child.name),
+              name: child.name,
+              className: child.classroom,
+              status: child.status,
+              statusType: child.status.toLowerCase().contains('ready')
+                  ? _ChildStatus.ready
+                  : _ChildStatus.inProgress,
+            ),
+          );
+        }).toList(),
 
         const SizedBox(height: 24),
 
+        // Quick Access Section
         const _SectionTitle(title: 'Quick Access'),
-
         const SizedBox(height: 12),
 
         Row(
@@ -51,8 +130,8 @@ class ParentDashboard extends StatelessWidget {
             Expanded(
               child: _QuickAccessCard(
                 icon: Icons.description_outlined,
-                title: 'Daily Report',
-                subtitle: 'Updated 1h ago',
+                title: data.quickAccess.dailyReport.label,
+                subtitle: data.quickAccess.dailyReport.lastUpdated ?? 'Updated',
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const DailyReportPage()),
@@ -64,8 +143,10 @@ class ParentDashboard extends StatelessWidget {
             Expanded(
               child: _QuickAccessCard(
                 icon: Icons.history_edu_outlined,
-                title: '3 Month Report',
-                subtitle: 'Last: Jun 2026',
+                title: data.quickAccess.threeMonthReport.label,
+                subtitle:
+                    data.quickAccess.threeMonthReport.lastUpdated ??
+                    'Last: Jun 2026',
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -86,8 +167,10 @@ class ParentDashboard extends StatelessWidget {
             Expanded(
               child: _QuickAccessCard(
                 icon: Icons.photo_library_outlined,
-                title: 'Photo Gallery',
-                subtitle: '12 new photos',
+                title: data.quickAccess.photoGallery.label,
+                subtitle: data.quickAccess.photoGallery.newCount != null
+                    ? '${data.quickAccess.photoGallery.newCount} new photos'
+                    : 'View photos',
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const PhotoGalleryPage()),
@@ -99,7 +182,7 @@ class ParentDashboard extends StatelessWidget {
             Expanded(
               child: _QuickAccessCard(
                 icon: Icons.payment_outlined,
-                title: 'Payment',
+                title: data.quickAccess.billingAndPayment.label,
                 subtitle: 'View payments',
                 onTap: () {
                   Navigator.of(context).push(
@@ -113,22 +196,77 @@ class ParentDashboard extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load dashboard',
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadDashboard,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getInitials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
+  }
 }
 
-// WEEKLY THEME
-
+// WEEKLY THEME CARD
 class _WeeklyThemeCard extends StatelessWidget {
-  const _WeeklyThemeCard();
+  final ThemeInfo theme;
+
+  const _WeeklyThemeCard({required this.theme});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final themeData = Theme.of(context);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary,
+        color: themeData.colorScheme.primary,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -136,7 +274,7 @@ class _WeeklyThemeCard extends StatelessWidget {
         children: [
           Text(
             "THIS WEEK'S THEME",
-            style: theme.textTheme.labelSmall?.copyWith(
+            style: themeData.textTheme.labelSmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.85),
               fontWeight: FontWeight.w700,
               letterSpacing: 0.7,
@@ -144,16 +282,18 @@ class _WeeklyThemeCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'All About Me & My World',
-            style: theme.textTheme.titleLarge?.copyWith(
+            theme.title,
+            style: themeData.textTheme.titleLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 10),
           Text(
-            "Abeebech has 2 new photos and today's daily report is ready to view.",
-            style: theme.textTheme.bodySmall?.copyWith(
+            theme.summary.isNotEmpty
+                ? theme.summary
+                : 'Your child\'s daily report is ready to view.',
+            style: themeData.textTheme.bodySmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.9),
               height: 1.4,
             ),
@@ -165,7 +305,6 @@ class _WeeklyThemeCard extends StatelessWidget {
 }
 
 // SECTION TITLE
-
 class _SectionTitle extends StatelessWidget {
   final String title;
 
@@ -183,11 +322,9 @@ class _SectionTitle extends StatelessWidget {
 }
 
 // CHILD STATUS
-
 enum _ChildStatus { ready, inProgress }
 
 // CHILD CARD
-
 class _ChildCard extends StatelessWidget {
   final String initials;
   final String name;
@@ -237,9 +374,7 @@ class _ChildCard extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,9 +396,7 @@ class _ChildCard extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(width: 8),
-
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
             decoration: BoxDecoration(
@@ -285,7 +418,6 @@ class _ChildCard extends StatelessWidget {
 }
 
 // QUICK ACCESS CARD
-
 class _QuickAccessCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -331,9 +463,7 @@ class _QuickAccessCard extends StatelessWidget {
                 ),
                 child: Icon(icon, size: 18, color: theme.colorScheme.primary),
               ),
-
               const Spacer(),
-
               Text(
                 title,
                 maxLines: 1,
@@ -342,9 +472,7 @@ class _QuickAccessCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-
               const SizedBox(height: 3),
-
               Text(
                 subtitle,
                 maxLines: 1,

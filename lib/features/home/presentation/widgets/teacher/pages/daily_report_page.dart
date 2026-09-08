@@ -20,6 +20,7 @@ class DailyReportPageTeachers extends StatefulWidget {
 
 class _DailyReportPageState extends State<DailyReportPageTeachers> {
   List<DailyReportModel> _reports = [];
+  List<DailyReportModel> _filteredReports = [];
   bool _isLoading = true;
   bool _isError = false;
   String _errorMessage = '';
@@ -27,6 +28,10 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
   int _totalPages = 0;
   int _totalReports = 0;
   final int _pageSize = 20;
+
+  // Calendar selection
+  DateTime? _selectedDate;
+  List<DateTime> _availableDates = [];
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -75,13 +80,28 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
         pageSize: _pageSize,
       );
 
+      // Extract unique dates from reports
+      final dates =
+          response.items
+              .map((r) => DateTime.tryParse(r.reportDate))
+              .where((d) => d != null)
+              .map((d) => DateTime(d!.year, d.month, d.day))
+              .toSet()
+              .toList()
+            ..sort();
+
       setState(() {
         _reports = response.items;
+        _filteredReports = response.items;
+        _availableDates = dates;
         _totalReports = response.total;
         _totalPages = (response.total / response.pageSize).ceil();
         _currentPage = response.page;
         _isLoading = false;
       });
+
+      // Apply date filter if selected
+      _applyDateFilter();
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -91,16 +111,69 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
     }
   }
 
-  void _searchReports(String query) {
-    // Client-side search - filter reports by student name
-    final searchQuery = query.trim().toLowerCase();
-    if (searchQuery.isEmpty) {
-      _loadReports();
+  void _applyDateFilter() {
+    if (_selectedDate == null) {
+      setState(() {
+        _filteredReports = _reports;
+      });
       return;
     }
 
     setState(() {
-      _reports = _reports.where((report) {
+      _filteredReports = _reports.where((report) {
+        final reportDate = DateTime.tryParse(report.reportDate);
+        if (reportDate == null) return false;
+
+        final filterDate = DateTime(
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
+        );
+        final reportDateOnly = DateTime(
+          reportDate.year,
+          reportDate.month,
+          reportDate.day,
+        );
+
+        return reportDateOnly == filterDate;
+      }).toList();
+    });
+  }
+
+  void _searchReports(String query) {
+    final searchQuery = query.trim().toLowerCase();
+
+    setState(() {
+      if (searchQuery.isEmpty) {
+        _filteredReports = _reports;
+        _applyDateFilter(); // Re-apply date filter
+        return;
+      }
+
+      // Apply both search and date filter
+      List<DailyReportModel> filtered = _reports;
+
+      // Apply date filter first
+      if (_selectedDate != null) {
+        final filterDate = DateTime(
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
+        );
+        filtered = filtered.where((report) {
+          final reportDate = DateTime.tryParse(report.reportDate);
+          if (reportDate == null) return false;
+          final reportDateOnly = DateTime(
+            reportDate.year,
+            reportDate.month,
+            reportDate.day,
+          );
+          return reportDateOnly == filterDate;
+        }).toList();
+      }
+
+      // Apply search filter
+      _filteredReports = filtered.where((report) {
         return report.studentName.toLowerCase().contains(searchQuery);
       }).toList();
     });
@@ -113,15 +186,6 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
     ).then((_) => _loadReports());
   }
 
-  void _navigateToEditReport(DailyReportModel report) {
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => CreateDailyReportPage(report: report),
-    //   ),
-    // ).then((_) => _loadReports());
-  }
-
   void _navigateToReportDetail(DailyReportModel report) {
     Navigator.push(
       context,
@@ -129,6 +193,28 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
         builder: (context) => DailyReportDetailPage(reportName: report.name),
       ),
     );
+  }
+
+  // ============================================================
+  // DATE FORMATTING
+  // ============================================================
+
+  String _formatDateShort(DateTime date) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}';
   }
 
   @override
@@ -168,16 +254,212 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
               child: _buildSearchBar(theme, colorScheme),
             ),
+            // Calendar
+            _buildCalendar(theme, colorScheme),
             // Stats
 
-            const SizedBox(height: 12),
-            // Content
             Expanded(child: _buildContent(theme, colorScheme)),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildCalendar(ThemeData theme, ColorScheme colorScheme) {
+    if (_availableDates.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Get the current selected date or first available date
+    DateTime currentDisplayDate = _selectedDate ?? _availableDates.first;
+
+    return Container(
+      height: 80,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          // Left Arrow - Previous Day
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                final currentIndex = _availableDates.indexOf(
+                  currentDisplayDate,
+                );
+                if (currentIndex > 0) {
+                  final newDate = _availableDates[currentIndex - 1];
+                  _selectedDate = newDate;
+                  _applyDateFilter();
+                  if (_searchController.text.isNotEmpty) {
+                    _searchReports(_searchController.text);
+                  }
+                }
+              });
+            },
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200, width: 1),
+              ),
+              child: Icon(
+                Icons.chevron_left_rounded,
+                color: Colors.blue.shade700,
+                size: 24,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Date Display
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                // Show date picker
+                _selectDate(context);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200, width: 1),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 16,
+                      color: Colors.blue.shade700,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _formatDateFull(currentDisplayDate),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue.shade900,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Report count badge
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Right Arrow - Next Day
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                final currentIndex = _availableDates.indexOf(
+                  currentDisplayDate,
+                );
+                if (currentIndex < _availableDates.length - 1) {
+                  final newDate = _availableDates[currentIndex + 1];
+                  _selectedDate = newDate;
+                  _applyDateFilter();
+                  if (_searchController.text.isNotEmpty) {
+                    _searchReports(_searchController.text);
+                  }
+                }
+              });
+            },
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200, width: 1),
+              ),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.blue.shade700,
+                size: 24,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateFull(DateTime date) {
+    final months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  // Helper method to get reports for a specific date
+  List<DailyReportModel> _getReportsForDate(DateTime date) {
+    return _reports.where((report) {
+      final reportDate = DateTime.tryParse(report.reportDate);
+      if (reportDate == null) return false;
+      return reportDate.year == date.year &&
+          reportDate.month == date.month &&
+          reportDate.day == date.day;
+    }).toList();
+  }
+
+  // Helper method to show date picker
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: _availableDates.first,
+      lastDate: _availableDates.last,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context)
+              .copyWith(colorScheme: Theme.of(context).colorScheme),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      // Find the closest available date
+      final closestDate = _availableDates.reduce((a, b) {
+        final diffA = (picked.difference(a).inDays).abs();
+        final diffB = (picked.difference(b).inDays).abs();
+        return diffA < diffB ? a : b;
+      });
+
+      setState(() {
+        _selectedDate = closestDate;
+        _applyDateFilter();
+        if (_searchController.text.isNotEmpty) {
+          _searchReports(_searchController.text);
+        }
+      });
+    }
+  }
+
+  // ============================================================
+  // SEARCH BAR
+  // ============================================================
 
   Widget _buildSearchBar(ThemeData theme, ColorScheme colorScheme) {
     return TextField(
@@ -224,6 +506,58 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
     );
   }
 
+  // ============================================================
+  // STATS
+  // ============================================================
+
+  Widget _buildStats(ThemeData theme, ColorScheme colorScheme) {
+    return Row(
+      children: [
+        Text(
+          '${_filteredReports.length} reports',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const Spacer(),
+        if (_selectedDate != null)
+          Row(
+            children: [
+              Text(
+                '📅 ${_formatDateFull(_selectedDate!)}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedDate = null;
+                    _applyDateFilter();
+                    if (_searchController.text.isNotEmpty) {
+                      _searchReports(_searchController.text);
+                    }
+                  });
+                },
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // CONTENT
+  // ============================================================
+
   Widget _buildContent(ThemeData theme, ColorScheme colorScheme) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -233,27 +567,30 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
       return _buildErrorWidget(theme, colorScheme);
     }
 
-    if (_reports.isEmpty) {
+    if (_filteredReports.isEmpty) {
       return _buildEmptyWidget(theme, colorScheme);
     }
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       physics: const BouncingScrollPhysics(),
-      itemCount: _reports.length,
+      itemCount: _filteredReports.length,
       itemBuilder: (context, index) {
-        final report = _reports[index];
+        final report = _filteredReports[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: DailyReportCard(
             report: report,
-            // onTap: () => _navigateToEditReport(report),
             onTap: () => _navigateToReportDetail(report),
           ),
         );
       },
     );
   }
+
+  // ============================================================
+  // ERROR & EMPTY WIDGETS
+  // ============================================================
 
   Widget _buildErrorWidget(ThemeData theme, ColorScheme colorScheme) {
     return Center(
@@ -320,7 +657,9 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No Daily Reports',
+              _selectedDate != null
+                  ? 'No reports for this date'
+                  : 'No Daily Reports',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: colorScheme.onSurface,
@@ -328,29 +667,57 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Start by creating your first daily report',
+              _selectedDate != null
+                  ? 'No daily reports found for ${_formatDateFull(_selectedDate!)}'
+                  : 'Start by creating your first daily report',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _navigateToCreateReport,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Create Report'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+            if (_selectedDate != null)
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _selectedDate = null;
+                    _applyDateFilter();
+                    if (_searchController.text.isNotEmpty) {
+                      _searchReports(_searchController.text);
+                    }
+                  });
+                },
+                icon: const Icon(Icons.clear_rounded),
+                label: const Text('Clear Date Filter'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: _navigateToCreateReport,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Create Report'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                 ),
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
               ),
-            ),
           ],
         ),
       ),

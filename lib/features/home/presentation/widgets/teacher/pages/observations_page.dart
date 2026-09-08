@@ -95,6 +95,15 @@ class _ObservationsPageState extends State<ObservationsPage> {
     );
   }
 
+  void _opennewObservationForm() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddObservationPage(onSave: () => _loadData()),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -119,6 +128,12 @@ class _ObservationsPageState extends State<ObservationsPage> {
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: _loadData,
+            tooltip: 'Refresh',
+          ),
+          SizedBox(width: 10),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _opennewObservationForm(),
             tooltip: 'Refresh',
           ),
         ],

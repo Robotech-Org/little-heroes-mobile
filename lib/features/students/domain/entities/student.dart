@@ -66,9 +66,26 @@
 //   bool get isActive {
 //     return enrollmentStatus.toLowerCase() == 'active';
 //   }
+
+//   // ============================================================
+//   // ADD THESE METHODS FOR DROPDOWN TO WORK PROPERLY
+//   // ============================================================
+
+//   @override
+//   bool operator ==(Object other) {
+//     if (identical(this, other)) return true;
+//     return other is Student && other.name == name;
+//   }
+
+//   @override
+//   int get hashCode => name.hashCode;
+
+//   @override
+//   String toString() => name;
 // }
 
 class Student {
+  final String id; // This is the 'name' field from the API response
   final String name;
   final String gender;
   final String dateOfBirth;
@@ -78,6 +95,7 @@ class Student {
   final String modified;
 
   Student({
+    required this.id,
     required this.name,
     required this.gender,
     required this.dateOfBirth,
@@ -89,6 +107,7 @@ class Student {
 
   factory Student.fromJson(Map<String, dynamic> json) {
     return Student(
+      id: json['name']?.toString() ?? '', // 'name' is actually the ID
       name: json['child_full_name']?.toString() ?? '',
       gender: json['child_gender']?.toString() ?? '',
       dateOfBirth: json['child_date_of_birth']?.toString() ?? '',
@@ -101,6 +120,7 @@ class Student {
 
   Map<String, dynamic> toJson() {
     return {
+      'name': id, // 'name' is the ID in the API
       'child_full_name': name,
       'child_gender': gender,
       'child_date_of_birth': dateOfBirth,
@@ -138,17 +158,17 @@ class Student {
   }
 
   // ============================================================
-  // ADD THESE METHODS FOR DROPDOWN TO WORK PROPERLY
+  // EQUALITY AND HASHCODE FOR DROPDOWN
   // ============================================================
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is Student && other.name == name;
+    return other is Student && other.id == id;
   }
 
   @override
-  int get hashCode => name.hashCode;
+  int get hashCode => id.hashCode;
 
   @override
   String toString() => name;

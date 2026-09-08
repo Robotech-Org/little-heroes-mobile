@@ -1,36 +1,171 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:little_heroes_mobile/core/router/app_routes.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
+import 'package:little_heroes_mobile/features/home/data/models/dashboard_response_model.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/dashboard_repository.dart';
+import 'package:little_heroes_mobile/injection_container.dart' as di;
 
-class TeacherDashboard extends StatelessWidget {
+class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
 
   @override
+  State<TeacherDashboard> createState() => _TeacherDashboardState();
+}
+
+class _TeacherDashboardState extends State<TeacherDashboard> {
+  TeacherData? _dashboardData;
+  bool _isLoading = true;
+  bool _isError = false;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+    });
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = 'Please login to view dashboard';
+        });
+        return;
+      }
+
+      final repository = di.sl<DashboardRepository>();
+      final response = await repository.getDashboard();
+
+      // Check if the response data is for teacher
+      if (response.data is TeacherData) {
+        setState(() {
+          _dashboardData = response.data as TeacherData;
+          _isLoading = false;
+        });
+      } else if (response.data is ParentData) {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = 'Teacher dashboard not available for parent role';
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = 'Invalid dashboard data';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isError = true;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_isError) {
+      return _buildErrorWidget();
+    }
+
+    if (_dashboardData == null) {
+      return const SizedBox.shrink();
+    }
+
+    final data = _dashboardData!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // WEEKLY THEME
-
-        const _WeeklyThemeCard(),
-
+        // Weekly Theme
+        _WeeklyThemeCard(themeData: data.theme),
         const SizedBox(height: 24),
 
-        // TEACHER DASHBOARD
+        // Teacher Dashboard
         const _SectionTitle(title: 'Teacher Dashboard'),
-
         const SizedBox(height: 12),
 
-        const TeacherTools(),
+        // Teacher Tools with real data
+        TeacherTools(
+          dashboardData: data.dashboard,
+          onToolTap: (tool) {
+            // Handle tool tap if needed
+          },
+        ),
       ],
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load dashboard',
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadDashboard,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
 // WEEKLY THEME
-
 class _WeeklyThemeCard extends StatelessWidget {
-  const _WeeklyThemeCard();
+  final ThemeInfo themeData;
+
+  const _WeeklyThemeCard({required this.themeData});
 
   @override
   Widget build(BuildContext context) {
@@ -55,21 +190,17 @@ class _WeeklyThemeCard extends StatelessWidget {
               letterSpacing: 0.7,
             ),
           ),
-
           const SizedBox(height: 6),
-
           Text(
-            'All About Me & My World',
+            themeData.title,
             style: theme.textTheme.titleLarge?.copyWith(
               color: colors.onPrimary,
               fontWeight: FontWeight.w800,
             ),
           ),
-
           const SizedBox(height: 10),
-
           Text(
-            'Plan engaging activities and keep track of your students throughout the week.',
+            themeData.goal,
             style: theme.textTheme.bodySmall?.copyWith(
               color: colors.onPrimary.withValues(alpha: 0.9),
               height: 1.4,
@@ -82,7 +213,6 @@ class _WeeklyThemeCard extends StatelessWidget {
 }
 
 // SECTION TITLE
-
 class _SectionTitle extends StatelessWidget {
   final String title;
 
@@ -100,42 +230,47 @@ class _SectionTitle extends StatelessWidget {
 }
 
 // TEACHER TOOLS / DASHBOARD
-
 class TeacherTools extends StatelessWidget {
+  final DashboardMetrics dashboardData;
   final ValueChanged<TeacherTool>? onToolTap;
 
-  const TeacherTools({super.key, this.onToolTap});
+  const TeacherTools({super.key, required this.dashboardData, this.onToolTap});
 
   @override
   Widget build(BuildContext context) {
-    const tools = [
+    // Build tools from dashboard data
+    final tools = [
       TeacherTool(
-        title: 'Daily Report',
+        title: dashboardData.dailyReport.label,
         description: 'Complete today\'s report',
-        count: '3',
-        countLabel: 'pending',
+        count: dashboardData.dailyReport.reportsLogged.toString(),
+        countLabel: 'of ${dashboardData.dailyReport.totalStudents}',
         icon: Icons.edit_note_rounded,
+        route: AppRoutes.dailyReport_teachers,
       ),
       TeacherTool(
-        title: '3 Month Reports',
+        title: dashboardData.threeMonthReport.label,
         description: 'View previous reports',
-        count: '12',
-        countLabel: 'available',
+        count: dashboardData.threeMonthReport.frameworksCount.toString(),
+        countLabel: 'frameworks',
         icon: Icons.bar_chart_rounded,
+        route: AppRoutes.threeMonthReports,
       ),
       TeacherTool(
-        title: 'Weekly Planner',
+        title: dashboardData.weeklyPlanner.label,
         description: 'Plan your weekly lessons',
-        count: '5',
-        countLabel: 'upcoming',
+        count: dashboardData.weeklyPlanner.pendingReview.toString(),
+        countLabel: 'pending review',
         icon: Icons.calendar_month_rounded,
+        route: AppRoutes.weeklyPlanner,
       ),
       TeacherTool(
-        title: 'Observations',
+        title: dashboardData.observation.label,
         description: 'Student observations',
-        count: '3',
+        count: '0',
         countLabel: 'pending',
         icon: Icons.visibility_outlined,
+        route: AppRoutes.observations,
       ),
     ];
 
@@ -162,38 +297,35 @@ class TeacherTools extends StatelessWidget {
       },
     );
   }
-}
 
-// OPEN TOOL
-
-void _openTool(BuildContext context, TeacherTool tool) {
-  switch (tool.title) {
-    case 'Daily Report':
-      context.push(AppRoutes.dailyReport_teachers);
-      break;
-
-    case '3 Month Reports':
-      context.push(AppRoutes.threeMonthReports);
-      break;
-
-    case 'Weekly Planner':
-      context.push(AppRoutes.weeklyPlanner);
-      break;
-
-    case 'Observations':
-      context.push(AppRoutes.observations);
-      break;
+  void _openTool(BuildContext context, TeacherTool tool) {
+    switch (tool.route) {
+      case AppRoutes.dailyReport_teachers:
+        context.push(AppRoutes.dailyReport_teachers);
+        break;
+      case AppRoutes.threeMonthReports:
+        context.push(AppRoutes.threeMonthReports);
+        break;
+      case AppRoutes.weeklyPlanner:
+        context.push(AppRoutes.weeklyPlanner);
+        break;
+      case AppRoutes.observations:
+        context.push(AppRoutes.observations);
+        break;
+      default:
+        break;
+    }
   }
 }
 
 // TOOL MODEL
-
 class TeacherTool {
   final String title;
   final String description;
   final String count;
   final String countLabel;
   final IconData icon;
+  final String route;
 
   const TeacherTool({
     required this.title,
@@ -201,11 +333,11 @@ class TeacherTool {
     required this.count,
     required this.countLabel,
     required this.icon,
+    required this.route,
   });
 }
 
 // TOOL CARD
-
 class TeacherToolCard extends StatelessWidget {
   final TeacherTool tool;
   final VoidCallback? onTap;
@@ -236,7 +368,6 @@ class TeacherToolCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ICON
-
               Container(
                 width: 44,
                 height: 44,
@@ -250,7 +381,6 @@ class TeacherToolCard extends StatelessWidget {
                   color: colors.onPrimaryContainer,
                 ),
               ),
-
               const SizedBox(height: 12),
 
               // TITLE
@@ -264,7 +394,6 @@ class TeacherToolCard extends StatelessWidget {
                   color: colors.onSurface,
                 ),
               ),
-
               const SizedBox(height: 4),
 
               // DESCRIPTION
@@ -277,7 +406,6 @@ class TeacherToolCard extends StatelessWidget {
                   color: colors.onSurfaceVariant,
                 ),
               ),
-
               const Spacer(),
 
               // COUNT + LABEL
@@ -292,9 +420,7 @@ class TeacherToolCard extends StatelessWidget {
                       color: colors.primary,
                     ),
                   ),
-
                   const SizedBox(width: 5),
-
                   Flexible(
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 2),

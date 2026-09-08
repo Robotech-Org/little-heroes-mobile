@@ -3,17 +3,26 @@ import 'package:get_it/get_it.dart';
 import 'package:little_heroes_mobile/features/chats/data/datasources/chat_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/chats/data/repositories/chat_repository_impl.dart';
 import 'package:little_heroes_mobile/features/chats/domain/repositories/chat_repository.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/classroom_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/competency_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/daily_report_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/dashboard_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/framework_domain_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/lesson_plan_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/observation_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/three_month_report_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/classroom_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/competency_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/daily_report_repository_impl.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/dashboard_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/framework_domain_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/lesson_plan_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/observation_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/three_month_report_repository_impl.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/classroom_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/competency_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/dashboard_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/framework_domain_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/lesson_plan_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/observation_repository.dart';
@@ -38,8 +47,6 @@ import 'package:little_heroes_mobile/features/auth/domain/usecases/verify_otp.da
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 
 import 'features/notifications/data/datasources/notification_local_data_source.dart';
-
-
 
 final GetIt sl = GetIt.instance;
 
@@ -255,6 +262,56 @@ Future<void> initDependencies() async {
     sl.registerLazySingleton<FrameworkDomainRepository>(
       () => FrameworkDomainRepositoryImpl(
         remoteDataSource: sl<FrameworkDomainRemoteDataSource>(),
+      ),
+    );
+  }
+  // ============================================================
+  // COMPETENCY
+  // ============================================================
+
+  if (!sl.isRegistered<CompetencyRemoteDataSource>()) {
+    sl.registerLazySingleton<CompetencyRemoteDataSource>(
+      () => CompetencyRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<CompetencyRepository>()) {
+    sl.registerLazySingleton<CompetencyRepository>(
+      () => CompetencyRepositoryImpl(
+        remoteDataSource: sl<CompetencyRemoteDataSource>(),
+      ),
+    );
+  }
+  // ============================================================
+  // DASHBOARD
+  // ============================================================
+
+  if (!sl.isRegistered<DashboardRemoteDataSource>()) {
+    sl.registerLazySingleton<DashboardRemoteDataSource>(
+      () => DashboardRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<DashboardRepository>()) {
+    sl.registerLazySingleton<DashboardRepository>(
+      () => DashboardRepositoryImpl(
+        remoteDataSource: sl<DashboardRemoteDataSource>(),
+      ),
+    );
+  }
+
+  // Classroom Remote Data Source
+  if (!sl.isRegistered<ClassroomRemoteDataSource>()) {
+    sl.registerLazySingleton<ClassroomRemoteDataSource>(
+      () => ClassroomRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  // Classroom Repository
+  if (!sl.isRegistered<ClassroomRepository>()) {
+    sl.registerLazySingleton<ClassroomRepository>(
+      () => ClassroomRepositoryImpl(
+        remoteDataSource: sl<ClassroomRemoteDataSource>(),
       ),
     );
   }

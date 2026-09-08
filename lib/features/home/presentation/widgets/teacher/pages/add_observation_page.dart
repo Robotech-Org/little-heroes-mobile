@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:little_heroes_mobile/core/constants/api_constants.dart';
 import 'package:little_heroes_mobile/core/utils/snackbar_utils.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
@@ -42,8 +43,12 @@ class _AddObservationPageState extends State<AddObservationPage> {
   List<Student> _taggedStudents = [];
   int _currentActivityIndex = 0;
 
+  // Upload result
+  String? _uploadedFileUrl;
+  String? _uploadedFileName;
+
   final List<String> _activities = [
-    'Circle Time & Story Telling',
+    'Morning Circle & Sensory Play',
     'Free Play',
     'Reading',
     'Mathematics',
@@ -53,8 +58,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
     'Social Activity',
     'Other',
   ];
-
-  final PageController _pageController = PageController();
 
   @override
   void initState() {
@@ -71,7 +74,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
   @override
   void dispose() {
     _noteController.dispose();
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -158,6 +160,8 @@ class _AddObservationPageState extends State<AddObservationPage> {
     setState(() {
       _selectedFile = null;
       _fileName = null;
+      _uploadedFileUrl = null;
+      _uploadedFileName = null;
     });
   }
 
@@ -196,33 +200,70 @@ class _AddObservationPageState extends State<AddObservationPage> {
 
       final repository = di.sl<ObservationRepository>();
 
-      // 1. Upload file if selected
+      // 1. Upload file if selected and not yet uploaded
       String? fileUrl;
       if (_selectedFile != null && _fileName != null) {
         setState(() => _isUploading = true);
-        fileUrl = await repository.uploadObservationFile(
+
+        // Upload the file
+        final uploadResult = await repository.uploadObservationFile(
           fileName: _fileName!,
           filePath: _selectedFile!.path,
         );
-        setState(() => _isUploading = false);
+
+        // The uploadResult might be a relative path like "/file/xxx.png"
+        // If it doesn't start with http, prepend the base URL
+        String fileUrlResult = uploadResult;
+        if (!fileUrlResult.startsWith('http://') &&
+            !fileUrlResult.startsWith('https://')) {
+          // Get base URL from ApiConstants
+          final baseUrl = ApiConstants.baseUrl;
+          // Ensure baseUrl doesn't end with '/'
+          final cleanBaseUrl = baseUrl.endsWith('/')
+              ? baseUrl.substring(0, baseUrl.length - 1)
+              : baseUrl;
+          // Ensure fileUrl doesn't start with '/' if baseUrl doesn't end with '/'
+          final cleanFileUrl = fileUrlResult.startsWith('/')
+              ? fileUrlResult
+              : '/$fileUrlResult';
+          fileUrl = '$cleanBaseUrl$cleanFileUrl';
+        } else {
+          fileUrl = fileUrlResult;
+        }
+
+        setState(() {
+          _uploadedFileUrl = fileUrl;
+          _uploadedFileName = _fileName;
+          _isUploading = false;
+        });
+      } else if (_uploadedFileUrl != null) {
+        // Use previously uploaded file
+        fileUrl = _uploadedFileUrl;
       }
+
+      // ============================================================
+      // DEBUG PRINTS - STUDENT AND TAGGED STUDENTS
+      // ============================================================
 
       // 2. Create observation with all data
       final data = {
-        'student': _selectedStudent!.name,
+        'student': "fej2rtpth8",
         'student_name': _selectedStudent!.name,
         'observation_date': DateTime.now().toIso8601String().split('T').first,
-        'observation_class_schedule': 'Morning Session',
+        'observation_class_schedule': 'i0sv3kpume',
         'observation_notes': note,
         'activity': _selectedActivity,
         'start_time': _startTime,
         'end_time': _endTime,
-        if (fileUrl != null) 'observation_photo': fileUrl,
-        if (_fileName != null) 'file_name': _fileName,
         'tagged_students': _taggedStudents
             .map((s) => {'student': s.name})
             .toList(),
       };
+
+      // Add observation_photo only if file was uploaded successfully
+      if (fileUrl != null && fileUrl.isNotEmpty) {
+        data['observation_photo'] = fileUrl;
+      }
 
       await repository.createObservation(data);
 
@@ -235,6 +276,7 @@ class _AddObservationPageState extends State<AddObservationPage> {
         _isSaving = false;
         _isUploading = false;
       });
+      print('❌ Save error: $e');
       SnackbarUtils.showError(context, 'Failed to save: ${e.toString()}');
     }
   }
@@ -351,6 +393,34 @@ class _AddObservationPageState extends State<AddObservationPage> {
               ),
             ),
           ),
+        if (_selectedStudent != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 14,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _selectedStudent!.name,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -415,9 +485,7 @@ class _AddObservationPageState extends State<AddObservationPage> {
                       letterSpacing: 0.5,
                     ),
                   ),
-
                   const SizedBox(height: 3),
-
                   Text(
                     _selectedActivity,
                     textAlign: TextAlign.center,
@@ -568,6 +636,10 @@ class _AddObservationPageState extends State<AddObservationPage> {
   }
 
   Widget _buildFileUploadSection(ThemeData theme, ColorScheme colorScheme) {
+    final isFileUploaded =
+        _uploadedFileUrl != null && _uploadedFileUrl!.isNotEmpty;
+    final isUploading = _isUploading;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -579,7 +651,7 @@ class _AddObservationPageState extends State<AddObservationPage> {
           ),
         ),
         const SizedBox(height: 8),
-        if (_selectedFile == null)
+        if (_selectedFile == null && !isFileUploaded)
           OutlinedButton.icon(
             onPressed: _isSaving ? null : _pickFile,
             icon: const Icon(Icons.attach_file_rounded),
@@ -594,26 +666,59 @@ class _AddObservationPageState extends State<AddObservationPage> {
               ),
             ),
           )
+        else if (isUploading)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceVariant.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Uploading file...',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          )
         else
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border.all(
-                color: colorScheme.primary.withValues(alpha: 0.3),
+                color: isFileUploaded
+                    ? Colors.green
+                    : colorScheme.primary.withValues(alpha: 0.3),
               ),
               borderRadius: BorderRadius.circular(12),
+              color: isFileUploaded
+                  ? Colors.green.withValues(alpha: 0.05)
+                  : null,
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer.withValues(alpha: 0.1),
+                    color: isFileUploaded
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : colorScheme.primaryContainer.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    Icons.insert_drive_file_outlined,
-                    color: colorScheme.primary,
+                    isFileUploaded
+                        ? Icons.check_circle_rounded
+                        : Icons.insert_drive_file_outlined,
+                    color: isFileUploaded ? Colors.green : colorScheme.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -622,20 +727,27 @@ class _AddObservationPageState extends State<AddObservationPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _fileName ?? 'Unknown file',
+                        isFileUploaded
+                            ? _uploadedFileName ?? 'Uploaded'
+                            : _fileName ?? 'Unknown file',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
+                          color: isFileUploaded ? Colors.green : null,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${(_selectedFile!.lengthSync() / 1024).toStringAsFixed(1)} KB',
+                        isFileUploaded
+                            ? 'Uploaded successfully ✓'
+                            : '${(_selectedFile!.lengthSync() / 1024).toStringAsFixed(1)} KB',
                         style: TextStyle(
                           fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
+                          color: isFileUploaded
+                              ? Colors.green
+                              : colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -650,8 +762,14 @@ class _AddObservationPageState extends State<AddObservationPage> {
           ),
         const SizedBox(height: 8),
         Text(
-          'Supported formats: JPG, PNG, PDF, DOC, MP4, MOV',
-          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+          isFileUploaded
+              ? 'File uploaded successfully!'
+              : 'Supported formats: JPG, PNG, PDF, DOC, MP4, MOV',
+          style: TextStyle(
+            fontSize: 12,
+            color: isFileUploaded ? Colors.green : colorScheme.onSurfaceVariant,
+            fontWeight: isFileUploaded ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
       ],
     );

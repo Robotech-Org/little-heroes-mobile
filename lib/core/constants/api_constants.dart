@@ -130,4 +130,23 @@ class ApiConstants {
   // FRAMEWORK DOMAIN APIs
   static const String listFrameworkDomains =
       '/api/method/little_heroes.api.v1.framework_domains.list_framework_domains';
+
+  // COMPETENCY APIs
+  static const String listCompetencies =
+      '/api/method/little_heroes.api.v1.framework_competencies.list_framework_competencies';
+
+  static const String getCompetency =
+      '/api/method/little_heroes.api.v1.framework_competencies.get_framework_competency';
+
+  // DASHBOARD APIs
+  static const String dashboard =
+      '/api/method/little_heroes.api.v1.dashboards.get_teacher_dashboard';
+  // static const String dashboard =
+  // '/api/method/little_heroes.api.v1.dashboards.get_parent_dashboard';
+
+  // Classroom endpoints
+  static const String listClassrooms =
+      '/api/method/little_heroes.api.v1.classrooms.list_classrooms';
+  static const String getClassroom =
+      '/api/method/little_heroes.api.v1.classrooms.get_classroom';
 }

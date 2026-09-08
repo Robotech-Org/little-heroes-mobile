@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:little_heroes_mobile/core/utils/snackbar_utils.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
+import 'package:little_heroes_mobile/features/home/data/models/classroom_model.dart';
 import 'package:little_heroes_mobile/features/home/data/models/daily_report_model.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/classroom_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
 import 'package:little_heroes_mobile/features/students/domain/entities/student.dart';
 import 'package:little_heroes_mobile/features/students/domain/repositories/student_repository.dart';
@@ -26,38 +28,65 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
   Student? _selectedStudent;
   bool _isLoadingStudents = true;
 
+  // Classroom selection
+  List<ClassroomModel> _classrooms = [];
+  ClassroomModel? _selectedClassroom;
+  bool _isLoadingClassrooms = true;
+
   // Report fields
-  String _selectedMeal = 'Ate Well';
-  String _selectedNap = 'Slept Well';
-  String _selectedMood = 'Happy';
-  String _selectedHealth = 'No Concerns';
+  String _selectedMeal = 'Ate All';
+  String _selectedNap = 'Slept Well (1-2+ Hours)';
+  String _selectedMood = 'Happy & Engaged';
+  String _selectedHealth = 'Good / Normal';
   String _messageToParent = '';
   bool _isSaving = false;
 
-  // Options
-  final List<String> _mealOptions = ['Ate Well', 'Ate Some', 'Refused'];
-  final List<String> _napOptions = ['Slept Well', 'Short Nap', 'Did Not Sleep'];
-  final List<String> _moodOptions = [
-    'Happy',
-    'Playful',
-    'Quiet',
-    'Fussy',
-    'Tired',
+  // Updated options from JSON
+  final List<String> _mealOptions = [
+    'Ate All',
+    'Ate Most',
+    'Ate Some',
+    'Ate Very Little',
+    'Refused / Did Not Eat',
+    'Not Applicable',
   ];
+
+  final List<String> _napOptions = [
+    'Slept Well (1-2+ Hours)',
+    'Short Nap (<1 Hour)',
+    'Rest Only (No Sleep)',
+    'Did Not Sleep',
+    'Not Applicable',
+  ];
+
+  final List<String> _moodOptions = [
+    'Happy & Engaged',
+    'Calm & Content',
+    'Energetic & Playful',
+    'Fussy / Crying',
+    'Tired / Sensitive',
+    'Challenging / Needed Support',
+  ];
+
   final List<String> _healthOptions = [
-    'No Concerns',
-    'Runny Nose',
-    'Cough',
-    'Fever',
+    'Good / Normal',
+    'Potty / Diaper Normal',
+    'Medication Administered',
+    'Minor Symptoms (Runny nose/Cough)',
+    'Needs Monitoring / Parent Contact',
   ];
 
   @override
   void initState() {
     super.initState();
-    _loadStudents();
+    _loadData();
     if (widget.report != null) {
       _populateFields(widget.report!);
     }
+  }
+
+  Future<void> _loadData() async {
+    await Future.wait([_loadStudents(), _loadClassrooms()]);
   }
 
   Future<void> _loadStudents() async {
@@ -76,6 +105,23 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
       setState(() {
         _students = response.items;
         _isLoadingStudents = false;
+
+        // If we have a report, try to select the student
+        if (widget.report != null) {
+          _selectedStudent = _students.firstWhere(
+            (s) => s.name == widget.report!.studentName,
+            orElse: () => Student(
+              id: widget.report!.name,
+              name: widget.report!.studentName,
+              gender: '',
+              dateOfBirth: '',
+              ageRange: '',
+              enrollmentStatus: '',
+              creation: '',
+              modified: '',
+            ),
+          );
+        }
       });
     } catch (e) {
       setState(() => _isLoadingStudents = false);
@@ -86,11 +132,47 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
     }
   }
 
+  Future<void> _loadClassrooms() async {
+    setState(() => _isLoadingClassrooms = true);
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() => _isLoadingClassrooms = false);
+        return;
+      }
+
+      final repository = di.sl<ClassroomRepository>();
+      final response = await repository.getClassrooms(page: 1, pageSize: 20);
+
+      setState(() {
+        _classrooms = response.items;
+        _isLoadingClassrooms = false;
+
+        // Select first classroom by default if available
+        if (_classrooms.isNotEmpty && _selectedClassroom == null) {
+          _selectedClassroom = _classrooms.first;
+        }
+
+        // If we have a report, try to select the classroom
+        if (widget.report != null && _classrooms.isNotEmpty) {
+          _selectedClassroom = _classrooms.firstWhere(
+            (c) => c.classroomName == widget.report!.studentClassroom,
+            orElse: () => _classrooms.first,
+          );
+        }
+      });
+    } catch (e) {
+      setState(() => _isLoadingClassrooms = false);
+    }
+  }
+
   void _populateFields(DailyReportModel report) {
-    // Find the student by name
-    _selectedStudent = _students.firstWhere(
+    // Find the student by name (already handled in _loadStudents)
+    _selectedStudent ??= _students.firstWhere(
       (s) => s.name == report.studentName,
       orElse: () => Student(
+        id: report.name,
         name: report.studentName,
         gender: '',
         dateOfBirth: '',
@@ -100,11 +182,65 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
         modified: '',
       ),
     );
-    _selectedMeal = report.mealsAndSnacks;
-    _selectedNap = report.napTime;
-    _selectedMood = report.moodAndBehavior;
-    _selectedHealth = report.healthAndHygiene;
+
+    // Map old values to new values if needed
+    _selectedMeal = _mapMealValue(report.mealsAndSnacks);
+    _selectedNap = _mapNapValue(report.napTime);
+    _selectedMood = _mapMoodValue(report.moodAndBehavior);
+    _selectedHealth = _mapHealthValue(report.healthAndHygiene);
     _messageToParent = report.dailyReportNotes;
+  }
+
+  // Helper methods to map old values to new ones
+  String _mapMealValue(String value) {
+    final mapping = {
+      'Ate Well': 'Ate All',
+      'Ate Most': 'Ate Most',
+      'Ate Some': 'Ate Some',
+      'Ate Very Little': 'Ate Very Little',
+      'Refused': 'Refused / Did Not Eat',
+      'Not Applicable': 'Not Applicable',
+    };
+    if (_mealOptions.contains(value)) return value;
+    return mapping[value] ?? 'Ate All';
+  }
+
+  String _mapNapValue(String value) {
+    final mapping = {
+      'Slept Well': 'Slept Well (1-2+ Hours)',
+      'Short Nap': 'Short Nap (<1 Hour)',
+      'Rest Only': 'Rest Only (No Sleep)',
+      'Did Not Sleep': 'Did Not Sleep',
+      'Not Applicable': 'Not Applicable',
+    };
+    if (_napOptions.contains(value)) return value;
+    return mapping[value] ?? 'Slept Well (1-2+ Hours)';
+  }
+
+  String _mapMoodValue(String value) {
+    final mapping = {
+      'Happy': 'Happy & Engaged',
+      'Playful': 'Energetic & Playful',
+      'Quiet': 'Calm & Content',
+      'Fussy': 'Fussy / Crying',
+      'Tired': 'Tired / Sensitive',
+      'Challenging': 'Challenging / Needed Support',
+    };
+    if (_moodOptions.contains(value)) return value;
+    return mapping[value] ?? 'Happy & Engaged';
+  }
+
+  String _mapHealthValue(String value) {
+    final mapping = {
+      'No Concerns': 'Good / Normal',
+      'Runny Nose': 'Minor Symptoms (Runny nose/Cough)',
+      'Cough': 'Minor Symptoms (Runny nose/Cough)',
+      'Fever': 'Needs Monitoring / Parent Contact',
+      'Good': 'Good / Normal',
+      'Normal': 'Good / Normal',
+    };
+    if (_healthOptions.contains(value)) return value;
+    return mapping[value] ?? 'Good / Normal';
   }
 
   Future<void> _saveReport() async {
@@ -112,6 +248,11 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
 
     if (_selectedStudent == null) {
       SnackbarUtils.showError(context, 'Please select a student');
+      return;
+    }
+
+    if (_selectedClassroom == null) {
+      SnackbarUtils.showError(context, 'Please select a classroom');
       return;
     }
 
@@ -125,11 +266,17 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
         return;
       }
 
+      final now = DateTime.now();
+      final reportDate =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+      final studentId = _selectedStudent!.id;
+
       final data = {
-        'student': _selectedStudent!.name,
+        'student': studentId,
         'student_name': _selectedStudent!.name,
-        'student_classroom': _selectedStudent!.ageRange,
-        'report_date': DateTime.now().toIso8601String().split('T').first,
+        'student_classroom': _selectedClassroom!.classroomName,
+        'report_date': reportDate,
         'meals_and_snacks': _selectedMeal,
         'nap_time': _selectedNap,
         'mood_and_behavior': _selectedMood,
@@ -138,6 +285,9 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
         'daily_report_status': 'Saved',
         'recorded_by': authState.user.fullName,
       };
+
+      print("daily report save ");
+      print(data.toString());
 
       final repository = di.sl<DailyReportRepository>();
 
@@ -207,8 +357,12 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Student Selector
+              // Student Selector - HORIZONTAL SCROLLABLE
               _buildStudentSelector(theme, colorScheme),
+              const SizedBox(height: 16),
+
+              // Classroom Selector
+              _buildClassroomSelector(theme, colorScheme),
               const SizedBox(height: 24),
 
               // Meals & Snacks
@@ -218,6 +372,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
                 label: 'Meals & Snacks',
                 value: _selectedMeal,
                 options: _mealOptions,
+                icon: Icons.restaurant_rounded,
                 onChanged: (value) {
                   setState(() => _selectedMeal = value);
                 },
@@ -232,6 +387,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
                 label: 'Nap Time',
                 value: _selectedNap,
                 options: _napOptions,
+                icon: Icons.bed_rounded,
                 onChanged: (value) {
                   setState(() => _selectedNap = value);
                 },
@@ -246,6 +402,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
                 label: 'Mood & Behavior',
                 value: _selectedMood,
                 options: _moodOptions,
+                icon: Icons.emoji_emotions_rounded,
                 onChanged: (value) {
                   setState(() => _selectedMood = value);
                 },
@@ -260,10 +417,14 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
                 label: 'Health & Hygiene',
                 value: _selectedHealth,
                 options: _healthOptions,
+                icon: Icons.health_and_safety_rounded,
                 onChanged: (value) {
                   setState(() => _selectedHealth = value);
                 },
               ),
+
+              const SizedBox(height: 20),
+
               // Message to Parent
               _buildMessageField(theme, colorScheme),
               const SizedBox(height: 32),
@@ -284,20 +445,27 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
     required String value,
     required List<String> options,
     required ValueChanged<String> onChanged,
+    IconData? icon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: colorScheme.onSurface,
-          ),
+        Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 20, color: colorScheme.primary),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              label,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
-
         const SizedBox(height: 10),
-
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -314,14 +482,22 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
                 ),
                 decoration: BoxDecoration(
                   color: isSelected ? colorScheme.primary : colorScheme.surface,
-
                   borderRadius: BorderRadius.circular(20),
-
                   border: Border.all(
                     color: isSelected
                         ? colorScheme.primary
-                        : colorScheme.primary.withValues(alpha: 0.5),
+                        : colorScheme.primary.withValues(alpha: 0.3),
+                    width: 1.5,
                   ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: colorScheme.primary.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -334,7 +510,6 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
                       ),
                       const SizedBox(width: 5),
                     ],
-
                     Text(
                       option,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -342,6 +517,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
                         color: isSelected
                             ? colorScheme.onPrimary
                             : colorScheme.onSurface,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -358,12 +534,18 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Select Student',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: colorScheme.onSurface,
-          ),
+        Row(
+          children: [
+            Icon(Icons.person_rounded, size: 20, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Select Student',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         if (_isLoadingStudents)
@@ -432,16 +614,153 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
     );
   }
 
+  // ============================================================
+  // CLASSROOM SELECTOR
+  // ============================================================
+
+  // ============================================================
+  // COMPACT HORIZONTAL SCROLLABLE CLASSROOM SELECTOR
+  // ============================================================
+
+  Widget _buildClassroomSelector(ThemeData theme, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.class_rounded, size: 20, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Classroom',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        if (_isLoadingClassrooms)
+          const Center(child: CircularProgressIndicator())
+        else if (_classrooms.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: Text(
+                'No classrooms available',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          )
+        else
+          // Horizontal scrollable classroom chips
+          SizedBox(
+            height: 50,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _classrooms.length,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              itemBuilder: (context, index) {
+                final classroom = _classrooms[index];
+                final isSelected = _selectedClassroom == classroom;
+
+                return GestureDetector(
+                  onTap: _isSaving
+                      ? null
+                      : () {
+                          setState(() => _selectedClassroom = classroom);
+                        },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    margin: const EdgeInsets.only(right: 10),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.surfaceVariant.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.outline.withValues(alpha: 0.1),
+                        width: isSelected ? 2 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.2,
+                                ),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.class_rounded,
+                          size: 16,
+                          color: isSelected
+                              ? colorScheme.onPrimary
+                              : colorScheme.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          classroom.classroomName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurface,
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            size: 14,
+                            color: colorScheme.onPrimary,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildMessageField(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Message to Parent',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: colorScheme.onSurface,
-          ),
+        Row(
+          children: [
+            Icon(Icons.message_rounded, size: 20, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Message to Parent',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -454,7 +773,11 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
             filled: true,
             fillColor: colorScheme.surfaceVariant.withValues(alpha: 0.3),
             contentPadding: const EdgeInsets.all(16),
+            hintStyle: TextStyle(
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
           ),
+          style: TextStyle(color: colorScheme.onSurface),
           onChanged: (value) => _messageToParent = value,
         ),
       ],
@@ -473,6 +796,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          elevation: 2,
         ),
         child: _isSaving
             ? const SizedBox(
