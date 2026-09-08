@@ -6,11 +6,13 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/pages/otp_verification_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/add_moment_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/daily_report_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/observations_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/three_month_reports_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/weekly_planner_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/share_with_parents_page.dart';
 import 'package:little_heroes_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:little_heroes_mobile/features/main/presentation/pages/settings_page.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
@@ -220,6 +222,18 @@ class AppRouter {
         builder: (context, state) {
           return const ObservationsPage();
         },
+      ),
+
+      // In app_router.dart
+      GoRoute(
+        path: AppRoutes.addMoment,
+        name: 'addMoment',
+        builder: (context, state) => const AddMomentPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.Compile_3_onth_report,
+        name: 'shareWithParents',
+        builder: (context, state) => const ShareWithParentsPage(),
       ),
     ],
   );

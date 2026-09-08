@@ -28,4 +28,7 @@ class AppRoutes {
   static const threeMonthReports = '/three-month-reports';
   static const weeklyPlanner = '/weekly-planner';
   static const observations = '/observations';
+
+  static const String addMoment = '/add-moment';
+  static const String Compile_3_onth_report = '/Compile_3_onth_report';
 }
