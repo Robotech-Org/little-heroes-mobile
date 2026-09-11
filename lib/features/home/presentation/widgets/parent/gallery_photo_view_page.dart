@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:little_heroes_mobile/core/widgets/authenticated_image.dart';
 import 'package:little_heroes_mobile/features/home/domain/entities/gallery_item.dart';
 
 class GalleryPhotoViewPage extends StatelessWidget {
@@ -16,6 +17,7 @@ class GalleryPhotoViewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -23,49 +25,66 @@ class GalleryPhotoViewPage extends StatelessWidget {
           _formatDate(item.momentDate),
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
-        backgroundColor: theme.colorScheme.surface,
-        foregroundColor: theme.colorScheme.onSurface,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
         children: [
-          // Image
+          // Image (loaded with cookies)
           Expanded(
             flex: 3,
             child: Container(
               width: double.infinity,
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: item.photoUrl.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.network(
-                        item.photoUrl,
-                        fit: BoxFit.contain,
-                        width: double.infinity,
-                        height: double.infinity,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Center(
-                            child: Icon(
-                              Icons.image_outlined,
-                              size: 80,
-                              color: theme.colorScheme.primary,
-                            ),
-                          );
-                        },
+              child: AuthenticatedImage(
+                imageUrl: item.photoUrl,
+                fit: BoxFit.contain,
+                borderRadius: BorderRadius.circular(20),
+                placeholder: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Loading image...',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    )
-                  : Center(
-                      child: Icon(
+                    ],
+                  ),
+                ),
+                errorWidget: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
                         Icons.image_outlined,
                         size: 80,
-                        color: theme.colorScheme.primary,
+                        color: colorScheme.primary.withOpacity(0.5),
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Unable to load image',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
 
@@ -87,7 +106,7 @@ class GalleryPhotoViewPage extends StatelessWidget {
                   Text(
                     'Teacher: ${item.teacher}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -95,7 +114,7 @@ class GalleryPhotoViewPage extends StatelessWidget {
                     Text(
                       item.notes!,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
+                        color: colorScheme.onSurface,
                         height: 1.5,
                       ),
                     ),
@@ -105,13 +124,13 @@ class GalleryPhotoViewPage extends StatelessWidget {
                       Icon(
                         Icons.photo_library_outlined,
                         size: 16,
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Photo ${index + 1} of $totalItems',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],

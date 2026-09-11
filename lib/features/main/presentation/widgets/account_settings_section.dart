@@ -53,7 +53,7 @@ class AccountSettingsSection extends StatelessWidget {
             SettingsTile(
               icon: Icons.child_care_outlined,
               title: 'Linked Children',
-              subtitle: '2 children',
+              subtitle: 'see children',
               onTap: onLinkedChildrenTap ?? () {},
             ),
 

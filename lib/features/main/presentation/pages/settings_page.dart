@@ -183,17 +183,16 @@ class _SettingsPageState extends State<SettingsPage> {
               //
               const AppearanceSettings(),
 
-              const SizedBox(height: 28),
+              // const SizedBox(height: 28),
 
               //
               // ACCOUNT ROLE
               //
-              if (role != null)
-                SettingsSection(
-                  title: 'Account Role',
-                  child: SettingsRoleTile(role: role, onChange: () {}),
-                ),
-
+              // if (role != null)
+              //   SettingsSection(
+              //     title: 'Account Role',
+              //     child: SettingsRoleTile(role: role, onChange: () {}),
+              //   ),
               const SizedBox(height: 28),
 
               //
