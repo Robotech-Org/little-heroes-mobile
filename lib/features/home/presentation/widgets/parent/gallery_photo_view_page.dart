@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:little_heroes_mobile/core/widgets/authenticated_image.dart';
 import 'package:little_heroes_mobile/features/home/domain/entities/gallery_item.dart';
 
-class GalleryPhotoViewPage extends StatelessWidget {
+class GalleryPhotoViewPage extends StatefulWidget {
   final GalleryItem item;
   final int index;
   final int totalItems;
@@ -15,9 +15,52 @@ class GalleryPhotoViewPage extends StatelessWidget {
   });
 
   @override
+  State<GalleryPhotoViewPage> createState() => _GalleryPhotoViewPageState();
+}
+
+class _GalleryPhotoViewPageState extends State<GalleryPhotoViewPage> {
+  final _transformController = TransformationController();
+  bool _isZoomed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _transformController.addListener(_onTransformChanged);
+  }
+
+  @override
+  void dispose() {
+    _transformController.removeListener(_onTransformChanged);
+    _transformController.dispose();
+    super.dispose();
+  }
+
+  void _onTransformChanged() {
+    final scale = _transformController.value.getMaxScaleOnAxis();
+    final zoomed = scale > 1.01;
+    if (zoomed != _isZoomed) {
+      setState(() => _isZoomed = zoomed);
+    }
+  }
+
+  void _resetZoom() {
+    _transformController.value = Matrix4.identity();
+  }
+
+  /// Double-tap toggles between 1x and 2.5x centered on the tap point.
+  void _handleDoubleTap() {
+    if (_isZoomed) {
+      _resetZoom();
+    } else {
+      _transformController.value = Matrix4.identity()..scale(2.5);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final item = widget.item;
 
     return Scaffold(
       appBar: AppBar(
@@ -33,10 +76,19 @@ class GalleryPhotoViewPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          // Show reset button only when zoomed
+          if (_isZoomed)
+            IconButton(
+              tooltip: 'Reset zoom',
+              icon: const Icon(Icons.zoom_out_map_rounded),
+              onPressed: _resetZoom,
+            ),
+        ],
       ),
       body: Column(
         children: [
-          // Image (loaded with cookies)
+          // Image with pinch-to-zoom support
           Expanded(
             flex: 3,
             child: Container(
@@ -44,49 +96,64 @@ class GalleryPhotoViewPage extends StatelessWidget {
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(20),
+                // ✅ reduced from 20 → 8
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: AuthenticatedImage(
-                imageUrl: item.photoUrl,
-                fit: BoxFit.contain,
-                borderRadius: BorderRadius.circular(20),
-                placeholder: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Loading image...',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+              clipBehavior: Clip.antiAlias,
+              child: GestureDetector(
+                onDoubleTap: _handleDoubleTap,
+                child: InteractiveViewer(
+                  transformationController: _transformController,
+                  minScale: 1.0,
+                  maxScale: 5.0,
+                  panEnabled: true,
+                  scaleEnabled: true,
+                  boundaryMargin: const EdgeInsets.all(20),
+                  child: AuthenticatedImage(
+                    imageUrl: item.photoUrl,
+                    fit: BoxFit.contain,
+                    // ✅ no radius on the image itself — parent clips
+                    borderRadius: BorderRadius.zero,
+                    placeholder: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Loading image...',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                errorWidget: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.image_outlined,
-                        size: 80,
-                        color: colorScheme.primary.withOpacity(0.5),
+                    ),
+                    errorWidget: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_outlined,
+                            size: 80,
+                            color: colorScheme.primary.withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Unable to load image',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Unable to load image',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
+          const SizedBox(height: 8),
 
           // Details
           Expanded(
@@ -128,7 +195,7 @@ class GalleryPhotoViewPage extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Photo ${index + 1} of $totalItems',
+                        'Photo ${widget.index + 1} of ${widget.totalItems}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),

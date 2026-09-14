@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:little_heroes_mobile/core/network/dio_client.dart';
+import 'package:little_heroes_mobile/core/widgets/image_cache_store.dart';
 
 class AuthenticatedImage extends StatefulWidget {
   final String imageUrl;
@@ -36,6 +37,15 @@ class _AuthenticatedImageState extends State<AuthenticatedImage> {
   @override
   void initState() {
     super.initState();
+
+    // ✅ Instant hit from cache — no async, no flicker.
+    final cached = ImageCacheStore.get(widget.imageUrl);
+    if (cached != null) {
+      _imageBytes = cached;
+      _isLoading = false;
+      return;
+    }
+
     _loadImage();
   }
 
@@ -43,11 +53,19 @@ class _AuthenticatedImageState extends State<AuthenticatedImage> {
   void didUpdateWidget(AuthenticatedImage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageUrl != widget.imageUrl) {
+      final cached = ImageCacheStore.get(widget.imageUrl);
+      if (cached != null) {
+        setState(() {
+          _imageBytes = cached;
+          _isLoading = false;
+          _hasError = false;
+        });
+        return;
+      }
       _loadImage();
     }
   }
 
-  ///   Load image with session cookies using the shared DioClient
   Future<void> _loadImage() async {
     if (widget.imageUrl.isEmpty) {
       if (mounted) {
@@ -67,38 +85,32 @@ class _AuthenticatedImageState extends State<AuthenticatedImage> {
     }
 
     try {
-      //   Get Dio client with the shared cookie jar (session id)
-      final dioClient = await DioClient.create();
-      final dio = dioClient.dio;
+      // ✅ ImageCacheStore.fetch dedupes concurrent requests for same URL
+      final bytes = await ImageCacheStore.fetch(widget.imageUrl, () async {
+        final dioClient = await DioClient.create();
+        final dio = dioClient.dio;
 
-      //   Request image — cookies are attached automatically by CookieManager
-      final response = await dio.get(
-        widget.imageUrl,
-        options: Options(
-          responseType: ResponseType.bytes,
-          headers: {'Accept': 'image/*'},
-          followRedirects: true,
-          validateStatus: (status) => status != null && status < 500,
-        ),
-      );
-
-      if (response.statusCode == 200 && response.data != null) {
-        if (mounted) {
-          setState(() {
-            _imageBytes = Uint8List.fromList(response.data as List<int>);
-            _isLoading = false;
-          });
-        }
-      } else {
-        debugPrint(
-          '❌ Image load failed: status ${response.statusCode} for ${widget.imageUrl}',
+        final response = await dio.get(
+          widget.imageUrl,
+          options: Options(
+            responseType: ResponseType.bytes,
+            headers: {'Accept': 'image/*'},
+            followRedirects: true,
+            validateStatus: (status) => status != null && status < 500,
+          ),
         );
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _hasError = true;
-          });
+
+        if (response.statusCode == 200 && response.data != null) {
+          return Uint8List.fromList(response.data as List<int>);
         }
+        throw Exception('Image load failed: status ${response.statusCode}');
+      });
+
+      if (mounted) {
+        setState(() {
+          _imageBytes = bytes;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       debugPrint('❌ Authenticated image error: $e');
