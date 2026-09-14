@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
-import 'package:little_heroes_mobile/features/chats/data/datasources/chat_remote_data_source.dart';
+import 'package:little_heroes_mobile/core/network/socket/socket_service.dart';
+import 'package:little_heroes_mobile/features/chats/data/datasources/chat_remote_datasource.dart';
 import 'package:little_heroes_mobile/features/chats/data/repositories/chat_repository_impl.dart';
 import 'package:little_heroes_mobile/features/chats/domain/repositories/chat_repository.dart';
+import 'package:little_heroes_mobile/features/chats/presentation/bloc/chat_bloc.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/classroom_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/competency_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/daily_report_remote_data_source.dart';
@@ -218,17 +220,30 @@ Future<void> initDependencies() async {
   // CHAT
   // ============================================================
 
-  if (!sl.isRegistered<ChatRemoteDataSource>()) {
-    sl.registerLazySingleton<ChatRemoteDataSource>(
-      () => ChatRemoteDataSourceImpl(sl<Dio>()),
-    );
-  }
+  //   Socket
+  sl.registerLazySingleton<SocketService>(() => SocketService());
 
-  if (!sl.isRegistered<ChatRepository>()) {
-    sl.registerLazySingleton<ChatRepository>(
-      () => ChatRepositoryImpl(remoteDataSource: sl<ChatRemoteDataSource>()),
-    );
-  }
+  //   Chat Data Source
+  sl.registerLazySingleton<ChatRemoteDataSource>(() => ChatRemoteDataSource());
+
+  //   Chat Repository
+  sl.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(remote: sl<ChatRemoteDataSource>()),
+  );
+
+  //   Chat BLoC
+  sl.registerFactory<ChatBloc>(
+    () => ChatBloc(
+      repository: sl<ChatRepository>(),
+      socketService: sl<SocketService>(),
+    ),
+  );
+
+  // if (!sl.isRegistered<ChatRepository>()) {
+  //   sl.registerLazySingleton<ChatRepository>(
+  //     () => ChatRepositoryImpl(remoteDataSource: sl<ChatRemoteDataSource>()),
+  //   );
+  // }
 
   // ============================================================
   // ANNOUNCEMENT
@@ -407,4 +422,13 @@ Future<void> initDependencies() async {
           MomentRepositoryImpl(remoteDataSource: sl<MomentRemoteDataSource>()),
     );
   }
+
+  // sl.registerLazySingleton<SocketService>(() => SocketService());
+  // // sl.registerLazySingleton<ChatRepository>(() => ChatRepository());
+  // sl.registerFactory<ChatBloc>(
+  //   () => ChatBloc(
+  //     repository: sl<ChatRepository>(),
+  //     socketService: sl<SocketService>(),
+  //   ),
+  // );
 }

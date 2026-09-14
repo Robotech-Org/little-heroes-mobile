@@ -70,6 +70,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:little_heroes_mobile/core/services/notification_service.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:little_heroes_mobile/features/chats/presentation/bloc/chat_bloc.dart';
 import 'package:little_heroes_mobile/features/home/presentation/bloc/gallery_bloc.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
 import 'package:little_heroes_mobile/injection_container.dart';
@@ -95,6 +96,7 @@ Future<void> main() async {
           create: (context) => sl<GalleryBloc>(),
           child: const PhotoGalleryPage(),
         ),
+        BlocProvider<ChatBloc>(create: (_) => sl<ChatBloc>()),
       ],
       child: const LittleHeroesApp(),
     ),

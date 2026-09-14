@@ -11,6 +11,9 @@ class AppRoutes {
 
   // Features
   static const String chats = '/chats';
+
+  static const String chatRoom = '/chat-room';
+
   static const String notifications = '/notifications';
   static const String reports = '/reports';
 

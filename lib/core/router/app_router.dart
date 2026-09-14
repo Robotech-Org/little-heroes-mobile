@@ -6,6 +6,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/pages/otp_verification_page.dart';
+import 'package:little_heroes_mobile/features/chats/presentation/bloc/chat_bloc.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/add_moment_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/daily_report_page.dart';
@@ -18,6 +19,7 @@ import 'package:little_heroes_mobile/features/main/presentation/pages/settings_p
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:little_heroes_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:little_heroes_mobile/features/splash/presentation/pages/splash_page.dart';
+import 'package:little_heroes_mobile/injection_container.dart';
 
 import '../../core/services/storage_service.dart';
 import 'app_routes.dart';

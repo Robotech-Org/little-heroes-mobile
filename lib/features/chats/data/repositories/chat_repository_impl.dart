@@ -1,26 +1,51 @@
-import 'package:little_heroes_mobile/features/chats/data/models/chat_participants_response_model.dart';
-
-import '../datasources/chat_remote_data_source.dart';
 import '../../domain/repositories/chat_repository.dart';
+import '../datasources/chat_remote_datasource.dart';
+import '../models/chat_models.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
-  final ChatRemoteDataSource remoteDataSource;
+  final ChatRemoteDataSource remote;
 
-  ChatRepositoryImpl({required this.remoteDataSource});
-
-  @override
-  Future<ChatParticipantsResponseModel> getParents({
-    int page = 1,
-    int pageSize = 20,
-  }) {
-    return remoteDataSource.getParents(page: page, pageSize: pageSize);
-  }
+  ChatRepositoryImpl({required this.remote});
 
   @override
-  Future<ChatParticipantsResponseModel> getTeachers({
+  Future<List<ChatChannel>> listMyChannels({int page = 1, int pageSize = 20}) =>
+      remote.listMyChannels(page: page, pageSize: pageSize);
+
+  @override
+  Future<List<ChatMessage>> getChannelMessages({
+    required String channelId,
+    int page = 1,
+    int pageSize = 50,
+  }) => remote.getChannelMessages(
+    channelId: channelId,
+    page: page,
+    pageSize: pageSize,
+  );
+
+  @override
+  Future<ChatMessage> sendMessage({
+    required String channelId,
+    required String text,
+  }) => remote.sendMessage(channelId: channelId, text: text);
+
+  @override
+  Future<void> markAsRead({required String channelId}) =>
+      remote.markAsRead(channelId: channelId);
+
+  @override
+  Future<List<ChatChannel>> adminListChannels({
     int page = 1,
     int pageSize = 20,
-  }) {
-    return remoteDataSource.getTeachers(page: page, pageSize: pageSize);
-  }
+    Map<String, dynamic>? filters,
+  }) => remote.adminListChannels(
+    page: page,
+    pageSize: pageSize,
+    filters: filters,
+  );
+
+  @override
+  Future<void> adminPostIntervention({
+    required String channelId,
+    required String text,
+  }) => remote.adminPostIntervention(channelId: channelId, text: text);
 }

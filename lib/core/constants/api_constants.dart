@@ -7,6 +7,12 @@ class ApiConstants {
 
   static String get baseUrl => dotenv.env['API_BASE_URL'] ?? '';
 
+  static String get socketUrl => dotenv.env['SOCKET_URL'] ?? baseUrl;
+
+  static String get hostHeader => dotenv.env['HOST_HEADER'] ?? 'dev.local';
+
+  static const String socketNamespace = '/';
+
   // AUTH APIs
 
   static const String login = '/api/method/little_heroes.api.v1.auth.login';
@@ -113,6 +119,26 @@ class ApiConstants {
   static const String chats = '/chats';
 
   static const String reports = '/reports';
+
+  // ✅ Admin / Oversight Endpoints (School Administrator role)
+  static const String adminListChannels =
+      '/api/method/little_heroes.api.v1.communications.admin_list_channels';
+  static const String adminGetChannelMessages =
+      '/api/method/little_heroes.api.v1.communications.admin_get_channel_messages';
+  static const String adminPostIntervention =
+      '/api/method/little_heroes.api.v1.communications.admin_post_intervention';
+
+  // ============================================================
+  // ✅ COMMUNICATIONS / CHAT (Raven Channel) APIs
+  // ============================================================
+  static const String listMyChannels =
+      '/api/method/little_heroes.api.v1.communications.list_my_channels';
+  static const String getChannelMessages =
+      '/api/method/little_heroes.api.v1.communications.get_channel_messages';
+  static const String sendMessage =
+      '/api/method/little_heroes.api.v1.communications.send_message';
+  static const String markAsRead =
+      '/api/method/little_heroes.api.v1.communications.mark_as_read';
 
   // LESSON PLAN APIs
   static const String listLessonPlans =

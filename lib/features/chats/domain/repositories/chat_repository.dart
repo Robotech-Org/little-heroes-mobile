@@ -1,14 +1,25 @@
-import 'package:little_heroes_mobile/features/chats/data/models/chat_participants_response_model.dart';
-
+import '../../data/models/chat_models.dart';
 
 abstract class ChatRepository {
-  Future<ChatParticipantsResponseModel> getParents({
-    int page = 1,
-    int pageSize = 20,
+  Future<List<ChatChannel>> listMyChannels({int page, int pageSize});
+  Future<List<ChatMessage>> getChannelMessages({
+    required String channelId,
+    int page,
+    int pageSize,
   });
+  Future<ChatMessage> sendMessage({
+    required String channelId,
+    required String text,
+  });
+  Future<void> markAsRead({required String channelId});
 
-  Future<ChatParticipantsResponseModel> getTeachers({
-    int page = 1,
-    int pageSize = 20,
+  Future<List<ChatChannel>> adminListChannels({
+    int page,
+    int pageSize,
+    Map<String, dynamic>? filters,
+  });
+  Future<void> adminPostIntervention({
+    required String channelId,
+    required String text,
   });
 }

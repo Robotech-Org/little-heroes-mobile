@@ -7,7 +7,6 @@ import 'package:little_heroes_mobile/core/router/app_routes.dart';
 import 'package:little_heroes_mobile/core/widgets/little_heroes_loading.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
-import 'package:little_heroes_mobile/features/chats/presentation/pages/chat_detail_page.dart';
 import 'package:little_heroes_mobile/features/chats/presentation/pages/chats_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/pages/home_page.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
