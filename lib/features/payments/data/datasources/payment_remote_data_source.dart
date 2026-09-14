@@ -4,7 +4,8 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/dio_error_handler.dart';
 import '../models/subscription_plan_model.dart';
-import '../models/subscription_plan_response_model.dart' hide SubscriptionPlanResponseModel;
+import '../models/subscription_plan_response_model.dart'
+    hide SubscriptionPlanResponseModel;
 
 abstract class PaymentRemoteDataSource {
   Future<SubscriptionPlanResponseModel> getSubscriptionPlans({

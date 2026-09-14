@@ -1,0 +1,122 @@
+class DailyReportOptions {
+  DailyReportOptions._(); // prevent instantiation
+
+  // ───────────────────────────────────────────────────────────
+  // Meals & Snacks
+  // ───────────────────────────────────────────────────────────
+  static const String mealAteAll = 'Ate All';
+  static const String mealAteMost = 'Ate Most';
+  static const String mealAteSome = 'Ate Some';
+  static const String mealAteVeryLittle = 'Ate Very Little';
+  static const String mealRefused = 'Refused / Did Not Eat';
+  static const String mealNotApplicable = 'Not Applicable';
+
+  static const List<String> meals = [
+    mealAteAll,
+    mealAteMost,
+    mealAteSome,
+    mealAteVeryLittle,
+    mealRefused,
+    mealNotApplicable,
+  ];
+
+  // ───────────────────────────────────────────────────────────
+  // Nap Time
+  // ───────────────────────────────────────────────────────────
+  static const String napSleptWell = 'Slept Well (1-2+ Hours)';
+  static const String napShort = 'Short Nap (<1 Hour)';
+  static const String napRestOnly = 'Rest Only (No Sleep)';
+  static const String napDidNotSleep = 'Did Not Sleep';
+  static const String napNotApplicable = 'Not Applicable';
+
+  static const List<String> naps = [
+    napSleptWell,
+    napShort,
+    napRestOnly,
+    napDidNotSleep,
+    napNotApplicable,
+  ];
+
+  // ───────────────────────────────────────────────────────────
+  // Mood & Behavior
+  // ───────────────────────────────────────────────────────────
+  static const String moodHappy = 'Happy & Engaged';
+  static const String moodCalm = 'Calm & Content';
+  static const String moodEnergetic = 'Energetic & Playful';
+  static const String moodFussy = 'Fussy / Crying';
+  static const String moodTired = 'Tired / Sensitive';
+  static const String moodChallenging = 'Challenging / Needed Support';
+
+  static const List<String> moods = [
+    moodHappy,
+    moodCalm,
+    moodEnergetic,
+    moodFussy,
+    moodTired,
+    moodChallenging,
+  ];
+
+  // ───────────────────────────────────────────────────────────
+  // Health & Hygiene
+  // ───────────────────────────────────────────────────────────
+  static const String healthGood = 'Good / Normal';
+  static const String healthPotty = 'Potty / Diaper Normal';
+  static const String healthMedication = 'Medication Administered';
+  static const String healthMinorSymptoms = 'Minor Symptoms (Runny nose/Cough)';
+  static const String healthNeedsMonitoring =
+      'Needs Monitoring / Parent Contact';
+
+  static const List<String> health = [
+    healthGood,
+    healthPotty,
+    healthMedication,
+    healthMinorSymptoms,
+    healthNeedsMonitoring,
+  ];
+
+  // ───────────────────────────────────────────────────────────
+  // Defaults
+  // ───────────────────────────────────────────────────────────
+  static const String defaultMeal = mealAteAll;
+  static const String defaultNap = napSleptWell;
+  static const String defaultMood = moodHappy;
+  static const String defaultHealth = healthGood;
+
+  // ───────────────────────────────────────────────────────────
+  // Legacy → New value mapping (for editing older reports)
+  // ───────────────────────────────────────────────────────────
+  static const Map<String, String> legacyMealMap = {
+    'Ate Well': mealAteAll,
+    'Ate Most': mealAteMost,
+    'Ate Some': mealAteSome,
+    'Ate Very Little': mealAteVeryLittle,
+    'Refused': mealRefused,
+    'Not Applicable': mealNotApplicable,
+  };
+
+  static const Map<String, String> legacyNapMap = {
+    'Slept Well': napSleptWell,
+    'Short Nap': napShort,
+    'Rest Only': napRestOnly,
+    'Did Not Sleep': napDidNotSleep,
+    'Not Applicable': napNotApplicable,
+  };
+
+  static const Map<String, String> legacyMoodMap = {
+    'Happy': moodHappy,
+    'Playful': moodEnergetic,
+    'Quiet': moodCalm,
+    'Fussy': moodFussy,
+    'Tired': moodTired,
+    'Challenging': moodChallenging,
+  };
+
+  static const Map<String, String> legacyHealthMap = {
+    'No Concerns': healthGood,
+    'Runny Nose': healthMinorSymptoms,
+    'Cough': healthMinorSymptoms,
+    'Fever': healthNeedsMonitoring,
+    'Good': healthGood,
+    'Normal': healthGood,
+  };
+}

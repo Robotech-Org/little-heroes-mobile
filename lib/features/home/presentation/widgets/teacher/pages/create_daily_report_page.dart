@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:little_heroes_mobile/core/utils/snackbar_utils.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/classroom_model.dart';
+import 'package:little_heroes_mobile/features/home/data/models/daily_report_draft_model.dart';
 import 'package:little_heroes_mobile/features/home/data/models/daily_report_model.dart';
+import 'package:little_heroes_mobile/features/home/data/services/daily_report_draft_service.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/classroom_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
+import 'package:little_heroes_mobile/features/home/presentation/constants/daily_report_options.dart';
 import 'package:little_heroes_mobile/features/students/domain/entities/student.dart';
 import 'package:little_heroes_mobile/features/students/domain/repositories/student_repository.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
@@ -34,47 +39,30 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
   bool _isLoadingClassrooms = true;
 
   // Report fields
-  String _selectedMeal = 'Ate All';
-  String _selectedNap = 'Slept Well (1-2+ Hours)';
-  String _selectedMood = 'Happy & Engaged';
-  String _selectedHealth = 'Good / Normal';
+  String _selectedMeal = DailyReportOptions.defaultMeal;
+  String _selectedNap = DailyReportOptions.defaultNap;
+  String _selectedMood = DailyReportOptions.defaultMood;
+  String _selectedHealth = DailyReportOptions.defaultHealth;
   String _messageToParent = '';
   bool _isSaving = false;
 
-  // Updated options from JSON
-  final List<String> _mealOptions = [
-    'Ate All',
-    'Ate Most',
-    'Ate Some',
-    'Ate Very Little',
-    'Refused / Did Not Eat',
-    'Not Applicable',
-  ];
+  //   Controller keeps the TextField in sync with restored / reset values
+  final _messageController = TextEditingController();
 
-  final List<String> _napOptions = [
-    'Slept Well (1-2+ Hours)',
-    'Short Nap (<1 Hour)',
-    'Rest Only (No Sleep)',
-    'Did Not Sleep',
-    'Not Applicable',
-  ];
+  final _draftService = DailyReportDraftService();
+  Timer? _autoSaveTimer;
+  bool _hasUnsavedChanges = false;
 
-  final List<String> _moodOptions = [
-    'Happy & Engaged',
-    'Calm & Content',
-    'Energetic & Playful',
-    'Fussy / Crying',
-    'Tired / Sensitive',
-    'Challenging / Needed Support',
-  ];
-
-  final List<String> _healthOptions = [
-    'Good / Normal',
-    'Potty / Diaper Normal',
-    'Medication Administered',
-    'Minor Symptoms (Runny nose/Cough)',
-    'Needs Monitoring / Parent Contact',
-  ];
+  //   MULTI-DRAFT: key depends on report (edit) or selected student (new)
+  String get _draftKey {
+    if (widget.report != null && widget.report!.name.isNotEmpty) {
+      return 'report_${widget.report!.name}';
+    }
+    if (_selectedStudent != null) {
+      return 'student_${_selectedStudent!.id}';
+    }
+    return 'new_draft';
+  }
 
   @override
   void initState() {
@@ -82,6 +70,26 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
     _loadData();
     if (widget.report != null) {
       _populateFields(widget.report!);
+    }
+    // Only auto-restore for EDIT mode. New reports wait for student pick.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreDraftIfAny());
+  }
+
+  @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  ///   Single place to update the message — keeps state and controller in sync.
+  void _setMessage(String value) {
+    _messageToParent = value;
+    if (_messageController.text != value) {
+      _messageController.text = value;
+      _messageController.selection = TextSelection.fromPosition(
+        TextPosition(offset: value.length),
+      );
     }
   }
 
@@ -106,7 +114,6 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
         _students = response.items;
         _isLoadingStudents = false;
 
-        // If we have a report, try to select the student
         if (widget.report != null) {
           _selectedStudent = _students.firstWhere(
             (s) => s.name == widget.report!.studentName,
@@ -149,12 +156,10 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
         _classrooms = response.items;
         _isLoadingClassrooms = false;
 
-        // Select first classroom by default if available
         if (_classrooms.isNotEmpty && _selectedClassroom == null) {
           _selectedClassroom = _classrooms.first;
         }
 
-        // If we have a report, try to select the classroom
         if (widget.report != null && _classrooms.isNotEmpty) {
           _selectedClassroom = _classrooms.firstWhere(
             (c) => c.classroomName == widget.report!.studentClassroom,
@@ -168,7 +173,6 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
   }
 
   void _populateFields(DailyReportModel report) {
-    // Find the student by name (already handled in _loadStudents)
     _selectedStudent ??= _students.firstWhere(
       (s) => s.name == report.studentName,
       orElse: () => Student(
@@ -183,64 +187,38 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
       ),
     );
 
-    // Map old values to new values if needed
     _selectedMeal = _mapMealValue(report.mealsAndSnacks);
     _selectedNap = _mapNapValue(report.napTime);
     _selectedMood = _mapMoodValue(report.moodAndBehavior);
     _selectedHealth = _mapHealthValue(report.healthAndHygiene);
-    _messageToParent = report.dailyReportNotes;
+    _setMessage(report.dailyReportNotes);
   }
 
-  // Helper methods to map old values to new ones
+  // ───────────────────────────────────────────────────────────
+  // Value mappers — delegate to DailyReportOptions constants
+  // ───────────────────────────────────────────────────────────
   String _mapMealValue(String value) {
-    final mapping = {
-      'Ate Well': 'Ate All',
-      'Ate Most': 'Ate Most',
-      'Ate Some': 'Ate Some',
-      'Ate Very Little': 'Ate Very Little',
-      'Refused': 'Refused / Did Not Eat',
-      'Not Applicable': 'Not Applicable',
-    };
-    if (_mealOptions.contains(value)) return value;
-    return mapping[value] ?? 'Ate All';
+    if (DailyReportOptions.meals.contains(value)) return value;
+    return DailyReportOptions.legacyMealMap[value] ??
+        DailyReportOptions.defaultMeal;
   }
 
   String _mapNapValue(String value) {
-    final mapping = {
-      'Slept Well': 'Slept Well (1-2+ Hours)',
-      'Short Nap': 'Short Nap (<1 Hour)',
-      'Rest Only': 'Rest Only (No Sleep)',
-      'Did Not Sleep': 'Did Not Sleep',
-      'Not Applicable': 'Not Applicable',
-    };
-    if (_napOptions.contains(value)) return value;
-    return mapping[value] ?? 'Slept Well (1-2+ Hours)';
+    if (DailyReportOptions.naps.contains(value)) return value;
+    return DailyReportOptions.legacyNapMap[value] ??
+        DailyReportOptions.defaultNap;
   }
 
   String _mapMoodValue(String value) {
-    final mapping = {
-      'Happy': 'Happy & Engaged',
-      'Playful': 'Energetic & Playful',
-      'Quiet': 'Calm & Content',
-      'Fussy': 'Fussy / Crying',
-      'Tired': 'Tired / Sensitive',
-      'Challenging': 'Challenging / Needed Support',
-    };
-    if (_moodOptions.contains(value)) return value;
-    return mapping[value] ?? 'Happy & Engaged';
+    if (DailyReportOptions.moods.contains(value)) return value;
+    return DailyReportOptions.legacyMoodMap[value] ??
+        DailyReportOptions.defaultMood;
   }
 
   String _mapHealthValue(String value) {
-    final mapping = {
-      'No Concerns': 'Good / Normal',
-      'Runny Nose': 'Minor Symptoms (Runny nose/Cough)',
-      'Cough': 'Minor Symptoms (Runny nose/Cough)',
-      'Fever': 'Needs Monitoring / Parent Contact',
-      'Good': 'Good / Normal',
-      'Normal': 'Good / Normal',
-    };
-    if (_healthOptions.contains(value)) return value;
-    return mapping[value] ?? 'Good / Normal';
+    if (DailyReportOptions.health.contains(value)) return value;
+    return DailyReportOptions.legacyHealthMap[value] ??
+        DailyReportOptions.defaultHealth;
   }
 
   Future<void> _saveReport() async {
@@ -256,6 +234,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
       return;
     }
 
+    _autoSaveTimer?.cancel();
     setState(() => _isSaving = true);
 
     try {
@@ -302,12 +281,167 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
         SnackbarUtils.showSuccess(context, 'Report created successfully!');
       }
 
+      await _deleteDraft();
+
       setState(() => _isSaving = false);
-      Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       setState(() => _isSaving = false);
       SnackbarUtils.showError(context, 'Failed to save: ${e.toString()}');
     }
+  }
+
+  /// Only auto-restore for EDIT mode. New reports use per-student restore.
+  Future<void> _restoreDraftIfAny() async {
+    if (!mounted) return;
+    if (widget.report == null) return;
+
+    final draft = await _draftService.getDraft(_draftKey);
+    if (draft == null || !mounted) return;
+
+    final restore = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unsaved Draft Found'),
+        content: Text(
+          'You have an unsaved draft from ${_formatTimeAgo(draft.savedAt)}.\n\n'
+          'Would you like to restore it?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Discard'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+
+    if (restore == true) {
+      setState(() {
+        _selectedMeal = draft.selectedMeal;
+        _selectedNap = draft.selectedNap;
+        _selectedMood = draft.selectedMood;
+        _selectedHealth = draft.selectedHealth;
+        _setMessage(draft.messageToParent);
+      });
+      SnackbarUtils.showSuccess(context, 'Draft restored');
+    } else {
+      await _draftService.deleteDraft(_draftKey);
+    }
+  }
+
+  /// Called when student changes. Resets form and looks for that student's draft.
+  Future<void> _onStudentChanged(Student? student) async {
+    if (student == null) return;
+
+    _autoSaveTimer?.cancel();
+
+    setState(() {
+      _selectedStudent = student;
+      _selectedMeal = DailyReportOptions.defaultMeal;
+      _selectedNap = DailyReportOptions.defaultNap;
+      _selectedMood = DailyReportOptions.defaultMood;
+      _selectedHealth = DailyReportOptions.defaultHealth;
+      _setMessage('');
+    });
+
+    final draft = await _draftService.getDraft('student_${student.id}');
+    if (draft == null || !mounted) return;
+
+    final restore = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Draft Found'),
+        content: Text(
+          'A saved draft for ${draft.studentName} from '
+          '${_formatTimeAgo(draft.savedAt)} exists.\n\n'
+          'Would you like to load it?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Start Fresh'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Load Draft'),
+          ),
+        ],
+      ),
+    );
+
+    if (restore == true) {
+      setState(() {
+        _selectedMeal = draft.selectedMeal;
+        _selectedNap = draft.selectedNap;
+        _selectedMood = draft.selectedMood;
+        _selectedHealth = draft.selectedHealth;
+        _setMessage(draft.messageToParent);
+
+        if (draft.classroomName != null && _classrooms.isNotEmpty) {
+          _selectedClassroom = _classrooms.firstWhere(
+            (c) => c.classroomName == draft.classroomName,
+            orElse: () => _selectedClassroom ?? _classrooms.first,
+          );
+        }
+      });
+      SnackbarUtils.showSuccess(context, 'Draft loaded');
+    }
+  }
+
+  /// Schedule auto-save 3 seconds after last change
+  void _scheduleAutoSave() {
+    _hasUnsavedChanges = true;
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(const Duration(seconds: 3), () {
+      _saveAsDraft(silent: true);
+    });
+  }
+
+  /// Persist current form as draft to local storage.
+  Future<void> _saveAsDraft({bool silent = false}) async {
+    if (_selectedStudent == null || _selectedClassroom == null) return;
+
+    final draft = DailyReportDraftModel(
+      reportName: widget.report?.name,
+      studentId: _selectedStudent!.id,
+      studentName: _selectedStudent!.name,
+      classroomName: _selectedClassroom!.classroomName,
+      reportDate: DateTime.now().toIso8601String().split('T').first,
+      selectedMeal: _selectedMeal,
+      selectedNap: _selectedNap,
+      selectedMood: _selectedMood,
+      selectedHealth: _selectedHealth,
+      messageToParent: _messageToParent,
+      savedAt: DateTime.now(),
+    );
+
+    await _draftService.saveDraft(draft);
+    _hasUnsavedChanges = false;
+
+    if (!silent && mounted) {
+      SnackbarUtils.showSuccess(
+        context,
+        'Draft saved for ${_selectedStudent!.name}',
+      );
+    }
+  }
+
+  /// Delete the draft after successful submit
+  Future<void> _deleteDraft() async {
+    await _draftService.deleteDraft(_draftKey);
+  }
+
+  String _formatTimeAgo(DateTime time) {
+    final diff = DateTime.now().difference(time);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inHours < 1) return '${diff.inMinutes} min ago';
+    if (diff.inDays < 1) return '${diff.inHours} hr ago';
+    return '${diff.inDays} days ago';
   }
 
   @override
@@ -357,79 +491,78 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Student Selector - HORIZONTAL SCROLLABLE
               _buildStudentSelector(theme, colorScheme),
               const SizedBox(height: 16),
 
-              // Classroom Selector
               _buildClassroomSelector(theme, colorScheme),
               const SizedBox(height: 24),
 
-              // Meals & Snacks
               _buildOptionSelector(
                 theme: theme,
                 colorScheme: colorScheme,
                 label: 'Meals & Snacks',
                 value: _selectedMeal,
-                options: _mealOptions,
+                options: DailyReportOptions.meals,
                 icon: Icons.restaurant_rounded,
                 onChanged: (value) {
                   setState(() => _selectedMeal = value);
+                  _scheduleAutoSave();
                 },
               ),
 
               const SizedBox(height: 20),
 
-              // Nap Time
               _buildOptionSelector(
                 theme: theme,
                 colorScheme: colorScheme,
                 label: 'Nap Time',
                 value: _selectedNap,
-                options: _napOptions,
+                options: DailyReportOptions.naps,
                 icon: Icons.bed_rounded,
                 onChanged: (value) {
                   setState(() => _selectedNap = value);
+                  _scheduleAutoSave();
                 },
               ),
 
               const SizedBox(height: 20),
 
-              // Mood & Behavior
               _buildOptionSelector(
                 theme: theme,
                 colorScheme: colorScheme,
                 label: 'Mood & Behavior',
                 value: _selectedMood,
-                options: _moodOptions,
+                options: DailyReportOptions.moods,
                 icon: Icons.emoji_emotions_rounded,
                 onChanged: (value) {
                   setState(() => _selectedMood = value);
+                  _scheduleAutoSave();
                 },
               ),
 
               const SizedBox(height: 20),
 
-              // Health & Hygiene
               _buildOptionSelector(
                 theme: theme,
                 colorScheme: colorScheme,
                 label: 'Health & Hygiene',
                 value: _selectedHealth,
-                options: _healthOptions,
+                options: DailyReportOptions.health,
                 icon: Icons.health_and_safety_rounded,
                 onChanged: (value) {
                   setState(() => _selectedHealth = value);
+                  _scheduleAutoSave();
                 },
               ),
 
               const SizedBox(height: 20),
 
-              // Message to Parent
               _buildMessageField(theme, colorScheme),
               const SizedBox(height: 32),
 
-              // Save Button
+              _buildSaveDraftButton(theme, colorScheme),
+              const SizedBox(height: 12),
+
               _buildSaveButton(theme, colorScheme),
             ],
           ),
@@ -568,11 +701,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
                 icon: const Icon(Icons.arrow_drop_down),
                 elevation: 16,
                 style: theme.textTheme.bodyMedium,
-                onChanged: _isSaving
-                    ? null
-                    : (value) {
-                        setState(() => _selectedStudent = value);
-                      },
+                onChanged: _isSaving ? null : _onStudentChanged,
                 items: _students.map((student) {
                   return DropdownMenuItem<Student>(
                     value: student,
@@ -614,14 +743,6 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
     );
   }
 
-  // ============================================================
-  // CLASSROOM SELECTOR
-  // ============================================================
-
-  // ============================================================
-  // COMPACT HORIZONTAL SCROLLABLE CLASSROOM SELECTOR
-  // ============================================================
-
   Widget _buildClassroomSelector(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -656,7 +777,6 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
             ),
           )
         else
-          // Horizontal scrollable classroom chips
           SizedBox(
             height: 50,
             child: ListView.builder(
@@ -672,6 +792,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
                       ? null
                       : () {
                           setState(() => _selectedClassroom = classroom);
+                          _scheduleAutoSave();
                         },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -764,7 +885,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
         ),
         const SizedBox(height: 8),
         TextFormField(
-          initialValue: _messageToParent,
+          controller: _messageController,
           maxLines: 4,
           enabled: !_isSaving,
           decoration: InputDecoration(
@@ -778,7 +899,10 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
             ),
           ),
           style: TextStyle(color: colorScheme.onSurface),
-          onChanged: (value) => _messageToParent = value,
+          onChanged: (value) {
+            _messageToParent = value;
+            _scheduleAutoSave();
+          },
         ),
       ],
     );
@@ -808,12 +932,47 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
                 ),
               )
             : Text(
-                widget.report != null ? 'Update Report' : 'Save & Mark Done',
+                widget.report != null ? 'Update Report' : 'Submit',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildSaveDraftButton(ThemeData theme, ColorScheme colorScheme) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: OutlinedButton.icon(
+        onPressed: _isSaving
+            ? null
+            : () async {
+                if (_selectedStudent == null) {
+                  SnackbarUtils.showError(context, 'Please select a student');
+                  return;
+                }
+                if (_selectedClassroom == null) {
+                  SnackbarUtils.showError(context, 'Please select a classroom');
+                  return;
+                }
+                _autoSaveTimer?.cancel();
+                await _saveAsDraft(silent: false);
+              },
+        icon: const Icon(Icons.save_outlined, size: 20),
+        label: const Text(
+          'Save Draft',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: colorScheme.primary,
+          side: BorderSide(color: colorScheme.primary, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       ),
     );
   }
