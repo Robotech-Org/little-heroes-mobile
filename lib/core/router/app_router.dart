@@ -7,15 +7,21 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.
 import 'package:little_heroes_mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/pages/otp_verification_page.dart';
 import 'package:little_heroes_mobile/features/chats/presentation/bloc/chat_bloc.dart';
+import 'package:little_heroes_mobile/features/chats/presentation/pages/chats_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/moment_show.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/add_moment_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/add_observation_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/daily_report_detail_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/daily_report_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/observation_detail_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/observations_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/three_month_reports_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/weekly_planner_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/share_with_parents_page.dart';
 import 'package:little_heroes_mobile/features/main/presentation/pages/main_page.dart';
 import 'package:little_heroes_mobile/features/main/presentation/pages/settings_page.dart';
+import 'package:little_heroes_mobile/features/notifications/presentation/pages/notification_detail_page.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:little_heroes_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:little_heroes_mobile/features/splash/presentation/pages/splash_page.dart';
@@ -236,6 +242,69 @@ class AppRouter {
         path: AppRoutes.Compile_3_onth_report,
         name: 'shareWithParents',
         builder: (context, state) => const ShareWithParentsPage(),
+      ),
+
+      // Daily Report detail — expects extra: reportId (String)
+      // Daily Report detail — from notification: /daily-reports/:id
+      GoRoute(
+        path: AppRoutes.dailyReportDetail,
+        name: 'dailyReportDetail',
+        builder: (context, state) {
+          final reportId = state.extra as String? ?? '';
+          return DailyReportDetailPage(reportName: reportId); //
+        },
+      ),
+
+      // Observation detail — from notification: /observations/:id
+      // GoRoute(
+      //   path: AppRoutes.observationDetail,
+      //   name: 'observationDetail',
+      //   builder: (context, state) {
+      //     // AddObservationPage currently only creates new observations,
+      //     // so we provide a no-op onSave when opened via notification.
+      //     return AddObservationPage(onSave: () {}); //
+      //   },
+      // ),
+
+      // Announcement detail — expects extra: announcementId (String)
+      GoRoute(
+        path: AppRoutes.announcementDetail,
+        name: 'announcementDetail',
+        builder: (context, state) {
+          final announcementId = state.extra as String? ?? '';
+          return NotificationDetailPage(announcementId: announcementId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.observationDetail,
+        name: 'observationDetail',
+        builder: (context, state) {
+          final observationId = state.extra as String? ?? '';
+          return ObservationDetailPage(observationId: observationId);
+        },
+      ),
+
+      // Chat room — expects extra: channelId (String)
+      GoRoute(
+        path: AppRoutes.chat,
+        name: 'chat',
+        builder: (context, state) {
+          final channelId = state.extra as String? ?? '';
+          return BlocProvider<ChatBloc>(
+            create: (_) => sl<ChatBloc>(),
+            child: ChatsPage(),
+          );
+        },
+      ),
+
+      // Moment detail — expects extra: momentId (String)
+      GoRoute(
+        path: AppRoutes.momentDetail,
+        name: 'momentDetail',
+        builder: (context, state) {
+          final momentId = state.extra as String? ?? '';
+          return MomentsPage();
+        },
       ),
     ],
   );

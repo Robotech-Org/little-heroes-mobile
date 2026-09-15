@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:little_heroes_mobile/core/services/notification_service.dart';
 
 import 'package:little_heroes_mobile/core/services/storage_service.dart';
 import 'package:little_heroes_mobile/features/auth/domain/usecases/change_password.dart';
@@ -88,6 +89,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       // Restore user from local storage
       final user = AuthUser.fromJson(userData);
+      NotificationService.registerCurrentDevice();
 
       // Restore authenticated state
       emit(AuthAuthenticated(user: user));

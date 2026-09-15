@@ -34,4 +34,13 @@ class AppRoutes {
 
   static const String addMoment = '/add-moment';
   static const String Compile_3_onth_report = '/Compile_3_onth_report';
+
+  // ============================================================
+  // Deep-link targets (used by push notifications)
+  // ============================================================
+  static const String dailyReportDetail = '/daily-report-detail';
+  static const String observationDetail = '/observation-detail';
+  static const String announcementDetail = '/announcement-detail';
+  static const String momentDetail = '/moment-detail';
+  static const String chat = '/chat';
 }

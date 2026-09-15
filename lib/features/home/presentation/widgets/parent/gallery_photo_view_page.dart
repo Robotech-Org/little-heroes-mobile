@@ -96,7 +96,7 @@ class _GalleryPhotoViewPageState extends State<GalleryPhotoViewPage> {
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
-                // ✅ reduced from 20 → 8
+                //   reduced from 20 → 8
                 borderRadius: BorderRadius.circular(8),
               ),
               clipBehavior: Clip.antiAlias,
@@ -112,7 +112,7 @@ class _GalleryPhotoViewPageState extends State<GalleryPhotoViewPage> {
                   child: AuthenticatedImage(
                     imageUrl: item.photoUrl,
                     fit: BoxFit.contain,
-                    // ✅ no radius on the image itself — parent clips
+                    //   no radius on the image itself — parent clips
                     borderRadius: BorderRadius.zero,
                     placeholder: Center(
                       child: Column(

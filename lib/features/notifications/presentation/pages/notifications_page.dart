@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:little_heroes_mobile/features/notifications/presentation/pages/notification_detail_page.dart';
 
-import '../../../../core/constants/user_role.dart';
-import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../injection_container.dart' as di;
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -154,12 +153,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   void _openNotificationDetail(AnnouncementModel announcement) {
-    // Show a bottom sheet or navigate to detail
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening: ${announcement.title}'),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NotificationDetailPage(announcement: announcement),
       ),
     );
   }

@@ -1,6 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:little_heroes_mobile/core/network/socket/socket_service.dart';
+import 'package:little_heroes_mobile/features/attendance/data/datasources/attendance_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/attendance/data/repositories/attendance_repository_impl.dart';
+import 'package:little_heroes_mobile/features/attendance/data/services/attendance_session_service.dart';
+import 'package:little_heroes_mobile/features/attendance/domain/repositories/attendance_repository.dart';
+import 'package:little_heroes_mobile/features/attendance/domain/usecases/sync_pending_sessions.dart';
 import 'package:little_heroes_mobile/features/chats/data/datasources/chat_remote_datasource.dart';
 import 'package:little_heroes_mobile/features/chats/data/repositories/chat_repository_impl.dart';
 import 'package:little_heroes_mobile/features/chats/domain/repositories/chat_repository.dart';
@@ -41,8 +46,15 @@ import 'package:little_heroes_mobile/features/home/domain/repositories/three_mon
 import 'package:little_heroes_mobile/features/home/domain/usecases/get_gallery_items.dart';
 import 'package:little_heroes_mobile/features/home/presentation/bloc/gallery_bloc.dart';
 import 'package:little_heroes_mobile/features/notifications/data/datasources/announcement_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/notifications/data/datasources/device_notification_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/notifications/data/repositories/announcement_repository_impl.dart';
+import 'package:little_heroes_mobile/features/notifications/data/repositories/device_notification_repository_impl.dart';
 import 'package:little_heroes_mobile/features/notifications/domain/repositories/announcement_repository.dart';
+import 'package:little_heroes_mobile/features/notifications/domain/repositories/device_notification_repository.dart';
+import 'package:little_heroes_mobile/features/notifications/domain/usecases/get_my_notifications.dart';
+import 'package:little_heroes_mobile/features/notifications/domain/usecases/mark_notifications_read.dart';
+import 'package:little_heroes_mobile/features/notifications/domain/usecases/register_device.dart';
+import 'package:little_heroes_mobile/features/notifications/domain/usecases/unregister_device.dart';
 import 'package:little_heroes_mobile/features/payments/data/datasources/payment_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/payments/data/repositories/payment_repository_impl.dart';
 import 'package:little_heroes_mobile/features/payments/domain/repositories/payment_repository.dart';
@@ -62,8 +74,6 @@ import 'package:little_heroes_mobile/features/auth/domain/usecases/send_otp.dart
 import 'package:little_heroes_mobile/features/auth/domain/usecases/verify_otp.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 
-import 'features/notifications/data/datasources/notification_local_data_source.dart';
-
 final GetIt sl = GetIt.instance;
 
 Future<void> initDependencies() async {
@@ -81,9 +91,46 @@ Future<void> initDependencies() async {
   // NOTIFICATION DATA SOURCE
   // ============================================================
 
-  if (!sl.isRegistered<NotificationLocalDataSource>()) {
-    sl.registerLazySingleton<NotificationLocalDataSource>(
-      () => NotificationLocalDataSourceImpl(),
+  // ============================================================
+  // DEVICE NOTIFICATIONS (Push + Inbox)
+  // ============================================================
+
+  if (!sl.isRegistered<DeviceNotificationRemoteDataSource>()) {
+    sl.registerLazySingleton<DeviceNotificationRemoteDataSource>(
+      () => DeviceNotificationRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<DeviceNotificationRepository>()) {
+    sl.registerLazySingleton<DeviceNotificationRepository>(
+      () => DeviceNotificationRepositoryImpl(
+        remoteDataSource: sl<DeviceNotificationRemoteDataSource>(),
+      ),
+    );
+  }
+
+  // Usecases
+  if (!sl.isRegistered<RegisterDevice>()) {
+    sl.registerLazySingleton<RegisterDevice>(
+      () => RegisterDevice(sl<DeviceNotificationRepository>()),
+    );
+  }
+
+  if (!sl.isRegistered<GetMyNotifications>()) {
+    sl.registerLazySingleton<GetMyNotifications>(
+      () => GetMyNotifications(sl<DeviceNotificationRepository>()),
+    );
+  }
+
+  if (!sl.isRegistered<MarkNotificationsRead>()) {
+    sl.registerLazySingleton<MarkNotificationsRead>(
+      () => MarkNotificationsRead(sl<DeviceNotificationRepository>()),
+    );
+  }
+
+  if (!sl.isRegistered<UnregisterDevice>()) {
+    sl.registerLazySingleton<UnregisterDevice>(
+      () => UnregisterDevice(sl<DeviceNotificationRepository>()),
     );
   }
 
@@ -217,33 +264,34 @@ Future<void> initDependencies() async {
     );
   }
 
+  // ============================================================
   // CHAT
   // ============================================================
 
-  //   Socket
-  sl.registerLazySingleton<SocketService>(() => SocketService());
+  if (!sl.isRegistered<SocketService>()) {
+    sl.registerLazySingleton<SocketService>(() => SocketService());
+  }
 
-  //   Chat Data Source
-  sl.registerLazySingleton<ChatRemoteDataSource>(() => ChatRemoteDataSource());
+  if (!sl.isRegistered<ChatRemoteDataSource>()) {
+    sl.registerLazySingleton<ChatRemoteDataSource>(
+      () => ChatRemoteDataSource(),
+    );
+  }
 
-  //   Chat Repository
-  sl.registerLazySingleton<ChatRepository>(
-    () => ChatRepositoryImpl(remote: sl<ChatRemoteDataSource>()),
-  );
+  if (!sl.isRegistered<ChatRepository>()) {
+    sl.registerLazySingleton<ChatRepository>(
+      () => ChatRepositoryImpl(remote: sl<ChatRemoteDataSource>()),
+    );
+  }
 
-  //   Chat BLoC
-  sl.registerFactory<ChatBloc>(
-    () => ChatBloc(
-      repository: sl<ChatRepository>(),
-      socketService: sl<SocketService>(),
-    ),
-  );
-
-  // if (!sl.isRegistered<ChatRepository>()) {
-  //   sl.registerLazySingleton<ChatRepository>(
-  //     () => ChatRepositoryImpl(remoteDataSource: sl<ChatRemoteDataSource>()),
-  //   );
-  // }
+  if (!sl.isRegistered<ChatBloc>()) {
+    sl.registerFactory<ChatBloc>(
+      () => ChatBloc(
+        repository: sl<ChatRepository>(),
+        socketService: sl<SocketService>(),
+      ),
+    );
+  }
 
   // ============================================================
   // ANNOUNCEMENT
@@ -423,12 +471,35 @@ Future<void> initDependencies() async {
     );
   }
 
-  // sl.registerLazySingleton<SocketService>(() => SocketService());
-  // // sl.registerLazySingleton<ChatRepository>(() => ChatRepository());
-  // sl.registerFactory<ChatBloc>(
-  //   () => ChatBloc(
-  //     repository: sl<ChatRepository>(),
-  //     socketService: sl<SocketService>(),
-  //   ),
-  // );
+  // ============================================================
+  // ATTENDANCE
+  // ============================================================
+  if (!sl.isRegistered<AttendanceRemoteDataSource>()) {
+    sl.registerLazySingleton<AttendanceRemoteDataSource>(
+      () => AttendanceRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<AttendanceRepository>()) {
+    sl.registerLazySingleton<AttendanceRepository>(
+      () => AttendanceRepositoryImpl(
+        remoteDataSource: sl<AttendanceRemoteDataSource>(),
+      ),
+    );
+  }
+
+  if (!sl.isRegistered<AttendanceSessionService>()) {
+    sl.registerLazySingleton<AttendanceSessionService>(
+      () => AttendanceSessionService(),
+    );
+  }
+
+  if (!sl.isRegistered<SyncPendingSessions>()) {
+    sl.registerLazySingleton<SyncPendingSessions>(
+      () => SyncPendingSessions(
+        sl<AttendanceRepository>(),
+        sl<AttendanceSessionService>(),
+      ),
+    );
+  }
 }

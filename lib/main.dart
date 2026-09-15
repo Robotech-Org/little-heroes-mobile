@@ -48,6 +48,7 @@ Future<void> _initializeApp() async {
     await StorageService.instance.init();
 
     await dotenv.load(fileName: '.env');
+    await initDependencies();
 
     await NotificationService.initialize();
 

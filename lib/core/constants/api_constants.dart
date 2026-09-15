@@ -116,6 +116,21 @@ class ApiConstants {
 
   static const String notifications = '/notifications';
 
+  // ============================================================
+  // NOTIFICATIONS
+  // ============================================================
+  static const String registerDevice =
+      '/api/method/little_heroes.api.v1.notifications.register_device';
+
+  static const String getMyNotifications =
+      '/api/method/little_heroes.api.v1.notifications.get_my_notifications';
+
+  static const String markNotificationsRead =
+      '/api/method/little_heroes.api.v1.notifications.mark_as_read';
+
+  static const String unregisterDevice =
+      '/api/method/little_heroes.api.v1.notifications.unregister_device';
+
   static const String chats = '/chats';
 
   static const String reports = '/reports';
@@ -211,4 +226,10 @@ class ApiConstants {
       '/api/method/little_heroes.api.v1.moments.deny_moment';
   static const String uploadMomentFile =
       '/api/method/little_heroes.api.v1.moments.upload_moment_file';
+
+  // ============================================================
+  // ATTENDANCE
+  // ============================================================
+  static const String scanQr =
+      '/api/method/little_heroes.api.v1.attendance.scan_qr';
 }

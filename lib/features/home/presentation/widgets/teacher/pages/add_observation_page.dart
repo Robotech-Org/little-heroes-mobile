@@ -404,7 +404,7 @@ class _AddObservationPageState extends State<AddObservationPage> {
             const SizedBox(height: 20),
 
             // Activity Card with Left/Right Navigation
-            _buildActivityCard(theme, colorScheme),
+            // _buildActivityCard(theme, colorScheme),
             const SizedBox(height: 20),
 
             // Observation Note
