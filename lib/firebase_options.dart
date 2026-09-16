@@ -50,19 +50,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB9xqLMWm_dXa0_ZFjRiNAkRl4GsHwinAg',
-    appId: '1:315469618700:android:b1d298d2c9c1d1bc931829',
-    messagingSenderId: '315469618700',
-    projectId: 'astutransport',
-    storageBucket: 'astutransport.firebasestorage.app',
+    apiKey: 'AIzaSyDlhy9870oESCR-2kHbLQATIJAyuJvl8z4',
+    appId: '1:293817589861:android:3339e311e0405c3c2e268c',
+    messagingSenderId: '293817589861',
+    projectId: 'little-heroes-22f73',
+    storageBucket: 'little-heroes-22f73.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDaYWxAoRNhgFYpIMnuZYOMuAJ2d7AP8LY',
-    appId: '1:315469618700:ios:58c40464fae3e8a6931829',
-    messagingSenderId: '315469618700',
-    projectId: 'astutransport',
-    storageBucket: 'astutransport.firebasestorage.app',
+    apiKey: 'AIzaSyD_bI3QyrZiaQR7bllnPonO1GfBA9zvxBQ',
+    appId: '1:293817589861:ios:db5e752391e0b9f22e268c',
+    messagingSenderId: '293817589861',
+    projectId: 'little-heroes-22f73',
+    storageBucket: 'little-heroes-22f73.firebasestorage.app',
     iosBundleId: 'com.example.littleHeroesMobile',
   );
 }
