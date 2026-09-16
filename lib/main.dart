@@ -9,6 +9,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 import 'package:little_heroes_mobile/features/chats/presentation/bloc/chat_bloc.dart';
 import 'package:little_heroes_mobile/features/home/presentation/bloc/gallery_bloc.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
+import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_bloc.dart';
 import 'package:little_heroes_mobile/injection_container.dart';
 
 import 'core/router/app_router.dart';
@@ -33,6 +34,7 @@ Future<void> main() async {
           child: const PhotoGalleryPage(),
         ),
         BlocProvider<ChatBloc>(create: (_) => sl<ChatBloc>()),
+        BlocProvider<PaymentBloc>(create: (_) => sl<PaymentBloc>()),
       ],
       child: const LittleHeroesApp(),
     ),

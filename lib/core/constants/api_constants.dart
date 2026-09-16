@@ -232,4 +232,24 @@ class ApiConstants {
   // ============================================================
   static const String scanQr =
       '/api/method/little_heroes.api.v1.attendance.scan_qr';
+
+  // ============================================================
+  // PAYMENTS
+  // ============================================================
+
+  /// GET — list the parent's tuition invoices
+  static const String getMyInvoices =
+      '/api/method/little_heroes.api.v1.payments.get_my_invoices';
+
+  /// POST — initialize a Chapa checkout session
+  static const String initializePayment =
+      '/api/method/little_heroes.api.v1.payments.initialize_payment';
+
+  /// GET — verify payment status by tx_ref or invoice_name
+  static const String getPaymentStatus =
+      '/api/method/little_heroes.api.v1.payments.get_payment_status';
+
+  /// GET — public callback (opened in browser after Chapa)
+  static const String paymentCallback =
+      '/api/method/little_heroes.api.v1.payments.callback';
 }

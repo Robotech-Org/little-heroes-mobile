@@ -9,6 +9,8 @@ import 'package:little_heroes_mobile/features/home/presentation/widgets/common/h
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/three_month_report_page.dart';
+import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_bloc.dart';
+import 'package:little_heroes_mobile/features/payments/presentation/pages/payment_history_page.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/pages/payment_page.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
 
@@ -330,6 +332,18 @@ class _ParentDashboardState extends State<ParentDashboard> {
               ),
             ),
             const SizedBox(width: 10),
+            // Expanded(
+            //   child: _QuickAccessCard(
+            //     icon: Icons.payment_outlined,
+            //     title: data.quickAccess.billingAndPayment.label,
+            //     subtitle: 'View payments',
+            //     onTap: () {
+            //       Navigator.of(context).push(
+            //         MaterialPageRoute(builder: (_) => const PaymentPage()),
+            //       );
+            //     },
+            //   ),
+            // ),
             Expanded(
               child: _QuickAccessCard(
                 icon: Icons.payment_outlined,
@@ -337,7 +351,12 @@ class _ParentDashboardState extends State<ParentDashboard> {
                 subtitle: 'View payments',
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PaymentPage()),
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider(
+                        create: (_) => di.sl<PaymentBloc>(),
+                        child: const PaymentHistoryPage(),
+                      ),
+                    ),
                   );
                 },
               ),

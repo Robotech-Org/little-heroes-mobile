@@ -58,6 +58,10 @@ import 'package:little_heroes_mobile/features/notifications/domain/usecases/unre
 import 'package:little_heroes_mobile/features/payments/data/datasources/payment_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/payments/data/repositories/payment_repository_impl.dart';
 import 'package:little_heroes_mobile/features/payments/domain/repositories/payment_repository.dart';
+import 'package:little_heroes_mobile/features/payments/domain/usecases/get_my_invoices.dart';
+import 'package:little_heroes_mobile/features/payments/domain/usecases/initialize_payment.dart';
+import 'package:little_heroes_mobile/features/payments/domain/usecases/verify_payment.dart';
+import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_bloc.dart';
 import 'package:little_heroes_mobile/features/students/data/datasources/student_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/students/data/repositories/student_repository_impl.dart';
 import 'package:little_heroes_mobile/features/students/domain/repositories/student_repository.dart';
@@ -499,6 +503,50 @@ Future<void> initDependencies() async {
       () => SyncPendingSessions(
         sl<AttendanceRepository>(),
         sl<AttendanceSessionService>(),
+      ),
+    );
+  }
+  // ============================================================
+  // PAYMENTS
+  // ============================================================
+  if (!sl.isRegistered<PaymentRemoteDataSource>()) {
+    sl.registerLazySingleton<PaymentRemoteDataSource>(
+      () => PaymentRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<PaymentRepository>()) {
+    sl.registerLazySingleton<PaymentRepository>(
+      () => PaymentRepositoryImpl(
+        remoteDataSource: sl<PaymentRemoteDataSource>(),
+      ),
+    );
+  }
+
+  if (!sl.isRegistered<GetMyInvoices>()) {
+    sl.registerLazySingleton<GetMyInvoices>(
+      () => GetMyInvoices(sl<PaymentRepository>()),
+    );
+  }
+
+  if (!sl.isRegistered<InitializePayment>()) {
+    sl.registerLazySingleton<InitializePayment>(
+      () => InitializePayment(sl<PaymentRepository>()),
+    );
+  }
+
+  if (!sl.isRegistered<VerifyPayment>()) {
+    sl.registerLazySingleton<VerifyPayment>(
+      () => VerifyPayment(sl<PaymentRepository>()),
+    );
+  }
+
+  if (!sl.isRegistered<PaymentBloc>()) {
+    sl.registerFactory<PaymentBloc>(
+      () => PaymentBloc(
+        getMyInvoices: sl<GetMyInvoices>(),
+        initializePayment: sl<InitializePayment>(),
+        verifyPayment: sl<VerifyPayment>(),
       ),
     );
   }
