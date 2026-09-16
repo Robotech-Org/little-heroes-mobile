@@ -5,6 +5,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/three_month_report_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/create_three_month_report_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/three_month_report_detail_page.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
 
@@ -119,6 +120,13 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
     setState(() {});
   }
 
+  void _openCreateReport() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CreateThreeMonthReportPage()),
+    ).then((_) => _loadReports()); // refresh list on return
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -144,6 +152,11 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => _loadReports(),
             tooltip: 'Refresh',
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_rounded),
+            onPressed: _openCreateReport,
+            tooltip: 'New Report',
           ),
         ],
       ),
