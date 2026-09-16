@@ -5,6 +5,9 @@ class GetMyInvoices {
   final PaymentRepository repository;
   GetMyInvoices(this.repository);
 
-  Future<InvoiceResponseModel> call({int limit = 50, String? status}) =>
-      repository.getMyInvoices(limit: limit, status: status);
+  Future<InvoiceResponseModel> call({
+    int limit = 50,
+    String? status,
+    String? parent,
+  }) => repository.getMyInvoices(limit: limit, status: status, parent: parent);
 }

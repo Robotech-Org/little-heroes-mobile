@@ -135,7 +135,7 @@ class ApiConstants {
 
   static const String reports = '/reports';
 
-  // ✅ Admin / Oversight Endpoints (School Administrator role)
+  //   Admin / Oversight Endpoints (School Administrator role)
   static const String adminListChannels =
       '/api/method/little_heroes.api.v1.communications.admin_list_channels';
   static const String adminGetChannelMessages =
@@ -144,7 +144,7 @@ class ApiConstants {
       '/api/method/little_heroes.api.v1.communications.admin_post_intervention';
 
   // ============================================================
-  // ✅ COMMUNICATIONS / CHAT (Raven Channel) APIs
+  //   COMMUNICATIONS / CHAT (Raven Channel) APIs
   // ============================================================
   static const String listMyChannels =
       '/api/method/little_heroes.api.v1.communications.list_my_channels';
@@ -232,6 +232,20 @@ class ApiConstants {
   // ============================================================
   static const String scanQr =
       '/api/method/little_heroes.api.v1.attendance.scan_qr';
+  static const String punchIn =
+      '/api/method/little_heroes.api.v1.attendance.punch_in';
+
+  static const String punchOut =
+      '/api/method/little_heroes.api.v1.attendance.punch_out';
+
+  static const String todayStatus =
+      '/api/method/little_heroes.api.v1.attendance.today_status';
+
+  static const String getAttendancePunch =
+      '/api/method/little_heroes.api.v1.attendance.get_attendance_punch';
+
+  static const String listAttendancePunches =
+      '/api/method/little_heroes.api.v1.attendance.list_attendance_punches';
 
   // ============================================================
   // PAYMENTS
@@ -239,7 +253,7 @@ class ApiConstants {
 
   /// GET — list the parent's tuition invoices
   static const String getMyInvoices =
-      '/api/method/little_heroes.api.v1.payments.get_my_invoices';
+      '/api/method/little_heroes.api.v1.payments.get_my_invoices?parent=+251956309313';
 
   /// POST — initialize a Chapa checkout session
   static const String initializePayment =
@@ -252,4 +266,7 @@ class ApiConstants {
   /// GET — public callback (opened in browser after Chapa)
   static const String paymentCallback =
       '/api/method/little_heroes.api.v1.payments.callback';
+
+  static const String listCurriculumPlans =
+      '/api/method/little_heroes.api.v1.curriculum_plans.list_curriculum_plans';
 }

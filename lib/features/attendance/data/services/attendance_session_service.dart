@@ -17,6 +17,7 @@ class AttendanceSessionService {
   // ─────────────────────────────────────────────
 
   Future<AttendanceSession> startSession({
+    required AttendanceLogType logType, // ← NEW
     required String deviceId,
     required double latitude,
     required double longitude,
@@ -25,6 +26,7 @@ class AttendanceSessionService {
     final now = DateTime.now();
     final session = AttendanceSession(
       sessionId: now.millisecondsSinceEpoch.toString(),
+      logType: logType,
       deviceId: deviceId,
       deviceLatitude: latitude,
       deviceLongitude: longitude,
@@ -127,5 +129,31 @@ class AttendanceSessionService {
   Future<void> clearAll() async {
     final box = await _getBox();
     await box.clear();
+  }
+
+  Future<List<AttendanceSession>> getAllSessions() async {
+    final box = await _getBox();
+    final items = <AttendanceSession>[];
+    for (final key in box.keys) {
+      if (key == _activeKey) continue;
+      final raw = box.get(key);
+      if (raw == null) continue;
+      items.add(AttendanceSession.fromMap(Map<String, dynamic>.from(raw)));
+    }
+    items.sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    return items;
+  }
+
+  Future<void> clearSyncedSessions() async {
+    final box = await _getBox();
+    final toRemove = <dynamic>[];
+    for (final key in box.keys) {
+      if (key == _activeKey) continue;
+      final raw = box.get(key);
+      if (raw == null) continue;
+      final session = AttendanceSession.fromMap(Map<String, dynamic>.from(raw));
+      if (session.synced) toRemove.add(key);
+    }
+    await box.deleteAll(toRemove);
   }
 }

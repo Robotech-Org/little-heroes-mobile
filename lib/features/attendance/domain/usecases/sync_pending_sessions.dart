@@ -1,4 +1,5 @@
 import '../repositories/attendance_repository.dart';
+import '../../data/models/attendance_session.dart';
 import '../../data/services/attendance_session_service.dart';
 
 class SyncPendingSessions {
@@ -7,8 +8,6 @@ class SyncPendingSessions {
 
   SyncPendingSessions(this.repository, this.sessions);
 
-  /// Syncs all pending sessions. One HTTP call per session
-  /// (each session has its own device + GPS envelope).
   Future<SyncSummary> call() async {
     final pending = await sessions.getPendingSessions();
     if (pending.isEmpty) {
@@ -20,11 +19,30 @@ class SyncPendingSessions {
 
     for (final session in pending) {
       try {
-        final response = await repository.scanQrBatch(session.toRequestJson());
+        final scans = session.scans.map((s) => s.toRequestItem()).toList();
+
+        final response = session.logType == AttendanceLogType.punchIn
+            ? await repository.punchIn(
+                scans: scans,
+                latitude: session.deviceLatitude,
+                longitude: session.deviceLongitude,
+                gpsAccuracyMeters: session.gpsAccuracyMeters,
+                deviceId: session.deviceId,
+              )
+            : await repository.punchOut(
+                scans: scans,
+                latitude: session.deviceLatitude,
+                longitude: session.deviceLongitude,
+                gpsAccuracyMeters: session.gpsAccuracyMeters,
+                deviceId: session.deviceId,
+              );
+
+        // Mark session synced on success
         await sessions.markSessionSynced(session.sessionId);
-        ok += response.results.where((r) => r.success).length;
-        fail += response.results.where((r) => !r.success).length;
-      } catch (_) {
+        ok += response.successCount;
+        fail += response.failedCount;
+      } catch (e) {
+        // Whole batch failed — leave session pending for retry
         fail += session.scans.length;
       }
     }

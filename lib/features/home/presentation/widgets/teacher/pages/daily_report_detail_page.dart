@@ -267,7 +267,9 @@ class _DailyReportDetailPageState extends State<DailyReportDetailPage> {
       final data = {
         'student': _selectedStudent!.id,
         'student_name': _selectedStudent!.name,
-        'student_classroom': "THE DISCOVERERS Room A",
+        // 'student_classroom': "THE DISCOVERERS Room A",
+        'student_classroom': _report?.studentClassroom ?? '', // ← use existing
+
         'report_date': reportDate,
         'meals_and_snacks': _selectedMeal,
         'nap_time': _selectedNap,

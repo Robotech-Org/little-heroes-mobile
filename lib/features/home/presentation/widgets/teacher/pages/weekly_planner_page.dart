@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:little_heroes_mobile/core/constants/app_colors.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/lesson_plan_model.dart';
@@ -212,10 +213,12 @@ class _WeeklyPlannerPageState extends State<WeeklyPlannerPage> {
 
         // List
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 30),
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
             physics: const BouncingScrollPhysics(),
             itemCount: _lessonPlans.length,
+            separatorBuilder: (_, __) =>
+                const SizedBox(height: 14), // ← the gap
             itemBuilder: (context, index) {
               final plan = _lessonPlans[index];
               return _LessonPlanCard(
@@ -395,7 +398,6 @@ class _WeeklyPlannerPageState extends State<WeeklyPlannerPage> {
   }
 }
 
-// LESSON PLAN CARD
 class _LessonPlanCard extends StatelessWidget {
   final LessonPlanModel plan;
   final VoidCallback onTap;
@@ -406,126 +408,322 @@ class _LessonPlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
-    final statusColor = _getStatusColor(plan.status);
+    final statusColor = _statusColor(plan.status);
+    final statusLabel = _statusLabel(plan.status);
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.08)),
-      ),
+    final title = plan.titleOfLesson?.trim().isNotEmpty == true
+        ? plan.titleOfLesson!
+        : 'Untitled Lesson';
+    final dateStr = plan.lessonPlanDate?.isNotEmpty == true
+        ? _formatDate(plan.lessonPlanDate!)
+        : 'No date';
+
+    final primaryText = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final secondaryText = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final tertiaryText = isDark
+        ? AppColors.darkTextTertiary
+        : AppColors.lightTextTertiary;
+    final surfaceColor = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+
+    return Material(
+      color: surfaceColor,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      plan.titleOfLesson ?? 'Lesson Plan',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.onSurface,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Row 1: Subject chip + status pill ──
+                Row(
+                  children: [
+                    if (plan.subject?.isNotEmpty == true) ...[
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            plan.subject!,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: colorScheme.primary,
+                              fontSize: 10,
+                              letterSpacing: 0.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      plan.statusText,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: statusColor,
+                      const SizedBox(width: 8),
+                    ],
+                    const Spacer(),
+                    // Status pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            statusLabel,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: statusColor,
+                              fontSize: 9.5,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              if (plan.subject != null)
-                Text(
-                  plan.subject!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 13,
-                  ),
+                  ],
                 ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(
-                    Icons.class_rounded,
-                    size: 14,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    plan.classroom,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Icon(
-                    Icons.calendar_today_rounded,
-                    size: 14,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    plan.lessonPlanDate ?? 'No date',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              if (plan.objective != null)
+
+                const SizedBox(height: 10),
+
+                // ── Row 2: Title ────────────────────────
                 Text(
-                  plan.objective!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 12,
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    height: 1.3,
+                    color: primaryText,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-            ],
+
+                // ═══════════════════════════════════════════════
+                //  ADMIN REJECTION BANNER
+                // ═══════════════════════════════════════════════
+                if (plan.hasRejection) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.error_outline_rounded,
+                            size: 14,
+                            color: AppColors.error,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Rejected by Admin',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.error,
+                                  fontSize: 10.5,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                plan.adminRejectionNote!,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: secondaryText,
+                                  fontSize: 11.5,
+                                  height: 1.4,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 10),
+
+                // ── Row 3: Meta (classroom, date) ──────
+                Row(
+                  children: [
+                    _metaItem(
+                      theme: theme,
+                      icon: Icons.class_rounded,
+                      label: plan.classroom.isNotEmpty ? plan.classroom : '—',
+                      color: secondaryText,
+                    ),
+                    const SizedBox(width: 12),
+                    _metaItem(
+                      theme: theme,
+                      icon: Icons.calendar_today_rounded,
+                      label: dateStr,
+                      color: secondaryText,
+                    ),
+                  ],
+                ),
+
+                // ── Row 4: Objective preview ───────────
+                if (plan.objective?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: isDark ? 0.25 : 0.45,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      plan.objective!.trim(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: tertiaryText,
+                        fontSize: 11.5,
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Color _getStatusColor(String status) {
+  Widget _metaItem({
+    required ThemeData theme,
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 4),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 130),
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: color,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'approved':
-        return Colors.green;
+        return AppColors.success;
       case 'pending':
-        return Colors.orange;
-      case 'draft':
-        return Colors.grey;
+        return AppColors.warningDark;
       case 'rejected':
-        return Colors.red;
+        return AppColors.error;
+      case 'draft':
       default:
-        return Colors.grey;
+        return AppColors.primary;
+    }
+  }
+
+  String _statusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return 'APPROVED';
+      case 'pending':
+        return 'PENDING';
+      case 'rejected':
+        return 'REJECTED';
+      case 'draft':
+        return 'DRAFT';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
+  String _formatDate(String iso) {
+    if (iso.isEmpty) return '—';
+    try {
+      final d = DateTime.parse(iso.replaceFirst(' ', 'T'));
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      return '${months[d.month - 1]} ${d.day}, ${d.year}';
+    } catch (_) {
+      return iso;
     }
   }
 }

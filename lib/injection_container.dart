@@ -12,6 +12,8 @@ import 'package:little_heroes_mobile/features/chats/domain/repositories/chat_rep
 import 'package:little_heroes_mobile/features/chats/presentation/bloc/chat_bloc.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/classroom_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/competency_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/curriculum_plan_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/home/data/datasources/curriculum_plan_repository.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/daily_report_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/dashboard_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/datasources/framework_domain_remote_data_source.dart';
@@ -24,6 +26,7 @@ import 'package:little_heroes_mobile/features/home/data/models/classroom_schedul
 import 'package:little_heroes_mobile/features/home/data/repositories/classroom_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/classroom_schedule_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/competency_repository_impl.dart';
+import 'package:little_heroes_mobile/features/home/data/repositories/curriculum_plan_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/daily_report_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/dashboard_repository_impl.dart';
 import 'package:little_heroes_mobile/features/home/data/repositories/framework_domain_repository_impl.dart';
@@ -547,6 +550,19 @@ Future<void> initDependencies() async {
         getMyInvoices: sl<GetMyInvoices>(),
         initializePayment: sl<InitializePayment>(),
         verifyPayment: sl<VerifyPayment>(),
+      ),
+    );
+  }
+
+  if (!sl.isRegistered<CurriculumPlanRemoteDataSource>()) {
+    sl.registerLazySingleton<CurriculumPlanRemoteDataSource>(
+      () => CurriculumPlanRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+  if (!sl.isRegistered<CurriculumPlanRepository>()) {
+    sl.registerLazySingleton<CurriculumPlanRepository>(
+      () => CurriculumPlanRepositoryImpl(
+        remoteDataSource: sl<CurriculumPlanRemoteDataSource>(),
       ),
     );
   }

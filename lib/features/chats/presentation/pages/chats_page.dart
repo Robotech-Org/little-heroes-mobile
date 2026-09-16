@@ -42,7 +42,7 @@ class _ChatsPageState extends State<ChatsPage> {
               return const Center(child: Text('No conversations yet'));
             }
 
-            // ✅ Sort by last message time (newest first)
+            //   Sort by last message time (newest first)
             final sorted = List<ChatChannel>.from(state.channels)
               ..sort((a, b) {
                 final aT = a.lastMessageTime ?? DateTime(1970);

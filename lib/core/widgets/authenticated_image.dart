@@ -38,7 +38,7 @@ class _AuthenticatedImageState extends State<AuthenticatedImage> {
   void initState() {
     super.initState();
 
-    // ✅ Instant hit from cache — no async, no flicker.
+    //   Instant hit from cache — no async, no flicker.
     final cached = ImageCacheStore.get(widget.imageUrl);
     if (cached != null) {
       _imageBytes = cached;
@@ -85,7 +85,7 @@ class _AuthenticatedImageState extends State<AuthenticatedImage> {
     }
 
     try {
-      // ✅ ImageCacheStore.fetch dedupes concurrent requests for same URL
+      //   ImageCacheStore.fetch dedupes concurrent requests for same URL
       final bytes = await ImageCacheStore.fetch(widget.imageUrl, () async {
         final dioClient = await DioClient.create();
         final dio = dioClient.dio;

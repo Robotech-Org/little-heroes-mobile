@@ -43,10 +43,33 @@
          https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
-    <queries>
+    <!-- <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-    </queries>
+    </queries> -->  
+    <queries>
+    <!-- Text processing (existing) -->
+    <intent>
+        <action android:name="android.intent.action.PROCESS_TEXT"/>
+        <data android:mimeType="text/plain"/>
+    </intent>
+
+    <!-- Allow opening https/http links in a browser or custom tab -->
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="http" />
+    </intent>
+
+    <!-- Allow resolving the specific Chapa checkout host -->
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" android:host="checkout.chapa.co" />
+    </intent>
+</queries>
 </manifest>

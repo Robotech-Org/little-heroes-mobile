@@ -332,18 +332,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
               ),
             ),
             const SizedBox(width: 10),
-            // Expanded(
-            //   child: _QuickAccessCard(
-            //     icon: Icons.payment_outlined,
-            //     title: data.quickAccess.billingAndPayment.label,
-            //     subtitle: 'View payments',
-            //     onTap: () {
-            //       Navigator.of(context).push(
-            //         MaterialPageRoute(builder: (_) => const PaymentPage()),
-            //       );
-            //     },
-            //   ),
-            // ),
+           
             Expanded(
               child: _QuickAccessCard(
                 icon: Icons.payment_outlined,

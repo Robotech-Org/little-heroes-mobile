@@ -1,4 +1,3 @@
-// lib/features/home/data/models/daily_report_draft_model.dart
 
 class DailyReportDraftModel {
   final String? reportName; // null = new report, set = editing existing

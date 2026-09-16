@@ -76,7 +76,7 @@ class SocketService {
       _connectionController.add(false);
     });
 
-    // ✅ Live chat updates
+    //   Live chat updates
     _socket!.on('new_message', (data) {
       log('📩 new_message: $data');
       if (data is Map<String, dynamic>) {

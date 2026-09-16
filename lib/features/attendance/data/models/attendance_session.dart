@@ -2,10 +2,11 @@ import 'dart:convert';
 
 import 'pending_attendance_scan.dart';
 
-/// One continuous scanning session.
-/// Device + GPS are captured ONCE when the session starts.
+enum AttendanceLogType { punchIn, punchOut }
+
 class AttendanceSession {
   final String sessionId;
+  final AttendanceLogType logType;
   final String deviceId;
   final double deviceLatitude;
   final double deviceLongitude;
@@ -16,6 +17,7 @@ class AttendanceSession {
 
   AttendanceSession({
     required this.sessionId,
+    required this.logType,
     required this.deviceId,
     required this.deviceLatitude,
     required this.deviceLongitude,
@@ -27,12 +29,16 @@ class AttendanceSession {
 
   bool get isEmpty => scans.isEmpty;
 
+  String get logTypeString =>
+      logType == AttendanceLogType.punchIn ? 'IN' : 'OUT';
+
   AttendanceSession copyWith({
     List<PendingAttendanceScan>? scans,
     bool? synced,
   }) {
     return AttendanceSession(
       sessionId: sessionId,
+      logType: logType,
       deviceId: deviceId,
       deviceLatitude: deviceLatitude,
       deviceLongitude: deviceLongitude,
@@ -43,18 +49,19 @@ class AttendanceSession {
     );
   }
 
-  /// The exact payload sent to the server.
+  /// The exact payload for POST /punch_in or /punch_out.
+  /// Note: **no `log_type`** — the endpoint itself determines it.
   Map<String, dynamic> toRequestJson() => {
     'device_id': deviceId,
     'device_latitude': deviceLatitude,
     'device_longitude': deviceLongitude,
     'gps_accuracy_meters': gpsAccuracyMeters,
-    'scanned_at': startedAt.toUtc().toIso8601String(),
     'scans': scans.map((s) => s.toRequestItem()).toList(),
   };
 
   Map<String, dynamic> toMap() => {
     'sessionId': sessionId,
+    'logType': logType.name,
     'deviceId': deviceId,
     'deviceLatitude': deviceLatitude,
     'deviceLongitude': deviceLongitude,
@@ -75,6 +82,10 @@ class AttendanceSession {
 
     return AttendanceSession(
       sessionId: map['sessionId'] as String,
+      logType: AttendanceLogType.values.firstWhere(
+        (e) => e.name == map['logType'],
+        orElse: () => AttendanceLogType.punchIn,
+      ),
       deviceId: map['deviceId'] as String,
       deviceLatitude: (map['deviceLatitude'] as num).toDouble(),
       deviceLongitude: (map['deviceLongitude'] as num).toDouble(),

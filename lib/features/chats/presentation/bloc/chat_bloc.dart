@@ -102,7 +102,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<SendChatMessage>(_onSendChatMessage);
     on<IncomingMessage>(_onIncomingMessage);
 
-    // ✅ Live updates from Socket.IO
+    //   Live updates from Socket.IO
     _socketSub = socketService.onNewMessage.listen((payload) {
       add(IncomingMessage(payload));
     });

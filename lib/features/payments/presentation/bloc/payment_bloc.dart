@@ -20,14 +20,16 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<StartPayment>(_onStartPayment);
     on<CheckPaymentStatus>(_onCheckStatus);
   }
-
   Future<void> _onLoadInvoices(
     LoadInvoices event,
     Emitter<PaymentState> emit,
   ) async {
     emit(PaymentLoading());
     try {
-      final response = await getMyInvoices(status: event.status);
+      final response = await getMyInvoices(
+        status: event.status,
+        parent: event.parent,
+      );
       emit(InvoicesLoaded(response.items));
     } catch (e) {
       emit(PaymentError(e.toString().replaceFirst('Exception: ', '')));

@@ -153,7 +153,7 @@ class _ThreeMonthReportDetailPageState
           competencyTitle: competency.title,
           levelAchieved: assessment.levelAchieved,
           levelDescription: levelDescription,
-          notes: assessment.notes ?? '', // ✅ keep real notes
+          notes: assessment.notes ?? '', //   keep real notes
         );
       }).toList();
 
@@ -216,7 +216,7 @@ class _ThreeMonthReportDetailPageState
           ),
         );
 
-        // ✅ Pull the note from the controller (source of truth while editing)
+        //   Pull the note from the controller (source of truth while editing)
         final noteText =
             _noteControllers[competency.competencyCode]?.text ??
             assessment.notes ??

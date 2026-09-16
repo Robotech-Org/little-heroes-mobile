@@ -8,7 +8,32 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   AttendanceRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<AttendanceBatchResponse> scanQrBatch(Map<String, dynamic> payload) {
-    return remoteDataSource.scanQrBatch(payload);
-  }
+  Future<AttendanceBatchResponse> punchIn({
+    required List<Map<String, dynamic>> scans,
+    required double latitude,
+    required double longitude,
+    required double gpsAccuracyMeters,
+    String? deviceId,
+  }) => remoteDataSource.punchIn(
+    scans: scans,
+    latitude: latitude,
+    longitude: longitude,
+    gpsAccuracyMeters: gpsAccuracyMeters,
+    deviceId: deviceId,
+  );
+
+  @override
+  Future<AttendanceBatchResponse> punchOut({
+    required List<Map<String, dynamic>> scans,
+    required double latitude,
+    required double longitude,
+    required double gpsAccuracyMeters,
+    String? deviceId,
+  }) => remoteDataSource.punchOut(
+    scans: scans,
+    latitude: latitude,
+    longitude: longitude,
+    gpsAccuracyMeters: gpsAccuracyMeters,
+    deviceId: deviceId,
+  );
 }

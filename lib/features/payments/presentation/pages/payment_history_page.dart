@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:little_heroes_mobile/core/constants/app_colors.dart';
-import 'package:little_heroes_mobile/core/utils/snackbar_utils.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/payments/data/models/invoice_model.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_bloc.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_event.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_state.dart';
-import 'package:little_heroes_mobile/injection_container.dart' as di;
 
 import 'payment_page.dart';
 
@@ -22,7 +22,39 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
   @override
   void initState() {
     super.initState();
-    context.read<PaymentBloc>().add(const LoadInvoices());
+    _load();
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  // Load invoices — reads the parent's phone from AuthBloc
+  // ═════════════════════════════════════════════════════════════
+  void _load() {
+    final authState = context.read<AuthBloc>().state;
+    String? phone;
+
+    if (authState is AuthAuthenticated) {
+      // Use whichever field your AuthUser exposes. Common names:
+      //   authState.user.phoneNumber
+      //   authState.user.username
+      //   authState.user.phone
+      phone = authState.user.phoneNumber;
+      phone = _normalizePhone(phone);
+    }
+
+    debugPrint(
+      '🔵 [PaymentHistoryPage] dispatching LoadInvoices(parent=$phone)',
+    );
+    context.read<PaymentBloc>().add(LoadInvoices(parent: phone));
+  }
+
+  /// Normalize "0956309313" / "251956309313" → "+251956309313"
+  String? _normalizePhone(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    var p = raw.trim().replaceAll(' ', '').replaceAll('-', '');
+    if (p.startsWith('+')) return p;
+    if (p.startsWith('0')) return '+251${p.substring(1)}';
+    if (p.startsWith('251')) return '+$p';
+    return p;
   }
 
   Future<void> _payInvoice(InvoiceModel invoice) async {
@@ -32,7 +64,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
 
     if (result == true && mounted) {
-      context.read<PaymentBloc>().add(const LoadInvoices());
+      _load(); // refresh
     }
   }
 
@@ -64,15 +96,12 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: () =>
-                context.read<PaymentBloc>().add(const LoadInvoices()),
+            onPressed: _load, // 👈 uses _load() so phone is included
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          context.read<PaymentBloc>().add(const LoadInvoices());
-        },
+        onRefresh: () async => _load(), // 👈 same here
         child: BlocBuilder<PaymentBloc, PaymentState>(
           builder: (context, state) {
             if (state is PaymentLoading) {
@@ -135,8 +164,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: () =>
-                    context.read<PaymentBloc>().add(const LoadInvoices()),
+                onPressed: _load, // 👈 uses _load()
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Retry'),
               ),

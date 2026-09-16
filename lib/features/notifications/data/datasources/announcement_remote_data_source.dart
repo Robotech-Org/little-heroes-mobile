@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/dio_error_handler.dart';
@@ -36,11 +37,13 @@ class AnnouncementRemoteDataSourceImpl implements AnnouncementRemoteDataSource {
       );
 
       if (response.data is Map<String, dynamic>) {
-        final result = AnnouncementResponseModel.fromJson(response.data);
+        final result = AnnouncementResponseModel.fromJson(
+          response.data as Map<String, dynamic>,
+        );
 
-        // If no announcements from API, return mock data
+        // Log when the server has nothing — but do NOT replace with mock.
         if (result.items.isEmpty) {
-          return _getMockAnnouncements();
+          debugPrint('ℹ️ [Announcements] Server returned 0 items');
         }
 
         return result;
@@ -48,55 +51,11 @@ class AnnouncementRemoteDataSourceImpl implements AnnouncementRemoteDataSource {
 
       throw Exception('Invalid response format');
     } on DioException catch (e) {
-      // If API fails, return mock data
-      return _getMockAnnouncements();
+      DioErrorHandler.handle(e);
+      rethrow;
     } catch (e) {
-      // If any error, return mock data
-      return _getMockAnnouncements();
+      throw Exception(e.toString());
     }
-  }
-
-  // ============================================================
-  // MOCK ANNOUNCEMENTS
-  // ============================================================
-
-  AnnouncementResponseModel _getMockAnnouncements() {
-    final now = DateTime.now();
-    final mockItems = [
-      AnnouncementModel(
-        name: 'mock_1',
-        title: 'Upcoming Parent-Teacher Orientation',
-        body: 'Dear Parents, we invite you to our annual orientation session this Friday at 4 PM. Please come and join us for an informative session about your child\'s development and learning journey.',
-        postedAt: _formatDateTime(now.subtract(const Duration(hours: 2))),
-        postedBy: 'Administrator',
-        classroom: 'THE DISCOVERERS Room A',
-        creation: _formatDateTime(now.subtract(const Duration(hours: 2))),
-        modified: _formatDateTime(now.subtract(const Duration(hours: 2))),
-      ),
-      AnnouncementModel(
-        name: 'mock_2',
-        title: 'School Holiday Announcement',
-        body: 'This is to inform all parents that the school will be closed on Monday, September 12th, 2026, in observance of the national holiday. Classes will resume on Tuesday, September 13th, 2026.',
-        postedAt: _formatDateTime(now.subtract(const Duration(days: 1))),
-        postedBy: 'School Administration',
-        classroom: 'All Classrooms',
-        creation: _formatDateTime(now.subtract(const Duration(days: 1))),
-        modified: _formatDateTime(now.subtract(const Duration(days: 1))),
-      ),
-    ];
-
-    return AnnouncementResponseModel(
-      success: true,
-      items: mockItems,
-      total: mockItems.length,
-      page: 1,
-      pageSize: 20,
-      totalPages: 1,
-    );
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:00';
   }
 
   @override
@@ -115,27 +74,13 @@ class AnnouncementRemoteDataSourceImpl implements AnnouncementRemoteDataSource {
         return AnnouncementModel.fromJson(data);
       }
 
-      // If not found, return a mock announcement
-      return _getMockAnnouncement(announcementName);
+      throw Exception('Announcement not found');
     } on DioException catch (e) {
-      // Return mock announcement on error
-      return _getMockAnnouncement(announcementName);
+      DioErrorHandler.handle(e);
+      rethrow;
     } catch (e) {
-      return _getMockAnnouncement(announcementName);
+      throw Exception(e.toString());
     }
-  }
-
-  AnnouncementModel _getMockAnnouncement(String name) {
-    return AnnouncementModel(
-      name: name,
-      title: 'Sample Announcement',
-      body: 'This is a sample announcement. Please check back later for more updates.',
-      postedAt: _formatDateTime(DateTime.now()),
-      postedBy: 'Administrator',
-      classroom: 'All Classrooms',
-      creation: _formatDateTime(DateTime.now()),
-      modified: _formatDateTime(DateTime.now()),
-    );
   }
 
   @override

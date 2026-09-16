@@ -10,9 +10,10 @@ abstract class PaymentEvent extends Equatable {
 /// Load invoices for the authenticated parent.
 class LoadInvoices extends PaymentEvent {
   final String? status;
-  const LoadInvoices({this.status});
+  final String? parent;
+  const LoadInvoices({this.status, this.parent});
   @override
-  List<Object?> get props => [status];
+  List<Object?> get props => [status, parent];
 }
 
 /// Initialize a checkout for a specific invoice.
