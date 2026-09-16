@@ -338,12 +338,12 @@ class _LessonPlanDetailPageState extends State<LessonPlanDetailPage> {
           label: 'Classroom',
           value: p.classroom,
         ),
-      if (p.teacher.isNotEmpty)
-        _MetaTile(
-          icon: Icons.person_outline_rounded,
-          label: 'Teacher',
-          value: p.teacher,
-        ),
+      // if (p.teacher.isNotEmpty)
+      //   _MetaTile(
+      //     icon: Icons.person_outline_rounded,
+      //     label: 'Teacher',
+      //     value: p.teacher,
+      //   ),
     ];
 
     if (tiles.isEmpty) return const SizedBox.shrink();
