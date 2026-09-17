@@ -183,7 +183,12 @@ class ApiConstants {
   static const String dashboard =
       '/api/method/little_heroes.api.v1.dashboards.get_dashboard';
   // static const String dashboard =
-  // '/api/method/little_heroes.api.v1.dashboards.get_parent_dashboard';
+
+  /// Dashboard scoped to a specific student.
+  /// Pass the `student_id` (which is actually the student's `name` in ERPNext)
+  /// as a query parameter.
+  static String dashboardForStudent(String studentId) =>
+      '$dashboard?student_id=${Uri.encodeQueryComponent(studentId)}';
 
   // Classroom endpoints
   static const String listClassrooms =

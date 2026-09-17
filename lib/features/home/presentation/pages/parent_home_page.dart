@@ -34,33 +34,6 @@ class ParentHomePage extends StatelessWidget {
 
                   const SizedBox(height: 28),
 
-                  // ==
-                  // CHILD ACTIVITY
-                  // ==
-                  // const SectionHeader(
-                  //   title: 'Child Activity',
-                  //   subtitle: 'Latest updates about your child',
-                  // ),
-
-                  // const SizedBox(height: 14),
-
-                  // const RecentActivity(type: RecentActivityType.parent),
-
-                  // const SizedBox(height: 28),
-
-                  // // ==
-                  // // UPCOMING
-                  // // ==
-                  // const SectionHeader(
-                  //   title: 'Upcoming',
-                  //   subtitle: 'Your next scheduled activity',
-                  // ),
-
-                  // const SizedBox(height: 14),
-
-                  // const UpcomingCard(type: UpcomingType.parent),
-
-                  // const SizedBox(height: 10),
                 ]),
               ),
             ),

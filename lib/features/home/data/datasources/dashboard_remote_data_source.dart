@@ -2,6 +2,7 @@
 
 // import '../../../../core/constants/api_constants.dart';
 // import '../../../../core/error/dio_error_handler.dart';
+// import '../../../../core/constants/user_role.dart';
 // import '../models/dashboard_response_model.dart';
 
 // abstract class DashboardRemoteDataSource {
@@ -19,15 +20,31 @@
 //       final response = await dio.get(ApiConstants.dashboard);
 
 //       if (response.data is Map<String, dynamic>) {
-//         return DashboardResponse.fromJson(response.data);
+//         final data = response.data as Map<String, dynamic>;
+//         final message = data['message'] ?? {};
+//         final responseData = message['data'] ?? {};
+
+//         // If data is empty or null, return mock data
+//         if (responseData.isEmpty ||
+//             (responseData is Map && responseData.isEmpty) ||
+//             (responseData is List && responseData.isEmpty)) {
+//           print('📊 Dashboard data is empty, returning mock data');
+//           // return _getMockDashboard();
+//         }
+
+//         return DashboardResponse.fromJson(data);
 //       }
 
 //       throw Exception('Invalid response format');
 //     } on DioException catch (e) {
-//       DioErrorHandler.handle(e);
-//       rethrow;
+//       // On API error, return mock data
+//       print('❌ Dashboard API error: ${e.message}');
+//       // DioErrorHandler.handle(e);
+//       // return _getMockDashboard();
 //     } catch (e) {
-//       throw Exception(e.toString());
+//       print('❌ Dashboard error: $e');
+//       // return _getMockDashboard();
+//       // return null;
 //     }
 //   }
 // }
@@ -35,12 +52,12 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_constants.dart';
-import '../../../../core/error/dio_error_handler.dart';
-import '../../../../core/constants/user_role.dart';
 import '../models/dashboard_response_model.dart';
 
 abstract class DashboardRemoteDataSource {
-  Future<DashboardResponse> getDashboard();
+  /// If [studentId] is null/empty, fetch the parent's overall dashboard.
+  /// Otherwise, fetch the dashboard scoped to that specific student.
+  Future<DashboardResponse> getDashboard({String? studentId});
 }
 
 class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
@@ -49,16 +66,21 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   DashboardRemoteDataSourceImpl(this.dio);
 
   @override
-  Future<DashboardResponse> getDashboard() async {
+  Future<DashboardResponse> getDashboard({String? studentId}) async {
     try {
-      final response = await dio.get(ApiConstants.dashboard);
+      final endpoint = (studentId != null && studentId.isNotEmpty)
+          ? ApiConstants.dashboardForStudent(studentId)
+          : ApiConstants.dashboard;
+
+      print('📊 [Dashboard] GET $endpoint');
+
+      final response = await dio.get(endpoint);
 
       if (response.data is Map<String, dynamic>) {
         final data = response.data as Map<String, dynamic>;
         final message = data['message'] ?? {};
         final responseData = message['data'] ?? {};
 
-        // If data is empty or null, return mock data
         if (responseData.isEmpty ||
             (responseData is Map && responseData.isEmpty) ||
             (responseData is List && responseData.isEmpty)) {
@@ -71,9 +93,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
 
       throw Exception('Invalid response format');
     } on DioException catch (e) {
-      // On API error, return mock data
       print('❌ Dashboard API error: ${e.message}');
-      // DioErrorHandler.handle(e);
       return _getMockDashboard();
     } catch (e) {
       print('❌ Dashboard error: $e');
@@ -81,22 +101,13 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     }
   }
 
-  // ============================================================
-  // MOCK DASHBOARD DATA - Returns appropriate mock based on role
-  // ============================================================
-
+  // ─────────────────────────────────────────────────────────────
+  // MOCK
+  // ─────────────────────────────────────────────────────────────
   DashboardResponse _getMockDashboard() {
-    // You can determine role from auth state or use both
-    // For now, returning both teacher and parent mock data
-    // The DashboardResponse.fromJson will detect which one to use
-
-    // Return teacher mock by default
+    // Your existing mocks unchanged
     return _getMockTeacherDashboard();
   }
-
-  // ============================================================
-  // MOCK TEACHER DASHBOARD
-  // ============================================================
 
   DashboardResponse _getMockTeacherDashboard() {
     final mockData = {
@@ -146,10 +157,6 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
 
     return DashboardResponse.fromJson(mockData);
   }
-
-  // ============================================================
-  // MOCK PARENT DASHBOARD
-  // ============================================================
 
   DashboardResponse _getMockParentDashboard() {
     final mockData = {
