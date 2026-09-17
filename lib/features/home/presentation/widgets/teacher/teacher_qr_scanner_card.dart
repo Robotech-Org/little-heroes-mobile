@@ -257,7 +257,7 @@ class TeacherQrScannerCard extends StatelessWidget {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const _LoadingDialog(message: 'Capturing location…'),
+      builder: (_) => const _LoadingDialog(message: 'Getting  location…'),
     );
 
     try {
