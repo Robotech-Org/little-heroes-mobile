@@ -23,59 +23,89 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  late final ChatBloc _bloc;
+
+  /// Name of the newest message we've already auto-scrolled for.
+  /// Used so pagination / loading older messages doesn't jump the view.
+  String? _lastNewestMessageName;
+
+  /// Whether to show the "jump to latest" FAB.
+  bool _showJumpToLatest = false;
+
   @override
   void initState() {
     super.initState();
-    context.read<ChatBloc>().add(OpenChannel(widget.channelId));
+    _bloc = context.read<ChatBloc>();
+    _bloc.add(OpenChannel(widget.channelId));
     _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    context.read<ChatBloc>().add(CloseChannel());
+    // Use the saved reference, not context (context is unsafe here).
+    _bloc.add(CloseChannel());
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  // ═════════════════════════════════════════════
+  // Scroll handling
+  // ═════════════════════════════════════════════
   void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final atBottom = _scrollController.position.pixels <= 50;
+    if (_showJumpToLatest == atBottom) {
+      setState(() => _showJumpToLatest = !atBottom);
+    }
+
+    // Reverse list: maxScrollExtent is toward older messages.
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 100) {
-      context.read<ChatBloc>().add(
-        LoadMessages(channelId: widget.channelId, loadMore: true),
-      );
+      _bloc.add(LoadMessages(channelId: widget.channelId, loadMore: true));
     }
   }
 
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 80), () {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  // ═════════════════════════════════════════════
+  // Send
+  // ═════════════════════════════════════════════
   void _send() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    context.read<ChatBloc>().add(
-      SendChatMessage(channelId: widget.channelId, text: text),
-    );
+    _bloc.add(SendChatMessage(channelId: widget.channelId, text: text));
     _controller.clear();
     _scrollToBottom();
   }
 
-  void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
+  // ═════════════════════════════════════════════
+  // Sorting + dedup
+  // ═════════════════════════════════════════════
   List<ChatMessage> _sorted(List<ChatMessage> messages) {
-    final copy = List<ChatMessage>.from(messages);
-    copy.sort((a, b) => a.creation.compareTo(b.creation));
-    return copy;
+    final seen = <String>{};
+    final unique = <ChatMessage>[];
+    for (final m in messages) {
+      if (seen.add(m.name)) unique.add(m);
+    }
+    unique.sort((a, b) => a.creation.compareTo(b.creation));
+    return unique;
   }
 
+  // ═════════════════════════════════════════════
+  // Build
+  // ═════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -84,7 +114,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       appBar: AppBar(title: Text(widget.title)),
       body: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
-          if (state is ChannelOpen) _scrollToBottom();
+          if (state is! ChannelOpen) return;
+          final sorted = _sorted(state.messages);
+          if (sorted.isEmpty) return;
+
+          final newestName = sorted.last.name;
+          if (newestName != _lastNewestMessageName) {
+            _lastNewestMessageName = newestName;
+            _scrollToBottom();
+          }
         },
         builder: (context, state) {
           if (state is! ChannelOpen) {
@@ -110,6 +148,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     ),
                     itemCount: messages.length,
                     itemBuilder: (context, i) {
+                      // reverse:true → index 0 is the bottom-most item,
+                      // so pull from the end of the sorted list.
                       final msg = messages[messages.length - 1 - i];
                       return MessageBubble(
                         message: msg,
@@ -123,9 +163,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           );
         },
       ),
+      floatingActionButton: _showJumpToLatest
+          ? FloatingActionButton.small(
+              onPressed: _scrollToBottom,
+              tooltip: 'Jump to latest',
+              child: const Icon(Icons.arrow_downward_rounded),
+            )
+          : null,
     );
   }
 
+  // ═════════════════════════════════════════════
+  // Input bar
+  // ═════════════════════════════════════════════
   Widget _buildInput(ThemeData theme) {
     return Container(
       padding: EdgeInsets.only(
@@ -147,6 +197,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               controller: _controller,
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => _send(),
+              minLines: 1,
+              maxLines: 5,
               decoration: InputDecoration(
                 hintText: 'Type a message...',
                 filled: true,
@@ -168,6 +220,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             child: IconButton(
               icon: const Icon(Icons.send_rounded, color: Colors.white),
               onPressed: _send,
+              tooltip: 'Send',
             ),
           ),
         ],

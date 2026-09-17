@@ -501,11 +501,12 @@ Future<void> initDependencies() async {
     );
   }
 
+ 
   if (!sl.isRegistered<SyncPendingSessions>()) {
     sl.registerLazySingleton<SyncPendingSessions>(
       () => SyncPendingSessions(
-        sl<AttendanceRepository>(),
-        sl<AttendanceSessionService>(),
+        repository: sl<AttendanceRepository>(),
+        sessionService: sl<AttendanceSessionService>(),
       ),
     );
   }

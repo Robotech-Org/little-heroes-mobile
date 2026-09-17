@@ -1,5 +1,3 @@
-// lib/features/chats/presentation/bloc/chat_bloc.dart
-
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -91,6 +89,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final SocketService socketService;
 
   StreamSubscription? _socketSub;
+  Timer? _pollTimer;
   String? _activeChannelId;
 
   ChatBloc({required this.repository, required this.socketService})
@@ -102,12 +101,15 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<SendChatMessage>(_onSendChatMessage);
     on<IncomingMessage>(_onIncomingMessage);
 
-    //   Live updates from Socket.IO
+    // Live updates from Socket.IO (when the backend supports it)
     _socketSub = socketService.onNewMessage.listen((payload) {
       add(IncomingMessage(payload));
     });
   }
 
+  // ═════════════════════════════════════════════
+  // CHANNELS
+  // ═════════════════════════════════════════════
   Future<void> _onLoadChannels(
     LoadChannels event,
     Emitter<ChatState> emit,
@@ -121,13 +123,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
   }
 
+  // ═════════════════════════════════════════════
+  // OPEN / CLOSE CHANNEL
+  // ═════════════════════════════════════════════
   Future<void> _onOpenChannel(
     OpenChannel event,
     Emitter<ChatState> emit,
   ) async {
     _activeChannelId = event.channelId;
 
-    await socketService.connect();
+    // Best-effort socket (won't block if server rejects)
+    unawaited(socketService.connect());
     socketService.joinChannel(event.channelId);
 
     emit(ChannelOpen(channelId: event.channelId, isLoading: true));
@@ -148,18 +154,81 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           page: 1,
         ),
       );
+
+      // Poll for new messages every 3 s (socket fallback)
+      _startPolling(event.channelId);
     } catch (e) {
       emit(ChatError(e.toString()));
     }
   }
 
   void _onCloseChannel(CloseChannel event, Emitter<ChatState> emit) {
+    _stopPolling();
     if (_activeChannelId != null) {
       socketService.leaveChannel(_activeChannelId!);
       _activeChannelId = null;
     }
   }
 
+  // ═════════════════════════════════════════════
+  // POLLING
+  // ═════════════════════════════════════════════
+  void _startPolling(String channelId) {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _pollNewMessages(channelId);
+    });
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  /// Fetch the newest page and append any messages we don't already have.
+  Future<void> _pollNewMessages(String channelId) async {
+    if (state is! ChannelOpen) return;
+    final current = state as ChannelOpen;
+
+    // Only poll the channel we're actually viewing
+    if (current.channelId != channelId) return;
+
+    try {
+      final latest = await repository.getChannelMessages(
+        channelId: channelId,
+        page: 1,
+      );
+
+      // Merge: keep only messages whose `name` isn't already in the list
+      final existingNames = current.messages.map((m) => m.name).toSet();
+      final fresh = latest
+          .where((m) => !existingNames.contains(m.name))
+          .toList();
+
+      if (fresh.isEmpty) return;
+      if (state is! ChannelOpen)
+        return; // channel may have changed during await
+
+      // Re-read state because it may have changed during the await
+      final now = state as ChannelOpen;
+      if (now.channelId != channelId) return;
+
+      // Merge again in case a socket event added messages meanwhile
+      final nowNames = now.messages.map((m) => m.name).toSet();
+      final stillFresh = fresh
+          .where((m) => !nowNames.contains(m.name))
+          .toList();
+      if (stillFresh.isEmpty) return;
+
+      emit(now.copyWith(messages: [...now.messages, ...stillFresh]));
+    } catch (_) {
+      // Silent — polling failures shouldn't spam the UI
+    }
+  }
+
+  // ═════════════════════════════════════════════
+  // PAGINATION
+  // ═════════════════════════════════════════════
   Future<void> _onLoadMessages(
     LoadMessages event,
     Emitter<ChatState> emit,
@@ -191,6 +260,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
   }
 
+  // ═════════════════════════════════════════════
+  // SEND
+  // ═════════════════════════════════════════════
   Future<void> _onSendChatMessage(
     SendChatMessage event,
     Emitter<ChatState> emit,
@@ -216,25 +288,37 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         text: event.text,
       );
 
-      final updated = current.messages.map((m) {
+      if (state is! ChannelOpen) return;
+      final latest = state as ChannelOpen;
+
+      final updated = latest.messages.map((m) {
         if (m.name == optimistic.name) {
           return sent.copyWith(sendStatus: MessageSendStatus.sent);
         }
         return m;
       }).toList();
 
-      emit(current.copyWith(messages: updated));
+      emit(latest.copyWith(messages: updated));
+
+      // Immediately poll to pull any messages we missed while sending
+      _pollNewMessages(event.channelId);
     } catch (e) {
-      final failed = current.messages.map((m) {
+      if (state is! ChannelOpen) return;
+      final latest = state as ChannelOpen;
+
+      final failed = latest.messages.map((m) {
         if (m.name == optimistic.name) {
           return m.copyWith(sendStatus: MessageSendStatus.failed);
         }
         return m;
       }).toList();
-      emit(current.copyWith(messages: failed));
+      emit(latest.copyWith(messages: failed));
     }
   }
 
+  // ═════════════════════════════════════════════
+  // SOCKET INCOMING
+  // ═════════════════════════════════════════════
   void _onIncomingMessage(IncomingMessage event, Emitter<ChatState> emit) {
     if (state is! ChannelOpen) return;
     final current = state as ChannelOpen;
@@ -250,8 +334,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
   }
 
+  // ═════════════════════════════════════════════
+  // CLEANUP
+  // ═════════════════════════════════════════════
   @override
   Future<void> close() {
+    _stopPolling();
     _socketSub?.cancel();
     return super.close();
   }

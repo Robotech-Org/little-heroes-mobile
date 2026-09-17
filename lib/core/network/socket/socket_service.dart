@@ -39,7 +39,8 @@ class SocketService {
       _socket = io.io(
         ApiConstants.socketUrl,
         io.OptionBuilder()
-            .setTransports(['websocket'])
+            // .setTransports(['websocket'])
+            .setTransports(['websocket', 'polling'])
             .disableAutoConnect()
             .setExtraHeaders({
               'Cookie': cookieString,
