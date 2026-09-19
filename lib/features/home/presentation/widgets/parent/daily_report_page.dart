@@ -58,12 +58,11 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
       final repository = di.sl<DailyReportRepository>();
 
-      // Get today's date in the format used by the API
       final today = DateTime.now();
       final reportDate =
-          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-'
+          '${today.day.toString().padLeft(2, '0')}';
 
-      // Search for reports by student and date
       final response = await repository.getDailyReports(
         page: 1,
         pageSize: 20,
@@ -78,7 +77,6 @@ class _DailyReportPageState extends State<DailyReportPage> {
           _isLoading = false;
         });
       } else {
-        // No report found for today
         setState(() {
           _report = null;
           _isLoading = false;
@@ -93,30 +91,6 @@ class _DailyReportPageState extends State<DailyReportPage> {
     }
   }
 
-  // void _sendNote() {
-  //   final note = _noteController.text.trim();
-
-  //   if (note.isEmpty) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(
-  //         content: Text('Please write a note first.'),
-  //         behavior: SnackBarBehavior.floating,
-  //       ),
-  //     );
-  //     return;
-  //   }
-
-  //   FocusScope.of(context).unfocus();
-
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     const SnackBar(
-  //       content: Text('Note sent to teacher.'),
-  //       behavior: SnackBarBehavior.floating,
-  //     ),
-  //   );
-
-  //   _noteController.clear();
-  // }
   void _sendNote() {
     final note = _noteController.text.trim();
 
@@ -132,7 +106,6 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
     FocusScope.of(context).unfocus();
 
-    // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Note sent to teacher.'),
@@ -142,9 +115,8 @@ class _DailyReportPageState extends State<DailyReportPage> {
 
     _noteController.clear();
 
-    //  Navigate back after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
     });
   }
 
@@ -165,7 +137,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back Button
+                    // Back button
                     SizedBox(
                       height: 42,
                       child: Material(
@@ -246,7 +218,6 @@ class _DailyReportPageState extends State<DailyReportPage> {
                     ),
                     const SizedBox(height: 30),
 
-                    // Loading State
                     if (_isLoading)
                       const Center(
                         child: Padding(
@@ -254,43 +225,44 @@ class _DailyReportPageState extends State<DailyReportPage> {
                           child: CircularProgressIndicator(),
                         ),
                       )
-                    // Error State
                     else if (_isError)
                       _buildErrorWidget(theme, colors)
-                    // No Report Found
                     else if (_report == null)
                       _buildEmptyWidget(theme, colors)
-                    // Report Content
                     else ...[
-                      // Meals
+                      // ── Meal ──────────────────────────────
                       const ReportItem(
                         title: 'MEALS & SNACKS',
                         values: ['Ate Most'],
                       ),
                       const SizedBox(height: 26),
 
-                      // Nap
+                      // ── Nap ───────────────────────────────
                       const ReportItem(
                         title: 'NAP TIME',
                         values: ['Short Nap'],
                       ),
                       const SizedBox(height: 26),
 
-                      // Mood
+                      // ── Mood ──────────────────────────────
                       const ReportItem(
                         title: 'MOOD & BEHAVIOR',
                         values: ['Happy', 'Playful'],
                       ),
                       const SizedBox(height: 26),
 
-                      // Health
+                      // ── Health ────────────────────────────
                       const ReportItem(
                         title: 'HEALTH & HYGIENE',
                         values: ['No Concerns'],
                       ),
                       const SizedBox(height: 32),
 
-                      // Note to Teacher
+                      // ── TEACHER'S NOTE ───────────────────
+                      _buildTeacherNote(theme, colors, _report!),
+                      const SizedBox(height: 32),
+
+                      // ── Note to Teacher (parent input) ───
                       Text(
                         'NOTE TO TEACHER',
                         style: theme.textTheme.labelSmall?.copyWith(
@@ -348,7 +320,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Send Note Button
+                      // Send button
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -356,7 +328,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
                           onPressed: _sendNote,
                           icon: const Icon(Icons.send_rounded, size: 18),
                           label: const Text(
-                            'Send Note ',
+                            'Send Note',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -380,6 +352,86 @@ class _DailyReportPageState extends State<DailyReportPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTeacherNote(
+    ThemeData theme,
+    ColorScheme colors,
+    DailyReportModel report,
+  ) {
+    // The teacher writes into `dailyReportNotes` (the "Message to Parent"
+    // field on their side). From the parent's view we label it
+    // "Teacher's Note".
+    final note = report.dailyReportNotes;
+
+    if (note == null || note.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 14,
+              color: colors.primary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              "TEACHER'S NOTE",
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: 11,
+                letterSpacing: 0.8,
+                color: colors.onSurfaceVariant,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colors.primaryContainer.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.school_outlined,
+                  size: 18,
+                  color: colors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  note,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    height: 1.5,
+                    fontWeight: FontWeight.w500,
+                    color: colors.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -450,7 +502,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
   }
 
   String _formatDate(DateTime date) {
-    final months = [
+    const months = [
       'Jan',
       'Feb',
       'Mar',
@@ -468,10 +520,9 @@ class _DailyReportPageState extends State<DailyReportPage> {
   }
 }
 
-// ============================================================
+// ═════════════════════════════════════════════════════════════
 // REPORT ITEM
-// ============================================================
-
+// ═════════════════════════════════════════════════════════════
 class ReportItem extends StatelessWidget {
   final String title;
   final List<String> values;
@@ -512,10 +563,9 @@ class ReportItem extends StatelessWidget {
   }
 }
 
-// ============================================================
+// ═════════════════════════════════════════════════════════════
 // STATUS PILL
-// ============================================================
-
+// ═════════════════════════════════════════════════════════════
 class StatusPill extends StatelessWidget {
   final String text;
   final Color backgroundColor;

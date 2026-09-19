@@ -5,8 +5,10 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.
 import 'package:little_heroes_mobile/features/home/data/models/dashboard_response_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/dashboard_repository.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/common/home_header.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_list_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/three_month_report_list_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/three_month_report_page.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_bloc.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/pages/payment_history_page.dart';
@@ -174,12 +176,22 @@ class _ParentDashboardState extends State<ParentDashboard> {
               statusType: child.status.toLowerCase().contains('ready')
                   ? _ChildStatus.ready
                   : _ChildStatus.inProgress,
+              // onTap: () {
+              //   Navigator.of(context).push(
+              //     MaterialPageRoute(
+              //       builder: (_) => DailyReportPage(
+              //         studentName: child.name,
+              //         studentId: child.id,
+              //       ),
+              //     ),
+              //   );
+              // },
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => DailyReportPage(
-                      studentName: child.name,
+                    builder: (_) => ParentDailyReportListPage(
                       studentId: child.id,
+                      studentName: child.name,
                     ),
                   ),
                 );
@@ -281,19 +293,34 @@ class _ParentDashboardState extends State<ParentDashboard> {
     if (child == null) return _noChildSnack();
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            DailyReportPage(studentName: child.name, studentId: child.id),
+        builder: (_) => ParentDailyReportListPage(
+          studentName: child.name,
+          studentId: child.id,
+        ),
       ),
     );
   }
+
+  // void _openThreeMonthReport() {
+  //   final child = _activeChild;
+  //   if (child == null) return _noChildSnack();
+  //   Navigator.of(context).push(
+  //     MaterialPageRoute(
+  //       builder: (_) =>
+  //           ThreeMonthReportPage(studentName: child.name, studentId: child.id),
+  //     ),
+  //   );
+  // }
 
   void _openThreeMonthReport() {
     final child = _activeChild;
     if (child == null) return _noChildSnack();
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            ThreeMonthReportPage(studentName: child.name, studentId: child.id),
+        builder: (_) => ParentThreeMonthReportListPage(
+          studentId: child.id,
+          studentName: child.name,
+        ),
       ),
     );
   }

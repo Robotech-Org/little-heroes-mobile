@@ -560,7 +560,7 @@ class _AttendanceSessionsPageState extends State<AttendanceSessionsPage> {
                               const Icon(Icons.cloud_upload_rounded, size: 22),
                               const SizedBox(width: 10),
                               Text(
-                                'Save Attendance ($_pendingTotal)',
+                                'Submit Attendance ($_pendingTotal)',
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
