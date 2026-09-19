@@ -1,3 +1,4 @@
+import '../../data/models/attendance_batch_response_model.dart';
 import '../../data/models/attendance_session.dart';
 import '../../data/services/attendance_session_service.dart';
 import '../repositories/attendance_repository.dart';
@@ -5,8 +6,9 @@ import '../repositories/attendance_repository.dart';
 class SyncSummary {
   final int synced;
   final int failed;
+  final int flagged;
   bool get nothingToSync => synced == 0 && failed == 0;
-  SyncSummary({required this.synced, required this.failed});
+  SyncSummary({required this.synced, required this.failed, this.flagged = 0});
 }
 
 class SyncPendingSessions {
@@ -21,10 +23,18 @@ class SyncPendingSessions {
 
     int synced = 0;
     int failed = 0;
+    int flagged = 0;
 
     for (final session in pending) {
+      // Only send scans that still need a round-trip
+      final unsent = session.scans.where((s) => s.isPending).toList();
+      if (unsent.isEmpty) {
+        await sessionService.markSessionSynced(session.sessionId);
+        continue;
+      }
+
       try {
-        final scans = session.scans
+        final scans = unsent
             .map(
               (s) => {
                 'student_id': s.studentId,
@@ -34,37 +44,58 @@ class SyncPendingSessions {
             )
             .toList();
 
-        final batchScannedAt = session.scans.isEmpty
-            ? session.startedAt
-            : session.scans.first.scannedAt;
+        final batchScannedAt = unsent.first.scannedAt;
 
-        if (session.logType == AttendanceLogType.punchIn) {
-          await repository.punchIn(
-            scans: scans,
-            latitude: session.deviceLatitude,
-            longitude: session.deviceLongitude,
-            gpsAccuracyMeters: session.gpsAccuracyMeters,
-            scannedAt: batchScannedAt,
-            deviceId: session.deviceId,
-          );
-        } else {
-          await repository.punchOut(
-            scans: scans,
-            latitude: session.deviceLatitude,
-            longitude: session.deviceLongitude,
-            gpsAccuracyMeters: session.gpsAccuracyMeters,
-            scannedAt: batchScannedAt,
-            deviceId: session.deviceId,
-          );
+        final AttendanceBatchResponse response =
+            session.logType == AttendanceLogType.punchIn
+            ? await repository.punchIn(
+                scans: scans,
+                latitude: session.deviceLatitude,
+                longitude: session.deviceLongitude,
+                gpsAccuracyMeters: session.gpsAccuracyMeters,
+                scannedAt: batchScannedAt,
+                deviceId: session.deviceId,
+              )
+            : await repository.punchOut(
+                scans: scans,
+                latitude: session.deviceLatitude,
+                longitude: session.deviceLongitude,
+                gpsAccuracyMeters: session.gpsAccuracyMeters,
+                scannedAt: batchScannedAt,
+                deviceId: session.deviceId,
+              );
+
+        final failedPayloads = <String>{};
+        final failureReasons = <String, String>{};
+        for (final f in response.failedScans) {
+          final p = f.qrPayload;
+          if (p != null && p.isNotEmpty) {
+            failedPayloads.add(p);
+            failureReasons[p] = f.reason ?? 'Server rejected this scan';
+          }
         }
 
-        await sessionService.markSessionSynced(session.sessionId);
-        synced += session.scans.length;
+        final sentPayloads = unsent.map((s) => s.qrPayload).toSet();
+        final succeededPayloads = sentPayloads.difference(failedPayloads);
+
+        await sessionService.applyBatchResult(
+          sessionId: session.sessionId,
+          succeededQrPayloads: succeededPayloads,
+          failedQrPayloads: failedPayloads,
+          failureReasons: failureReasons,
+        );
+
+        synced += response.successCount;
+        failed += response.failedCount;
+
+        if (response.validationStatus?.toLowerCase() == 'flagged') {
+          flagged += response.successCount;
+        }
       } catch (_) {
-        failed += session.scans.length;
+        failed += unsent.length;
       }
     }
 
-    return SyncSummary(synced: synced, failed: failed);
+    return SyncSummary(synced: synced, failed: failed, flagged: flagged);
   }
 }

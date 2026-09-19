@@ -51,6 +51,10 @@ class _AttendanceSessionsPageState extends State<AttendanceSessionsPage> {
 
     try {
       final service = di.sl<AttendanceSessionService>();
+
+      //   Auto-clean yesterday's data (Ethiopian midnight boundary)
+      await service.purgeSessionsOlderThanToday();
+
       final sessions = await service.getTodaySessions();
       final active = await service.getActiveSession();
 
@@ -109,7 +113,6 @@ class _AttendanceSessionsPageState extends State<AttendanceSessionsPage> {
       );
     }
   }
-
   // ═════════════════════════════════════════════════════════════
   // Derived — the whole phase machine in three flags
   // ═════════════════════════════════════════════════════════════
@@ -143,14 +146,11 @@ class _AttendanceSessionsPageState extends State<AttendanceSessionsPage> {
   int get _pendingPunchInCount {
     var count = 0;
     for (final s in _todaySessions) {
-      if (!s.synced && s.logType == AttendanceLogType.punchIn) {
-        count += s.scans.length;
-      }
+      if (s.logType != AttendanceLogType.punchIn) continue;
+      count += s.scans.where((scan) => scan.isPending).length;
     }
-    if (_active != null &&
-        _active!.logType == AttendanceLogType.punchIn &&
-        !_active!.synced) {
-      count += _active!.scans.length;
+    if (_active != null && _active!.logType == AttendanceLogType.punchIn) {
+      count += _active!.scans.where((scan) => scan.isPending).length;
     }
     return count;
   }
@@ -158,9 +158,8 @@ class _AttendanceSessionsPageState extends State<AttendanceSessionsPage> {
   int get _pendingPunchOutCount {
     var count = 0;
     for (final s in _todaySessions) {
-      if (!s.synced && s.logType == AttendanceLogType.punchOut) {
-        count += s.scans.length;
-      }
+      if (s.logType != AttendanceLogType.punchOut) continue;
+      count += s.scans.where((scan) => scan.isPending).length;
     }
     return count;
   }

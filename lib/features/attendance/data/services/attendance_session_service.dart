@@ -69,7 +69,7 @@ class AttendanceSessionService {
 
     final session = AttendanceSession.fromMap(Map<String, dynamic>.from(raw));
 
-    // ✅ Dedup by studentId — replace if the same card is scanned again
+    //   Dedup by studentId — replace if the same card is scanned again
     final updatedScans = List<PendingAttendanceScan>.from(session.scans)
       ..removeWhere((s) => s.studentId == scan.studentId)
       ..add(scan);
@@ -180,5 +180,100 @@ class AttendanceSessionService {
       if (session.synced) toRemove.add(key);
     }
     await box.deleteAll(toRemove);
+  }
+
+  /// Called after a batch HTTP call.
+  ///
+  /// IMPORTANT: This method NEVER removes scans from the session. It only
+  /// flips flags so the roster stays intact for the punch-out phase.
+  ///
+  /// * Scans the server accepted → `synced: true`, clear any old reason.
+  /// * Scans the server rejected → `synced: false`, stamp the reason.
+  /// * Scans not mentioned → left untouched.
+  /// * Session-level `synced` is true only when every scan is synced.
+  Future<void> applyBatchResult({
+    required String sessionId,
+    required Set<String> succeededQrPayloads,
+    required Set<String> failedQrPayloads,
+    required Map<String, String> failureReasons,
+  }) async {
+    final box = await _getBox();
+    final raw = box.get(sessionId);
+    if (raw == null) return;
+
+    final session = AttendanceSession.fromMap(Map<String, dynamic>.from(raw));
+
+    final updated = <PendingAttendanceScan>[];
+    for (final scan in session.scans) {
+      if (succeededQrPayloads.contains(scan.qrPayload)) {
+        updated.add(scan.copyWith(synced: true, clearFailure: true));
+      } else if (failedQrPayloads.contains(scan.qrPayload)) {
+        updated.add(
+          scan.copyWith(
+            synced: false,
+            failureReason:
+                failureReasons[scan.qrPayload] ?? 'Server rejected this scan',
+          ),
+        );
+      } else {
+        // Not part of this batch — leave it alone
+        updated.add(scan);
+      }
+    }
+
+    final allSynced = updated.every((s) => s.synced && !s.hasFailed);
+
+    await box.put(
+      sessionId,
+      session.copyWith(scans: updated, synced: allSynced).toMap(),
+    );
+  }
+
+  /// Removes any finalized session whose `startedAt` is before the start of
+  /// today **in Ethiopian time (UTC+3)**.
+  ///
+  /// Ethiopia has no daylight saving, so +3 hours is a fixed offset.
+  /// Everything before Ethiopian midnight (UTC 21:00) is treated as
+  /// "previous day" and removed.
+  Future<void> purgeSessionsOlderThanToday() async {
+    final box = await _getBox();
+
+    // 1. Get the current moment in UTC
+    final nowUtc = DateTime.now().toUtc();
+
+    // 2. Convert to Ethiopian time by adding 3 hours
+    final nowEt = nowUtc.add(const Duration(hours: 3));
+
+    // 3. Ethiopian midnight = the same day at 00:00 EAT
+    final midnightEt = DateTime.utc(
+      nowEt.year,
+      nowEt.month,
+      nowEt.day,
+      0,
+      0,
+      0,
+    );
+
+    // 4. Convert that boundary back to UTC for comparison with stored values
+    final startOfTodayUtc = midnightEt.subtract(const Duration(hours: 3));
+
+    final toRemove = <dynamic>[];
+    for (final key in box.keys) {
+      if (key == _activeKey) continue;
+      final raw = box.get(key);
+      if (raw == null) continue;
+
+      final session = AttendanceSession.fromMap(Map<String, dynamic>.from(raw));
+
+      // `startedAt` is stored as local time, but its epoch comparison
+      // against `startOfTodayUtc` is timezone-safe.
+      if (session.startedAt.toUtc().isBefore(startOfTodayUtc)) {
+        toRemove.add(key);
+      }
+    }
+
+    if (toRemove.isNotEmpty) {
+      await box.deleteAll(toRemove);
+    }
   }
 }

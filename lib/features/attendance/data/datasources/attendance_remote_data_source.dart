@@ -42,7 +42,7 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
     'device_latitude': latitude,
     'device_longitude': longitude,
     'gps_accuracy_meters': gpsAccuracyMeters,
-    'scanned_at': scannedAt.toUtc().toIso8601String(), // ✅ top-level
+    'scanned_at': scannedAt.toUtc().toIso8601String(), //   top-level
     if (deviceId != null && deviceId.isNotEmpty) 'device_id': deviceId,
     'scans': scans,
   });

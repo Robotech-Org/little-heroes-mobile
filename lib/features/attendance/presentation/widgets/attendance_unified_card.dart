@@ -38,12 +38,18 @@ class AttendanceUnifiedCard extends StatelessWidget {
         .length;
     final done = enablePunchOut && remaining == 0;
 
+    // Count failed rows (server rejected them last time)
+    final failedCount = students.where((s) => s.hasFailed).length;
+
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: colors.outlineVariant.withValues(alpha: 0.45),
+          color: failedCount > 0
+              ? colors.error.withValues(alpha: 0.35)
+              : colors.outlineVariant.withValues(alpha: 0.45),
+          width: failedCount > 0 ? 1.4 : 1.0,
         ),
       ),
       child: Column(
@@ -57,16 +63,22 @@ class AttendanceUnifiedCard extends StatelessWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: colors.primaryContainer,
+                    color: failedCount > 0
+                        ? colors.error.withValues(alpha: 0.12)
+                        : colors.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    enablePunchOut
+                    failedCount > 0
+                        ? Icons.error_outline_rounded
+                        : enablePunchOut
                         ? (done
                               ? Icons.check_circle_rounded
                               : Icons.logout_rounded)
                         : Icons.people_alt_rounded,
-                    color: colors.onPrimaryContainer,
+                    color: failedCount > 0
+                        ? colors.error
+                        : colors.onPrimaryContainer,
                     size: 22,
                   ),
                 ),
@@ -84,17 +96,20 @@ class AttendanceUnifiedCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        enablePunchOut
-                            ? (done
-                                  ? 'All checked out'
-                                  : '$remaining still to check out')
-                            : 'Ready to save',
+                        _subtitle(
+                          failedCount: failedCount,
+                          enablePunchOut: enablePunchOut,
+                          done: done,
+                          remaining: remaining,
+                        ),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: enablePunchOut && done
-                              ? AppColors.success
-                              : colors.onSurfaceVariant,
+                          color: failedCount > 0
+                              ? colors.error
+                              : (enablePunchOut && done
+                                    ? AppColors.success
+                                    : colors.onSurfaceVariant),
                         ),
                       ),
                     ],
@@ -104,8 +119,11 @@ class AttendanceUnifiedCard extends StatelessWidget {
             ),
           ),
 
-          // ── "Check Out All" — only in punch-out phase ──
-          if (enablePunchOut && !done && onPunchOutAll != null)
+          // ── "Check Out All" — only in punch-out phase, no failures ──
+          if (enablePunchOut &&
+              !done &&
+              onPunchOutAll != null &&
+              failedCount == 0)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: SizedBox(
@@ -193,6 +211,21 @@ class AttendanceUnifiedCard extends StatelessWidget {
     );
   }
 
+  String _subtitle({
+    required int failedCount,
+    required bool enablePunchOut,
+    required bool done,
+    required int remaining,
+  }) {
+    if (failedCount > 0) {
+      return '$failedCount failed — fix the card and tap Save to retry';
+    }
+    if (enablePunchOut) {
+      return done ? 'All checked out' : '$remaining still to check out';
+    }
+    return 'Ready to save';
+  }
+
   Widget _row({
     required BuildContext context,
     required ColorScheme colors,
@@ -203,19 +236,24 @@ class AttendanceUnifiedCard extends StatelessWidget {
     required VoidCallback? onTapOut,
     required bool isLast,
   }) {
+    // ✗ if the last sync failed for this scan
+    final failed = scan.hasFailed;
+
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             children: [
-              // Number
+              // Number badge (red if failed)
               Container(
                 width: 28,
                 height: 28,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: colors.primaryContainer.withValues(alpha: 0.6),
+                  color: failed
+                      ? colors.error.withValues(alpha: 0.15)
+                      : colors.primaryContainer.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -223,21 +261,41 @@ class AttendanceUnifiedCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: colors.onPrimaryContainer,
+                    color: failed ? colors.error : colors.onPrimaryContainer,
                   ),
                 ),
               ),
               const SizedBox(width: 12),
 
-              // Card ID
+              // Card ID + failure hint
               Expanded(
-                child: Text(
-                  scan.studentId,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'monospace',
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      scan.studentId,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    if (failed)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          scan.failureReason!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: colors.error,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
 
@@ -252,37 +310,41 @@ class AttendanceUnifiedCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
 
-              // Always: punched-in check
-              const Icon(
-                Icons.check_circle_rounded,
-                size: 20,
-                color: AppColors.success,
-              ),
-
-              // Punch-out indicator (only in punch-out phase)
-              if (showPunchOut) ...[
-                const SizedBox(width: 6),
-                if (isOut)
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    size: 20,
-                    color: AppColors.success,
-                  )
-                else
-                  SizedBox(
-                    width: 30,
-                    height: 30,
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      tooltip: 'Check Out',
-                      icon: const Icon(
-                        Icons.logout_rounded,
-                        size: 20,
-                        color: AppColors.warningDark,
+              // ── Status icons ──
+              if (failed)
+                // ✗ for failed — must be retried or rescanned
+                Icon(Icons.cancel_rounded, size: 20, color: colors.error)
+              else ...[
+                // ✓ punched in
+                const Icon(
+                  Icons.check_circle_rounded,
+                  size: 20,
+                  color: AppColors.success,
+                ),
+                if (showPunchOut) ...[
+                  const SizedBox(width: 6),
+                  if (isOut)
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      size: 20,
+                      color: AppColors.success,
+                    )
+                  else
+                    SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        tooltip: 'Check Out',
+                        icon: const Icon(
+                          Icons.logout_rounded,
+                          size: 20,
+                          color: AppColors.warningDark,
+                        ),
+                        onPressed: onTapOut,
                       ),
-                      onPressed: onTapOut,
                     ),
-                  ),
+                ],
               ],
             ],
           ),
