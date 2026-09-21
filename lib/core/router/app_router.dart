@@ -348,7 +348,14 @@ import 'page_not_found.dart';
 class AppRouter {
   AppRouter._();
 
+  /// Root navigator key — used by SessionManager to show a snackbar
+  /// on top of whatever route is currently showing.
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   static final GoRouter router = GoRouter(
+    navigatorKey: navigatorKey, // 👈 add this
+
     initialLocation: AppRoutes.splash,
 
     // ═══════════════════════════════════════════════════════════

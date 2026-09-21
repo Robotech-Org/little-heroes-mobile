@@ -42,7 +42,7 @@ class NotificationService {
 
     // Token rotation
     _messaging.onTokenRefresh.listen((newToken) async {
-      debugPrint('FCM TOKEN REFRESHED: $newToken');
+      // debugPrint('FCM TOKEN REFRESHED: $newToken');
       _currentToken = newToken;
 
       await _safeRegister(newToken);
