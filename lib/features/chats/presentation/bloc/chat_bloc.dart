@@ -9,7 +9,13 @@ import '../../domain/repositories/chat_repository.dart';
 // ============ EVENTS ============
 abstract class ChatEvent {}
 
-class LoadChannels extends ChatEvent {}
+class LoadChannels extends ChatEvent {
+  /// When `true`, the bloc will NOT emit `ChannelsLoading` first — it
+  /// updates the list in place so the UI doesn't flicker on auto-refresh.
+  final bool silent;
+
+  LoadChannels({this.silent = false});
+}
 
 class OpenChannel extends ChatEvent {
   final String channelId;
@@ -101,7 +107,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<SendChatMessage>(_onSendChatMessage);
     on<IncomingMessage>(_onIncomingMessage);
 
-    // Live updates from Socket.IO (when the backend supports it)
+    // Socket.IO live updates (when the backend supports it)
     _socketSub = socketService.onNewMessage.listen((payload) {
       add(IncomingMessage(payload));
     });
@@ -114,13 +120,33 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     LoadChannels event,
     Emitter<ChatState> emit,
   ) async {
-    emit(ChannelsLoading());
+    if (!event.silent) emit(ChannelsLoading());
+
     try {
       final channels = await repository.listMyChannels();
+
+      // When the request was silent and the payload is identical,
+      // skip re-emitting to avoid useless rebuilds.
+      if (event.silent && state is ChannelsLoaded) {
+        final existing = (state as ChannelsLoaded).channels;
+        if (_channelsEqual(existing, channels)) return;
+      }
+
       emit(ChannelsLoaded(channels));
     } catch (e) {
-      emit(ChatError(e.toString()));
+      // For silent refresh failures, keep showing the previous list.
+      if (!event.silent) emit(ChatError(e.toString()));
     }
+  }
+
+  bool _channelsEqual(List<ChatChannel> a, List<ChatChannel> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].ravenChannel != b[i].ravenChannel) return false;
+      if (a[i].lastMessageTime != b[i].lastMessageTime) return false;
+      if (a[i].lastMessagePreview != b[i].lastMessagePreview) return false;
+    }
+    return true;
   }
 
   // ═════════════════════════════════════════════
@@ -132,7 +158,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     _activeChannelId = event.channelId;
 
-    // Best-effort socket (won't block if server rejects)
+    // Best-effort socket
     unawaited(socketService.connect());
     socketService.joinChannel(event.channelId);
 
@@ -155,7 +181,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         ),
       );
 
-      // Poll for new messages every 3 s (socket fallback)
+      // Start polling for new messages
       _startPolling(event.channelId);
     } catch (e) {
       emit(ChatError(e.toString()));
@@ -185,12 +211,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _pollTimer = null;
   }
 
-  /// Fetch the newest page and append any messages we don't already have.
   Future<void> _pollNewMessages(String channelId) async {
     if (state is! ChannelOpen) return;
     final current = state as ChannelOpen;
-
-    // Only poll the channel we're actually viewing
     if (current.channelId != channelId) return;
 
     try {
@@ -199,21 +222,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         page: 1,
       );
 
-      // Merge: keep only messages whose `name` isn't already in the list
       final existingNames = current.messages.map((m) => m.name).toSet();
       final fresh = latest
           .where((m) => !existingNames.contains(m.name))
           .toList();
 
       if (fresh.isEmpty) return;
-      if (state is! ChannelOpen)
-        return; // channel may have changed during await
+      if (state is! ChannelOpen) return;
 
-      // Re-read state because it may have changed during the await
       final now = state as ChannelOpen;
       if (now.channelId != channelId) return;
 
-      // Merge again in case a socket event added messages meanwhile
       final nowNames = now.messages.map((m) => m.name).toSet();
       final stillFresh = fresh
           .where((m) => !nowNames.contains(m.name))
@@ -270,7 +289,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     if (state is! ChannelOpen) return;
     final current = state as ChannelOpen;
 
-    // Optimistic UI
     final optimistic = ChatMessage(
       name: 'temp_${DateTime.now().millisecondsSinceEpoch}',
       owner: 'me',
@@ -300,7 +318,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       emit(latest.copyWith(messages: updated));
 
-      // Immediately poll to pull any messages we missed while sending
+      // Kick a poll immediately so we pull anything we missed
       _pollNewMessages(event.channelId);
     } catch (e) {
       if (state is! ChannelOpen) return;

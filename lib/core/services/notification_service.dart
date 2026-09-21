@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:little_heroes_mobile/core/router/app_router.dart';
+import 'package:little_heroes_mobile/core/router/app_routes.dart';
 import 'package:little_heroes_mobile/features/notifications/domain/usecases/register_device.dart';
 import 'package:little_heroes_mobile/features/notifications/domain/usecases/unregister_device.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
@@ -123,7 +124,7 @@ class NotificationService {
 
   /// Map backend route (e.g. `/daily-reports/DR-2026-0042`)
   /// to Flutter GoRouter path.
-  static void _navigateToRoute(String route) {
+  static void _navigateToRoute(String route, {String? title}) {
     try {
       if (route.startsWith('/daily-reports/')) {
         final id = route.split('/').last;
@@ -140,14 +141,49 @@ class NotificationService {
         AppRouter.router.push('/announcement-detail', extra: id);
         return;
       }
+      // if (route.startsWith('/chat/')) {
+      //   final id = route.split('/').last;
+      //   AppRouter.router.push('/chat', extra: id);
+      //   return;
+      // }
       if (route.startsWith('/chat/')) {
-        final id = route.split('/').last;
-        AppRouter.router.push('/chat', extra: id);
+        final segments = route.split('/').where((s) => s.isNotEmpty).toList();
+        if (segments.length < 2) {
+          debugPrint('Chat notification has no channel id: $route');
+          return;
+        }
+        final channelId = segments[1];
+
+        AppRouter.router.push(
+          AppRoutes.chat,
+          extra: {'channelId': channelId, 'title': title ?? 'Chat'},
+        );
         return;
       }
+      // ── Photo Gallery (list) ────────────────────────
+      // Backend sends `/gallery` or `/galleries` (no id) → open the grid.
+      if (route == '/gallery' || route == '/galleries') {
+        AppRouter.router.push(AppRoutes.photoGallery);
+        return;
+      }
+
+      // ── Photo Gallery (single photo) ────────────────
+      // Backend sends `/galleries/<galleryItemId>` → open the viewer.
+      // The route handler will fetch the item (or accept a pre-loaded one
+      // via `extra`) — here we just pass the id.
+      if (route.startsWith('/galleries/')) {
+        final id = route.split('/').last;
+        AppRouter.router.push(AppRoutes.galleryPhoto, extra: {'itemId': id});
+        return;
+      }
+      // if (route.startsWith('/moments/')) {
+      //   final id = route.split('/').last;
+      //   AppRouter.router.push('/moment-detail', extra: id);
+      //   return;
+      // }
       if (route.startsWith('/moments/')) {
         final id = route.split('/').last;
-        AppRouter.router.push('/moment-detail', extra: id);
+        AppRouter.router.push(AppRoutes.momentDetail, extra: id);
         return;
       }
       debugPrint('Unknown notification route: $route');

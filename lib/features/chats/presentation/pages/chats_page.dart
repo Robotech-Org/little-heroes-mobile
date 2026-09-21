@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
@@ -14,106 +16,334 @@ class ChatsPage extends StatefulWidget {
 }
 
 class _ChatsPageState extends State<ChatsPage> {
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _pollTimer;
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
+
     context.read<ChatBloc>().add(LoadChannels());
+
+    // Auto-refresh the list every 5 s without flicker.
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      context.read<ChatBloc>().add(LoadChannels(silent: true));
+    });
   }
 
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // ═════════════════════════════════════════════
+  // Search
+  // ═════════════════════════════════════════════
+  void _onSearchChanged(String value) {
+    setState(() => _searchQuery = value.trim().toLowerCase());
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() => _searchQuery = '');
+  }
+
+  List<ChatChannel> _filterAndSort(List<ChatChannel> channels) {
+    var list = channels;
+
+    if (_searchQuery.isNotEmpty) {
+      list = channels.where((c) {
+        return c.studentName.toLowerCase().contains(_searchQuery) ||
+            c.classroom.toLowerCase().contains(_searchQuery) ||
+            (c.lastMessagePreview?.toLowerCase().contains(_searchQuery) ??
+                false);
+      }).toList();
+    }
+
+    final sorted = List<ChatChannel>.from(list)
+      ..sort((a, b) {
+        final aT = a.lastMessageTime ?? DateTime(1970);
+        final bT = b.lastMessageTime ?? DateTime(1970);
+        return bT.compareTo(aT);
+      });
+    return sorted;
+  }
+
+  // ═════════════════════════════════════════════
+  // Build
+  // ═════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        surfaceTintColor: Colors.transparent,
         title: const Text(
           'Messages',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () => context.read<ChatBloc>().add(LoadChannels()),
+          ),
+        ],
       ),
-      body: BlocBuilder<ChatBloc, ChatState>(
-        builder: (context, state) {
-          if (state is ChannelsLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: _buildSearchBar(theme),
+          ),
+          Expanded(
+            child: BlocBuilder<ChatBloc, ChatState>(
+              builder: (context, state) {
+                if (state is ChannelsLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (state is ChannelsLoaded) {
-            if (state.channels.isEmpty) {
-              return const Center(child: Text('No conversations yet'));
-            }
+                if (state is ChannelsLoaded) {
+                  if (state.channels.isEmpty) {
+                    return _buildEmpty(theme);
+                  }
 
-            //   Sort by last message time (newest first)
-            final sorted = List<ChatChannel>.from(state.channels)
-              ..sort((a, b) {
-                final aT = a.lastMessageTime ?? DateTime(1970);
-                final bT = b.lastMessageTime ?? DateTime(1970);
-                return bT.compareTo(aT);
-              });
+                  final visible = _filterAndSort(state.channels);
 
-            return RefreshIndicator(
-              onRefresh: () async =>
-                  context.read<ChatBloc>().add(LoadChannels()),
-              child: ListView.separated(
-                itemCount: sorted.length,
-                separatorBuilder: (_, __) => Divider(
-                  height: 1,
-                  indent: 80,
-                  color: theme.dividerColor.withOpacity(0.08),
-                ),
-                itemBuilder: (context, i) {
-                  final channel = sorted[i];
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    leading: CircleAvatar(
-                      radius: 26,
-                      child: Text(_initials(channel.studentName)),
-                    ),
-                    title: Text(
-                      channel.studentName,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Text(
-                      channel.lastMessagePreview ?? channel.classroom,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: Text(
-                      _formatRelative(channel.lastMessageTime),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => BlocProvider(
-                            create: (_) => di.sl<ChatBloc>(),
-                            child: ChatRoomScreen(
-                              channelId: channel.ravenChannel,
-                              title: channel.studentName,
-                            ),
-                          ),
-                        ),
-                      );
+                  if (visible.isEmpty && _searchQuery.isNotEmpty) {
+                    return _buildNoSearchResults(theme);
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      context.read<ChatBloc>().add(LoadChannels());
+                      await Future.delayed(const Duration(milliseconds: 600));
                     },
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: visible.length,
+                      separatorBuilder: (_, __) => Divider(
+                        height: 1,
+                        indent: 80,
+                        color: theme.dividerColor.withValues(alpha: 0.08),
+                      ),
+                      itemBuilder: (_, i) => _channelTile(theme, visible[i]),
+                    ),
                   );
-                },
-              ),
-            );
-          }
+                }
 
-          if (state is ChatError) {
-            return Center(child: Text(state.message));
-          }
+                if (state is ChatError) {
+                  return _buildError(theme, state.message);
+                }
 
-          return const SizedBox.shrink();
-        },
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  // ═════════════════════════════════════════════
+  // Widgets
+  // ═════════════════════════════════════════════
+  Widget _channelTile(ThemeData theme, ChatChannel channel) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: CircleAvatar(
+        radius: 26,
+        backgroundColor: theme.colorScheme.primaryContainer.withValues(
+          alpha: 0.6,
+        ),
+        child: Text(
+          _initials(channel.studentName),
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
+        ),
+      ),
+      title: Text(
+        channel.studentName,
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(
+        channel.lastMessagePreview ?? channel.classroom,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Text(
+        _formatRelative(channel.lastMessageTime),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlocProvider(
+              create: (_) => di.sl<ChatBloc>(),
+              child: ChatRoomScreen(
+                channelId: channel.ravenChannel,
+                title: channel.studentName,
+              ),
+            ),
+          ),
+        ).then((_) {
+          // Returning from a room → refresh immediately
+          if (mounted) {
+            context.read<ChatBloc>().add(LoadChannels(silent: true));
+          }
+        });
+      },
+    );
+  }
+
+  Widget _buildSearchBar(ThemeData theme) {
+    final colors = theme.colorScheme;
+    return TextField(
+      controller: _searchController,
+      onChanged: _onSearchChanged,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'Search conversations...',
+        prefixIcon: Icon(Icons.search_rounded, color: colors.onSurfaceVariant),
+        suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+                icon: Icon(Icons.clear_rounded, color: colors.onSurfaceVariant),
+                onPressed: _clearSearch,
+              )
+            : null,
+        filled: true,
+        fillColor: colors.surfaceContainerHighest.withValues(alpha: 0.4),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 4),
+      ),
+    );
+  }
+
+  Widget _buildEmpty(ThemeData theme) {
+    final colors = theme.colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: colors.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.forum_outlined,
+                size: 34,
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No conversations yet',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your chats with teachers will appear here.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoSearchResults(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No matches for "$_searchQuery"',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: _clearSearch,
+              icon: const Icon(Icons.clear_rounded),
+              label: const Text('Clear search'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildError(ThemeData theme, String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: theme.colorScheme.error,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => context.read<ChatBloc>().add(LoadChannels()),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ═════════════════════════════════════════════
+  // Helpers
+  // ═════════════════════════════════════════════
   String _initials(String name) {
     final parts = name.trim().split(' ');
     if (parts.isEmpty) return '?';
