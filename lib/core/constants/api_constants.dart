@@ -274,4 +274,22 @@ class ApiConstants {
 
   static const String listCurriculumPlans =
       '/api/method/little_heroes.api.v1.curriculum_plans.list_curriculum_plans';
+
+  // ============================================================
+  // NEWSLETTERS (aka Blog)
+  // ============================================================
+  static const String listNewsletters =
+      '/api/method/little_heroes.api.v1.newsletters.list_newsletters';
+
+  static const String getNewsletter =
+      '/api/method/little_heroes.api.v1.newsletters.get_newsletter';
+
+  static const String createNewsletter =
+      '/api/method/little_heroes.api.v1.newsletters.create_newsletter';
+
+  static const String updateNewsletter =
+      '/api/method/little_heroes.api.v1.newsletters.update_newsletter';
+
+  static const String deleteNewsletter =
+      '/api/method/little_heroes.api.v1.newsletters.delete_newsletter';
 }

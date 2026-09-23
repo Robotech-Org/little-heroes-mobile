@@ -36,6 +36,10 @@ class AppRoutes {
   static const String addMoment = '/add-moment';
   static const String Compile_3_onth_report = '/Compile_3_onth_report';
 
+  // Newsletter (blog)
+  static const String newsletters = '/newsletters';
+  static const String newsletterDetail = '/newsletter-detail';
+
   // ═════════════════════════════════════════════════════════════
   // PARENT-ONLY
   // ═════════════════════════════════════════════════════════════

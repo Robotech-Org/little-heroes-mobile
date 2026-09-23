@@ -6,10 +6,9 @@ import 'package:little_heroes_mobile/features/home/data/models/dashboard_respons
 import 'package:little_heroes_mobile/features/home/domain/repositories/dashboard_repository.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/common/home_header.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_list_page.dart';
-import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/newsletter_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/three_month_report_list_page.dart';
-import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/three_month_report_page.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_bloc.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/pages/payment_history_page.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
@@ -33,6 +32,9 @@ class _ParentDashboardState extends State<ParentDashboard> {
   /// Currently selected child. `null` = parent-wide dashboard.
   String? _selectedStudentId;
 
+  /// Guards against repeated auto-scope fetches when there's only one child.
+  bool _autoScoped = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,7 +45,6 @@ class _ParentDashboardState extends State<ParentDashboard> {
   // LOAD
   // ═══════════════════════════════════════════════════════════
   Future<void> _loadDashboard() async {
-    // Show skeleton whenever we're fetching — first load OR child change.
     setState(() {
       _isLoading = true;
       _isError = false;
@@ -77,12 +78,32 @@ class _ParentDashboardState extends State<ParentDashboard> {
             ? incomingChildren
             : (_selectedStudentId == null ? incomingChildren : _children);
 
+        // 👇 Auto-select the only child so the dropdown isn't sitting on
+        // "All Children" for a parent who has just one.
+        String? autoSelected = _selectedStudentId;
+        bool needsRefetch = false;
+        if (children.length == 1 &&
+            _selectedStudentId == null &&
+            !_autoScoped) {
+          autoSelected = children.first.id;
+          _autoScoped = true;
+          needsRefetch = true;
+        }
+
         setState(() {
           _dashboardData = data;
           _children = children;
+          _selectedStudentId = autoSelected;
           _isLoading = false;
           _isError = false;
         });
+
+        // If we just auto-selected a child, fetch their scoped dashboard once.
+        if (needsRefetch) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _loadDashboard();
+          });
+        }
       } else {
         setState(() {
           _isLoading = false;
@@ -111,8 +132,8 @@ class _ParentDashboardState extends State<ParentDashboard> {
   // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    // If we have no children list yet, nothing to show except skeleton.
     final showSelector = _children.isNotEmpty;
+    final hasSingleChild = _children.length == 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,6 +154,8 @@ class _ParentDashboardState extends State<ParentDashboard> {
             selectedId: _selectedStudentId,
             // Disable while a request is in-flight.
             onChanged: _isLoading ? null : _onChildSelected,
+            // 👇 Hide "All Children" when there's only one child.
+            allowAll: !hasSingleChild,
           ),
           const SizedBox(height: 8),
         ],
@@ -176,16 +199,6 @@ class _ParentDashboardState extends State<ParentDashboard> {
               statusType: child.status.toLowerCase().contains('ready')
                   ? _ChildStatus.ready
                   : _ChildStatus.inProgress,
-              // onTap: () {
-              //   Navigator.of(context).push(
-              //     MaterialPageRoute(
-              //       builder: (_) => DailyReportPage(
-              //         studentName: child.name,
-              //         studentId: child.id,
-              //       ),
-              //     ),
-              //   );
-              // },
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -233,6 +246,43 @@ class _ParentDashboardState extends State<ParentDashboard> {
 
         const SizedBox(height: 10),
 
+        // Row(
+        //   crossAxisAlignment: CrossAxisAlignment.start,
+        //   children: [
+        //     Expanded(
+        //       child: _QuickAccessCard(
+        //         icon: Icons.photo_library_outlined,
+        //         title: data.quickAccess.photoGallery.label,
+        //         subtitle: data.quickAccess.photoGallery.newCount != null
+        //             ? '${data.quickAccess.photoGallery.newCount} new photos'
+        //             : 'View photos',
+        //         onTap: () {
+        //           Navigator.of(context).push(
+        //             MaterialPageRoute(builder: (_) => const PhotoGalleryPage()),
+        //           );
+        //         },
+        //       ),
+        //     ),
+        //     const SizedBox(width: 5),
+        //     Expanded(
+        //       child: _QuickAccessCard(
+        //         icon: Icons.payment_outlined,
+        //         title: data.quickAccess.billingAndPayment.label,
+        //         subtitle: 'View payments',
+        //         onTap: () {
+        //           Navigator.of(context).push(
+        //             MaterialPageRoute(
+        //               builder: (_) => BlocProvider(
+        //                 create: (_) => di.sl<PaymentBloc>(),
+        //                 child: const PaymentHistoryPage(),
+        //               ),
+        //             ),
+        //           );
+        //         },
+        //       ),
+        //     ),
+        //   ],
+        // ),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -250,7 +300,28 @@ class _ParentDashboardState extends State<ParentDashboard> {
                 },
               ),
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _QuickAccessCard(
+                // 👇 Newsletter tile
+                icon: Icons.mark_email_read_outlined,
+                title: 'Newsletters',
+                subtitle: 'News & updates',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NewsletterPage()),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 10),
+
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Expanded(
               child: _QuickAccessCard(
                 icon: Icons.payment_outlined,
@@ -268,6 +339,9 @@ class _ParentDashboardState extends State<ParentDashboard> {
                 },
               ),
             ),
+            const SizedBox(width: 10),
+            // Keeps the grid symmetric
+            const Expanded(child: SizedBox.shrink()),
           ],
         ),
       ],
@@ -300,17 +374,6 @@ class _ParentDashboardState extends State<ParentDashboard> {
       ),
     );
   }
-
-  // void _openThreeMonthReport() {
-  //   final child = _activeChild;
-  //   if (child == null) return _noChildSnack();
-  //   Navigator.of(context).push(
-  //     MaterialPageRoute(
-  //       builder: (_) =>
-  //           ThreeMonthReportPage(studentName: child.name, studentId: child.id),
-  //     ),
-  //   );
-  // }
 
   void _openThreeMonthReport() {
     final child = _activeChild;
@@ -400,7 +463,6 @@ class _ParentDashboardState extends State<ParentDashboard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Weekly theme skeleton
         Container(
           width: double.infinity,
           padding: EdgeInsets.all(isSmallScreen ? 14 : 18),
@@ -428,20 +490,16 @@ class _ParentDashboardState extends State<ParentDashboard> {
         ),
         const SizedBox(height: 24),
 
-        // Section title skeleton
         _skeletonLine(width: 140, height: 20),
         const SizedBox(height: 12),
 
-        // Two child card skeletons
         ...List.generate(2, (_) => _childCardSkeleton(theme)),
 
         const SizedBox(height: 24),
 
-        // Section title skeleton
         _skeletonLine(width: 120, height: 20),
         const SizedBox(height: 12),
 
-        // Two quick-access rows
         Row(
           children: [
             Expanded(child: _quickAccessSkeleton(theme)),
@@ -551,10 +609,15 @@ class _ChildSelector extends StatelessWidget {
   final String? selectedId;
   final ValueChanged<String?>? onChanged;
 
+  /// When false, the "All Children" option is hidden. Used when the
+  /// parent has only one child — showing "All" doesn't make sense.
+  final bool allowAll;
+
   const _ChildSelector({
     required this.children,
     required this.selectedId,
     required this.onChanged,
+    this.allowAll = true,
   });
 
   @override
@@ -562,6 +625,71 @@ class _ChildSelector extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final enabled = onChanged != null;
+
+    // Build the item list based on allowAll.
+    final items = <DropdownMenuItem<String?>>[];
+    if (allowAll) {
+      items.add(
+        DropdownMenuItem<String?>(
+          value: null,
+          child: Row(
+            children: [
+              Icon(
+                Icons.people_outline_rounded,
+                size: 18,
+                color: colors.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'All Children',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    items.addAll(
+      children.map(
+        (c) => DropdownMenuItem<String?>(
+          value: c.id,
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: colors.primaryContainer.withValues(alpha: 0.6),
+                child: Text(
+                  _initials(c.name),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: colors.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  c.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Make sure the value always matches one of the visible items.
+    final safeValue = items.any((i) => i.value == selectedId)
+        ? selectedId
+        : (items.isNotEmpty ? items.first.value : null);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -572,7 +700,7 @@ class _ChildSelector extends StatelessWidget {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
-          value: selectedId,
+          value: safeValue,
           isExpanded: true,
           borderRadius: BorderRadius.circular(14),
           icon: Icon(
@@ -599,61 +727,7 @@ class _ChildSelector extends StatelessWidget {
               ),
             ],
           ),
-          items: [
-            DropdownMenuItem<String?>(
-              value: null,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.people_outline_rounded,
-                    size: 18,
-                    color: colors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'All Children',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ...children.map(
-              (c) => DropdownMenuItem<String?>(
-                value: c.id,
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundColor: colors.primaryContainer.withValues(
-                        alpha: 0.6,
-                      ),
-                      child: Text(
-                        _initials(c.name),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: colors.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        c.name,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          items: items,
           onChanged: onChanged,
         ),
       ),
@@ -669,7 +743,7 @@ class _ChildSelector extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CHILD SELECTOR — SKELETON (placeholder while first loading)
+// CHILD SELECTOR — SKELETON
 // ═══════════════════════════════════════════════════════════════
 class _ChildSelectorSkeleton extends StatelessWidget {
   const _ChildSelectorSkeleton();

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:little_heroes_mobile/core/constants/api_constants.dart';
 import 'package:little_heroes_mobile/core/utils/snackbar_utils.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
@@ -53,13 +54,16 @@ class _AddObservationPageState extends State<AddObservationPage> {
   String? _fileName;
   bool _isUploading = false;
 
+  // Upload result
+  String? _uploadedFileUrl;
+  String? _uploadedFileName;
+
   // Tagged students
   List<Student> _taggedStudents = [];
   int _currentActivityIndex = 0;
 
-  // Upload result
-  String? _uploadedFileUrl;
-  String? _uploadedFileName;
+  // Image picker (same as moments page)
+  final ImagePicker _imagePicker = ImagePicker();
 
   final List<String> _activities = [
     'Morning Circle & Sensory Play',
@@ -81,7 +85,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
     _loadClassrooms();
     _loadClassSchedules();
 
-    // If student is passed from widget, pre-select it
     if (widget.student != null) {
       _selectedStudent = widget.student;
     }
@@ -93,6 +96,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
     super.dispose();
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // LOADERS
+  // ═══════════════════════════════════════════════════════════
   Future<void> _loadStudents() async {
     setState(() => _isLoadingStudents = true);
 
@@ -192,23 +198,81 @@ class _AddObservationPageState extends State<AddObservationPage> {
   }
 
   String _formatTime(DateTime time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    return '${time.hour.toString().padLeft(2, '0')}:'
+        '${time.minute.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _pickFile() async {
+  // ═══════════════════════════════════════════════════════════
+  // FILE PICKERS
+  // ═══════════════════════════════════════════════════════════
+
+  /// Camera capture (images only).
+  Future<void> _captureFromCamera() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      final file = File(image.path);
+      if (!mounted) return;
+
+      setState(() {
+        _selectedFile = file;
+        _fileName = image.name;
+        _uploadedFileUrl = null;
+        _uploadedFileName = null;
+      });
+
+      SnackbarUtils.showSuccess(context, 'Photo captured successfully!');
+    } catch (e) {
+      if (!mounted) return;
+      SnackbarUtils.showError(
+        context,
+        'Failed to capture photo: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Gallery picker (images only).
+  Future<void> _pickFromGallery() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      final file = File(image.path);
+      if (!mounted) return;
+
+      setState(() {
+        _selectedFile = file;
+        _fileName = image.name;
+        _uploadedFileUrl = null;
+        _uploadedFileName = null;
+      });
+
+      SnackbarUtils.showSuccess(context, 'Image selected successfully!');
+    } catch (e) {
+      if (!mounted) return;
+      SnackbarUtils.showError(context, 'Failed to pick image: ${e.toString()}');
+    }
+  }
+
+  /// File picker — **images, PDF, DOC only** (no video).
+  Future<void> _pickFromFilePicker() async {
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
-        allowedExtensions: [
-          'jpg',
-          'jpeg',
-          'png',
-          'pdf',
-          'doc',
-          'docx',
-          'mp4',
-          'mov',
-        ],
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
         allowMultiple: false,
       );
 
@@ -222,10 +286,16 @@ class _AddObservationPageState extends State<AddObservationPage> {
       }
 
       final file = File(filePath);
+      if (!mounted) return;
+
       setState(() {
         _selectedFile = file;
         _fileName = result.first.name;
+        _uploadedFileUrl = null;
+        _uploadedFileName = null;
       });
+
+      SnackbarUtils.showSuccess(context, 'File selected successfully!');
     } catch (e) {
       if (!mounted) return;
       SnackbarUtils.showError(
@@ -233,6 +303,120 @@ class _AddObservationPageState extends State<AddObservationPage> {
         'Failed to select file: ${e.toString()}',
       );
     }
+  }
+
+  /// Bottom sheet with 3 source options.
+  void _showAttachmentSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Attach to observation',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Choose how you want to add a file',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSourceOption(
+                      icon: Icons.camera_alt_rounded,
+                      label: 'Camera',
+                      color: Colors.blue,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _captureFromCamera();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSourceOption(
+                      icon: Icons.photo_library_rounded,
+                      label: 'Gallery',
+                      color: Colors.green,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pickFromGallery();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSourceOption(
+                      icon: Icons.folder_rounded,
+                      label: 'Files',
+                      color: Colors.orange,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pickFromFilePicker();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSourceOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2), width: 1),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 32, color: color),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _removeFile() {
@@ -244,16 +428,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
     });
   }
 
-  void _toggleTaggedStudent(Student student) {
-    setState(() {
-      if (_taggedStudents.contains(student)) {
-        _taggedStudents.remove(student);
-      } else {
-        _taggedStudents.add(student);
-      }
-    });
-  }
-
+  // ═══════════════════════════════════════════════════════════
+  // SAVE OBSERVATION
+  // ═══════════════════════════════════════════════════════════
   Future<void> _saveObservation() async {
     final note = _noteController.text.trim();
 
@@ -284,7 +461,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
 
       final repository = di.sl<ObservationRepository>();
 
-      // 1. Upload file if selected and not yet uploaded
       String? fileUrl;
       if (_selectedFile != null && _fileName != null) {
         setState(() => _isUploading = true);
@@ -327,7 +503,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
         'activity': _selectedActivity,
         'start_time': _startTime,
         'end_time': _endTime,
-        // FIXED: Use student ID, NOT the name
         'tagged_students': _taggedStudents
             .map((s) => {'student': s.id, 'student_name': s.name})
             .toList(),
@@ -353,6 +528,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // BUILD
+  // ═══════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -395,27 +573,12 @@ class _AddObservationPageState extends State<AddObservationPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Classroom Schedule Selector - HORIZONTAL SCROLLABLE
             _buildClassScheduleSelector(theme, colorScheme),
             const SizedBox(height: 16),
-
-            // Student Selector
             _buildStudentSelector(theme, colorScheme),
             const SizedBox(height: 20),
-
-            // Activity Card with Left/Right Navigation
-            // _buildActivityCard(theme, colorScheme),
-            const SizedBox(height: 20),
-
-            // Observation Note
             _buildNoteField(theme, colorScheme),
             const SizedBox(height: 20),
-
-            // Tagged Students
-            // _buildTaggedStudents(theme, colorScheme),
-            const SizedBox(height: 20),
-
-            // File Upload
             _buildFileUploadSection(theme, colorScheme),
           ],
         ),
@@ -423,9 +586,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
     );
   }
 
-  // ============================================================
-  // HORIZONTAL SCROLLABLE CLASS SCHEDULE SELECTOR
-  // ============================================================
+  // ═══════════════════════════════════════════════════════════
+  // CLASS SCHEDULE SELECTOR
+  // ═══════════════════════════════════════════════════════════
   Widget _buildClassScheduleSelector(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,7 +607,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
           ],
         ),
         const SizedBox(height: 10),
-
         if (_isLoadingSchedules)
           const Center(child: CircularProgressIndicator())
         else if (_classSchedules.isEmpty)
@@ -497,17 +659,6 @@ class _AddObservationPageState extends State<AddObservationPage> {
                             : colorScheme.outline.withValues(alpha: 0.1),
                         width: isSelected ? 2 : 1,
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: colorScheme.primary.withValues(
-                                  alpha: 0.2,
-                                ),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ]
-                          : null,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -553,6 +704,9 @@ class _AddObservationPageState extends State<AddObservationPage> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // STUDENT SELECTOR
+  // ═══════════════════════════════════════════════════════════
   Widget _buildStudentSelector(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,137 +759,13 @@ class _AddObservationPageState extends State<AddObservationPage> {
               ),
             ),
           ),
-        if (_selectedStudent != null) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle_rounded,
-                  size: 14,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _selectedStudent!.name,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }
 
-  Widget _buildActivityCard(ThemeData theme, ColorScheme colorScheme) {
-    final hasPrevious = _currentActivityIndex > 0;
-    final hasNext = _currentActivityIndex < _activities.length - 1;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: colorScheme.primary,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.18),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          InkWell(
-            onTap: !_isSaving && hasPrevious
-                ? () {
-                    setState(() {
-                      _currentActivityIndex--;
-                      _selectedActivity = _activities[_currentActivityIndex];
-                    });
-                  }
-                : null,
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.all(6),
-              child: Icon(
-                Icons.chevron_left_rounded,
-                size: 20,
-                color: hasPrevious
-                    ? colorScheme.onPrimary
-                    : colorScheme.onPrimary.withValues(alpha: 0.35),
-              ),
-            ),
-          ),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: Column(
-                key: ValueKey(_selectedActivity),
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$_startTime - $_endTime',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onPrimary.withValues(alpha: 0.75),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    _selectedActivity,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: colorScheme.onPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          InkWell(
-            onTap: !_isSaving && hasNext
-                ? () {
-                    setState(() {
-                      _currentActivityIndex++;
-                      _selectedActivity = _activities[_currentActivityIndex];
-                    });
-                  }
-                : null,
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.all(6),
-              child: Icon(
-                Icons.chevron_right_rounded,
-                size: 20,
-                color: hasNext
-                    ? colorScheme.onPrimary
-                    : colorScheme.onPrimary.withValues(alpha: 0.35),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ═══════════════════════════════════════════════════════════
+  // NOTE FIELD
+  // ═══════════════════════════════════════════════════════════
   Widget _buildNoteField(ThemeData theme, ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,42 +796,105 @@ class _AddObservationPageState extends State<AddObservationPage> {
     );
   }
 
-  Widget _buildFileUploadSection(ThemeData theme, ColorScheme colorScheme) {
-    final isFileUploaded =
-        _uploadedFileUrl != null && _uploadedFileUrl!.isNotEmpty;
-    final isUploading = _isUploading;
+  // ═══════════════════════════════════════════════════════════
+  // FILE UPLOAD
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildFileUploadSection(ThemeData theme, ColorScheme colors) {
+    final isImageFile =
+        _selectedFile != null &&
+        _fileName != null &&
+        _isImageExtension(_fileName!);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Attach File',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: colorScheme.onSurface,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
-        if (_selectedFile == null && !isFileUploaded)
-          OutlinedButton.icon(
-            onPressed: _isSaving ? null : _pickFile,
-            icon: const Icon(Icons.attach_file_rounded),
-            label: const Text('Upload File'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+
+        // ── No file yet → empty state with chips ──
+        if (_selectedFile == null && _uploadedFileUrl == null)
+          GestureDetector(
+            onTap: _isSaving ? null : _showAttachmentSourceSheet,
+            child: Container(
+              width: double.infinity,
+              height: 180,
+              decoration: BoxDecoration(
+                color: colors.surfaceVariant.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colors.outline.withValues(alpha: 0.2),
+                ),
               ),
-              side: BorderSide(
-                color: colorScheme.outline.withValues(alpha: 0.3),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.cloud_upload_outlined,
+                    size: 56,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '📎 Add Attachment',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tap to capture, choose from gallery, or pick a file',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildSourceChip(
+                        icon: Icons.camera_alt_rounded,
+                        label: 'Camera',
+                        color: Colors.blue,
+                        onTap: () {
+                          if (!_isSaving) _captureFromCamera();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildSourceChip(
+                        icon: Icons.photo_library_rounded,
+                        label: 'Gallery',
+                        color: Colors.green,
+                        onTap: () {
+                          if (!_isSaving) _pickFromGallery();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildSourceChip(
+                        icon: Icons.folder_rounded,
+                        label: 'Files',
+                        color: Colors.orange,
+                        onTap: () {
+                          if (!_isSaving) _pickFromFilePicker();
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           )
-        else if (isUploading)
+        // ── Uploading ──
+        else if (_isUploading)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withValues(alpha: 0.3),
+              color: colors.surfaceVariant.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -815,23 +908,110 @@ class _AddObservationPageState extends State<AddObservationPage> {
                 Text(
                   'Uploading file...',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: colors.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           )
+        // ── Image preview ──
+        else if (isImageFile)
+          Stack(
+            children: [
+              Container(
+                width: double.infinity,
+                height: 220,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  image: DecorationImage(
+                    image: FileImage(_selectedFile!),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: CircleAvatar(
+                  backgroundColor: Colors.black.withValues(alpha: 0.6),
+                  radius: 20,
+                  child: IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    onPressed: _removeFile,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 28,
+                      minHeight: 28,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 12,
+                left: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.green,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _fileName ?? 'Uploaded',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 12,
+                right: 12,
+                child: CircleAvatar(
+                  backgroundColor: Colors.black.withValues(alpha: 0.6),
+                  radius: 18,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    onPressed: _showAttachmentSourceSheet,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 28,
+                      minHeight: 28,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          )
+        // ── Non-image file card (PDF / DOC) ──
         else
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border.all(
-                color: isFileUploaded
+                color: _uploadedFileUrl != null
                     ? Colors.green
-                    : colorScheme.primary.withValues(alpha: 0.3),
+                    : colors.primary.withValues(alpha: 0.3),
               ),
               borderRadius: BorderRadius.circular(12),
-              color: isFileUploaded
+              color: _uploadedFileUrl != null
                   ? Colors.green.withValues(alpha: 0.05)
                   : null,
             ),
@@ -840,17 +1020,10 @@ class _AddObservationPageState extends State<AddObservationPage> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isFileUploaded
-                        ? Colors.green.withValues(alpha: 0.1)
-                        : colorScheme.primaryContainer.withValues(alpha: 0.1),
+                    color: colors.primaryContainer.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    isFileUploaded
-                        ? Icons.check_circle_rounded
-                        : Icons.insert_drive_file_outlined,
-                    color: isFileUploaded ? Colors.green : colorScheme.primary,
-                  ),
+                  child: Icon(_iconForFile(_fileName), color: colors.primary),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -858,27 +1031,20 @@ class _AddObservationPageState extends State<AddObservationPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isFileUploaded
-                            ? _uploadedFileName ?? 'Uploaded'
-                            : _fileName ?? 'Unknown file',
+                        _fileName ?? 'Unknown file',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
-                          color: isFileUploaded ? Colors.green : null,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        isFileUploaded
-                            ? 'Uploaded successfully ✓'
-                            : '${(_selectedFile!.lengthSync() / 1024).toStringAsFixed(1)} KB',
+                        '${(_selectedFile!.lengthSync() / 1024).toStringAsFixed(1)} KB',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isFileUploaded
-                              ? Colors.green
-                              : colorScheme.onSurfaceVariant,
+                          color: colors.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -886,23 +1052,81 @@ class _AddObservationPageState extends State<AddObservationPage> {
                 ),
                 IconButton(
                   onPressed: _isSaving ? null : _removeFile,
-                  icon: Icon(Icons.close_rounded, color: colorScheme.error),
+                  icon: Icon(Icons.close_rounded, color: colors.error),
                 ),
               ],
             ),
           ),
+
         const SizedBox(height: 8),
         Text(
-          isFileUploaded
-              ? 'File uploaded successfully!'
-              : 'Supported formats: JPG, PNG, PDF, DOC, MP4, MOV',
-          style: TextStyle(
-            fontSize: 12,
-            color: isFileUploaded ? Colors.green : colorScheme.onSurfaceVariant,
-            fontWeight: isFileUploaded ? FontWeight.w600 : FontWeight.normal,
-          ),
+          'Supported: JPG, PNG, PDF, DOC', // 👈 video formats removed
+          style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
         ),
       ],
     );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildSourceChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _isImageExtension(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].contains(ext);
+  }
+
+  IconData _iconForFile(String? fileName) {
+    if (fileName == null) return Icons.insert_drive_file_outlined;
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+      case 'heic':
+        return Icons.image_rounded;
+      case 'pdf':
+        return Icons.picture_as_pdf_rounded;
+      case 'doc':
+      case 'docx':
+        return Icons.description_rounded;
+      default:
+        return Icons.insert_drive_file_outlined;
+    }
   }
 }

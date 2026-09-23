@@ -322,6 +322,8 @@ import 'package:little_heroes_mobile/features/chats/presentation/bloc/chat_bloc.
 import 'package:little_heroes_mobile/features/chats/presentation/pages/chats_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/bloc/gallery_bloc.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/moment_show.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/newsletter_detail_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/newsletter_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/add_moment_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
@@ -505,6 +507,19 @@ class AppRouter {
         name: 'settings',
         builder: (context, state) {
           return const SettingsPage();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.newsletters,
+        name: 'newsletters',
+        builder: (context, state) => const NewsletterPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.newsletterDetail,
+        name: 'newsletterDetail',
+        builder: (context, state) {
+          final id = state.extra as String? ?? '';
+          return NewsletterDetailPage(newsletterName: id);
         },
       ),
 

@@ -50,6 +50,13 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
   final _messageController = TextEditingController();
 
   final _draftService = DailyReportDraftService();
+
+  String _selectedDiaper = DailyReportOptions.defaultDiaper;
+  final Set<String> _selectedActivities = {};
+
+  final _activityNotesController = TextEditingController();
+  final _diaperNotesController = TextEditingController();
+
   Timer? _autoSaveTimer;
   bool _hasUnsavedChanges = false;
 
@@ -75,10 +82,18 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _restoreDraftIfAny());
   }
 
+  // @override
+  // void dispose() {
+  //   _autoSaveTimer?.cancel();
+  //   _messageController.dispose();
+  //   super.dispose();
+  // }
   @override
   void dispose() {
     _autoSaveTimer?.cancel();
     _messageController.dispose();
+    _activityNotesController.dispose();
+    _diaperNotesController.dispose();
     super.dispose();
   }
 
@@ -251,6 +266,19 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
 
       final studentId = _selectedStudent!.id;
 
+      // final data = {
+      //   'student': studentId,
+      //   'student_name': _selectedStudent!.name,
+      //   'student_classroom': _selectedClassroom!.classroomName,
+      //   'report_date': reportDate,
+      //   'meals_and_snacks': _selectedMeal,
+      //   'nap_time': _selectedNap,
+      //   'mood_and_behavior': _selectedMood,
+      //   'health_and_hygiene': _selectedHealth,
+      //   'daily_report_notes': _messageToParent,
+      //   'daily_report_status': 'Saved',
+      //   'recorded_by': authState.user.fullName,
+      // };
       final data = {
         'student': studentId,
         'student_name': _selectedStudent!.name,
@@ -263,6 +291,12 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
         'daily_report_notes': _messageToParent,
         'daily_report_status': 'Saved',
         'recorded_by': authState.user.fullName,
+
+        // 👇 New
+        'activities': _selectedActivities.toList(),
+        'activity_notes': _activityNotesController.text.trim(),
+        'diaper_change': _selectedDiaper,
+        'diaper_notes': _diaperNotesController.text.trim(),
       };
 
       print("daily report save ");
@@ -375,19 +409,34 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
     );
 
     if (restore == true) {
-      setState(() {
-        _selectedMeal = draft.selectedMeal;
-        _selectedNap = draft.selectedNap;
-        _selectedMood = draft.selectedMood;
-        _selectedHealth = draft.selectedHealth;
-        _setMessage(draft.messageToParent);
+      // setState(() {
+      //   _selectedMeal = draft.selectedMeal;
+      //   _selectedNap = draft.selectedNap;
+      //   _selectedMood = draft.selectedMood;
+      //   _selectedHealth = draft.selectedHealth;
+      //   _setMessage(draft.messageToParent);
 
-        if (draft.classroomName != null && _classrooms.isNotEmpty) {
-          _selectedClassroom = _classrooms.firstWhere(
-            (c) => c.classroomName == draft.classroomName,
-            orElse: () => _selectedClassroom ?? _classrooms.first,
-          );
-        }
+      //   if (draft.classroomName != null && _classrooms.isNotEmpty) {
+      //     _selectedClassroom = _classrooms.firstWhere(
+      //       (c) => c.classroomName == draft.classroomName,
+      //       orElse: () => _selectedClassroom ?? _classrooms.first,
+      //     );
+      //   }
+      // });
+      setState(() {
+        _selectedStudent = student;
+        _selectedMeal = DailyReportOptions.defaultMeal;
+        _selectedNap = DailyReportOptions.defaultNap;
+        _selectedMood = DailyReportOptions.defaultMood;
+        _selectedHealth = DailyReportOptions.defaultHealth;
+
+        // 👇 Reset new sections
+        _selectedDiaper = DailyReportOptions.defaultDiaper;
+        _selectedActivities.clear();
+        _activityNotesController.clear();
+        _diaperNotesController.clear();
+
+        _setMessage('');
       });
       SnackbarUtils.showSuccess(context, 'Draft loaded');
     }
@@ -542,18 +591,38 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
 
               const SizedBox(height: 20),
 
+              // _buildOptionSelector(
+              //   theme: theme,
+              //   colorScheme: colorScheme,
+              //   label: 'Health & Hygiene',
+              //   value: _selectedHealth,
+              //   options: DailyReportOptions.health,
+              //   icon: Icons.health_and_safety_rounded,
+              //   onChanged: (value) {
+              //     setState(() => _selectedHealth = value);
+              //     _scheduleAutoSave();
+              //   },
+              // ),
               _buildOptionSelector(
                 theme: theme,
                 colorScheme: colorScheme,
-                label: 'Health & Hygiene',
+                label: 'Health Check',
                 value: _selectedHealth,
-                options: DailyReportOptions.health,
+                options: DailyReportOptions
+                    .healthChecks, // 👈 was DailyReportOptions.health
                 icon: Icons.health_and_safety_rounded,
                 onChanged: (value) {
                   setState(() => _selectedHealth = value);
                   _scheduleAutoSave();
                 },
               ),
+
+              const SizedBox(height: 20),
+              const SizedBox(height: 20),
+              _buildActivitySelector(theme, colorScheme),
+
+              const SizedBox(height: 20),
+              _buildDiaperSelector(theme, colorScheme),
 
               const SizedBox(height: 20),
 
@@ -862,6 +931,222 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
               },
             ),
           ),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // LEARNING & PLAY ACTIVITIES — multi-select + notes
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildActivitySelector(ThemeData theme, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.toys_rounded, size: 20, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Learning & Play Activities',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: DailyReportOptions.activities.map((activity) {
+            final isSelected = _selectedActivities.contains(activity);
+            return GestureDetector(
+              onTap: _isSaving
+                  ? null
+                  : () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedActivities.remove(activity);
+                        } else {
+                          _selectedActivities.add(activity);
+                        }
+                      });
+                      _scheduleAutoSave();
+                    },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? colorScheme.primary : colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.primary.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isSelected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked,
+                      size: 16,
+                      color: isSelected
+                          ? colorScheme.onPrimary
+                          : colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      activity,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _activityNotesController,
+          maxLines: 2,
+          enabled: !_isSaving,
+          decoration: InputDecoration(
+            hintText: 'Notes on activities...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: colorScheme.surfaceVariant.withValues(alpha: 0.15),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            isDense: true,
+          ),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurface,
+            fontSize: 13,
+          ),
+          onChanged: (_) => _scheduleAutoSave(),
+        ),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // DIAPER CHANGES / TOILET TRAINING — single-select + notes
+  // ═══════════════════════════════════════════════════════════
+  Widget _buildDiaperSelector(ThemeData theme, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.child_care_rounded,
+              size: 20,
+              color: colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Diaper Changes / Toilet Training',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: DailyReportOptions.diaperOptions.map((option) {
+            final isSelected = _selectedDiaper == option;
+            return GestureDetector(
+              onTap: _isSaving
+                  ? null
+                  : () {
+                      setState(() => _selectedDiaper = option);
+                      _scheduleAutoSave();
+                    },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? colorScheme.primary : colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.primary.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isSelected) ...[
+                      Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: colorScheme.onPrimary,
+                      ),
+                      const SizedBox(width: 5),
+                    ],
+                    Text(
+                      option,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _diaperNotesController,
+          maxLines: 2,
+          enabled: !_isSaving,
+          decoration: InputDecoration(
+            hintText: 'Notes on diaper / toilet...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: colorScheme.surfaceVariant.withValues(alpha: 0.15),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            isDense: true,
+          ),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurface,
+            fontSize: 13,
+          ),
+          onChanged: (_) => _scheduleAutoSave(),
+        ),
       ],
     );
   }
