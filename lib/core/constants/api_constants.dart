@@ -6,6 +6,7 @@ class ApiConstants {
   // BASE URL
 
   static String get baseUrl => dotenv.env['API_BASE_URL'] ?? '';
+  
 
   static String get socketUrl => dotenv.env['SOCKET_URL'] ?? baseUrl;
 
@@ -292,4 +293,8 @@ class ApiConstants {
 
   static const String deleteNewsletter =
       '/api/method/little_heroes.api.v1.newsletters.delete_newsletter';
+
+  // In your ApiConstants class, add:
+  static const String uploadAttachment =
+      '/api/method/little_heroes.api.v1.communications.upload_attachment';
 }

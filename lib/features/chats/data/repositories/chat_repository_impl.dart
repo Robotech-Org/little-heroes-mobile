@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+
 import '../../domain/repositories/chat_repository.dart';
 import '../datasources/chat_remote_datasource.dart';
 import '../models/chat_models.dart';
@@ -27,6 +31,44 @@ class ChatRepositoryImpl implements ChatRepository {
     required String channelId,
     required String text,
   }) => remote.sendMessage(channelId: channelId, text: text);
+
+  @override
+  Future<AttachmentUploadResult> uploadAttachment({
+    required String channelId,
+    required File file,
+    String? fileName,
+    ProgressCallback? onProgress,
+  }) => remote.uploadAttachment(
+    channelId: channelId,
+    file: file,
+    fileName: fileName,
+    onProgress: onProgress,
+  );
+
+  @override
+  Future<ChatMessage> sendAttachmentMessage({
+    required String channelId,
+    required AttachmentUploadResult attachment,
+    String text = '',
+  }) => remote.sendMessage(
+    channelId: channelId,
+    text: text,
+    fileUrl: attachment.fileUrl,
+    messageType: attachment.messageType,
+  );
+
+  @override
+  Future<ChatMessage> sendMessageWithFile({
+    required String channelId,
+    required File file,
+    String text = '',
+    ProgressCallback? onProgress,
+  }) => remote.sendMessage(
+    channelId: channelId,
+    text: text,
+    directFile: file,
+    onProgress: onProgress,
+  );
 
   @override
   Future<void> markAsRead({required String channelId}) =>

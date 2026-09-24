@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:little_heroes_mobile/core/network/socket/socket_service.dart';
@@ -36,9 +37,29 @@ class SendChatMessage extends ChatEvent {
   SendChatMessage({required this.channelId, required this.text});
 }
 
+/// Send a text + file/image attachment.
+///
+/// Uses the two-step flow documented in
+/// `Messaging Updates — Summary for Mobile Developers`:
+///   1. `upload_attachment` → returns `file_url` + `message_type`
+///   2. `send_message`      → posts the message referencing that URL
+class SendAttachment extends ChatEvent {
+  final String channelId;
+  final File file;
+  final String text;
+  SendAttachment({required this.channelId, required this.file, this.text = ''});
+}
+
 class IncomingMessage extends ChatEvent {
   final Map<String, dynamic> payload;
   IncomingMessage(this.payload);
+}
+
+/// Internal event — reports upload progress for an in-flight attachment.
+class UploadProgressChanged extends ChatEvent {
+  final String tempId;
+  final double progress;
+  UploadProgressChanged({required this.tempId, required this.progress});
 }
 
 // ============ STATES ============
@@ -105,6 +126,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<CloseChannel>(_onCloseChannel);
     on<LoadMessages>(_onLoadMessages);
     on<SendChatMessage>(_onSendChatMessage);
+    on<SendAttachment>(_onSendAttachment);
+    on<UploadProgressChanged>(_onUploadProgress);
     on<IncomingMessage>(_onIncomingMessage);
 
     // Socket.IO live updates (when the backend supports it)
@@ -280,7 +303,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   }
 
   // ═════════════════════════════════════════════
-  // SEND
+  // SEND — TEXT
   // ═════════════════════════════════════════════
   Future<void> _onSendChatMessage(
     SendChatMessage event,
@@ -291,7 +314,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     final optimistic = ChatMessage(
       name: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      channelId: event.channelId,
       owner: 'me',
+      senderName: 'Me',
+      senderRole: '',
+      senderRoleLabel: '',
+      isMe: true,
+      isAdmin: false,
+      sender: MessageSender.fromLegacy(owner: 'me', isMe: true),
       text: event.text,
       creation: DateTime.now(),
       modified: DateTime.now(),
@@ -335,6 +365,113 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   }
 
   // ═════════════════════════════════════════════
+  // SEND — ATTACHMENT (image / file)
+  // ═════════════════════════════════════════════
+  Future<void> _onSendAttachment(
+    SendAttachment event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (state is! ChannelOpen) return;
+    final current = state as ChannelOpen;
+
+    final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    final isImage = _isImageFile(event.file.path);
+
+    // Optimistic bubble — shows local file + 0% progress
+    final optimistic = ChatMessage(
+      name: tempId,
+      channelId: event.channelId,
+      owner: 'me',
+      senderName: 'Me',
+      senderRole: '',
+      senderRoleLabel: '',
+      isMe: true,
+      isAdmin: false,
+      sender: MessageSender.fromLegacy(owner: 'me', isMe: true),
+      text: event.text,
+      messageType: isImage ? 'Image' : 'File',
+      file: event.file.path, // local path until uploaded
+      fileName: event.file.path.split(Platform.pathSeparator).last,
+      creation: DateTime.now(),
+      modified: DateTime.now(),
+      sendStatus: MessageSendStatus.sending,
+      uploadProgress: 0,
+    );
+
+    emit(current.copyWith(messages: [...current.messages, optimistic]));
+
+    try {
+      // ── Step 1: upload ───────────────────────────────
+      final upload = await repository.uploadAttachment(
+        channelId: event.channelId,
+        file: event.file,
+        onProgress: (sent, total) {
+          if (total > 0) {
+            add(UploadProgressChanged(tempId: tempId, progress: sent / total));
+          }
+        },
+      );
+
+      // ── Step 2: send message referencing the file ────
+      final sent = await repository.sendAttachmentMessage(
+        channelId: event.channelId,
+        attachment: upload,
+        text: event.text,
+      );
+
+      if (state is! ChannelOpen) return;
+      final latest = state as ChannelOpen;
+
+      final updated = latest.messages.map((m) {
+        if (m.name == tempId) {
+          return sent.copyWith(sendStatus: MessageSendStatus.sent);
+        }
+        return m;
+      }).toList();
+
+      emit(latest.copyWith(messages: updated));
+
+      // Pull anything else we may have missed
+      _pollNewMessages(event.channelId);
+    } catch (e) {
+      if (state is! ChannelOpen) return;
+      final latest = state as ChannelOpen;
+
+      final failed = latest.messages.map((m) {
+        if (m.name == tempId) {
+          return m.copyWith(sendStatus: MessageSendStatus.failed);
+        }
+        return m;
+      }).toList();
+
+      emit(latest.copyWith(messages: failed));
+    }
+  }
+
+  void _onUploadProgress(UploadProgressChanged event, Emitter<ChatState> emit) {
+    if (state is! ChannelOpen) return;
+    final current = state as ChannelOpen;
+
+    final updated = current.messages.map((m) {
+      if (m.name == event.tempId) {
+        return m.copyWith(uploadProgress: event.progress);
+      }
+      return m;
+    }).toList();
+
+    emit(current.copyWith(messages: updated));
+  }
+
+  bool _isImageFile(String path) {
+    final lower = path.toLowerCase();
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.gif') ||
+        lower.endsWith('.webp');
+  }
+
+  // ═════════════════════════════════════════════
   // SOCKET INCOMING
   // ═════════════════════════════════════════════
   void _onIncomingMessage(IncomingMessage event, Emitter<ChatState> emit) {
@@ -346,6 +483,29 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     if (channelId != current.channelId) return;
 
     final message = ChatMessage.fromJson(payload);
+
+    // If this echoes our optimistic message, replace it (upload finished
+    // server-side and now has a real `name` + `file_url`).
+    final byOwner = message.isMe
+        ? current.messages.firstWhere(
+            (m) =>
+                m.isMe && m.name.startsWith('temp_') && m.text == message.text,
+            orElse: () => message,
+          )
+        : message;
+
+    if (byOwner.name != message.name &&
+        current.messages.any((m) => m.name == byOwner.name)) {
+      final updated = current.messages.map((m) {
+        if (m.name == byOwner.name) {
+          return message.copyWith(sendStatus: MessageSendStatus.sent);
+        }
+        return m;
+      }).toList();
+      emit(current.copyWith(messages: updated));
+      return;
+    }
+
     final exists = current.messages.any((m) => m.name == message.name);
     if (!exists) {
       emit(current.copyWith(messages: [...current.messages, message]));

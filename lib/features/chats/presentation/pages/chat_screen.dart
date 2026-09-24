@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../data/models/chat_models.dart';
 import '../bloc/chat_bloc.dart';
@@ -22,6 +26,7 @@ class ChatRoomScreen extends StatefulWidget {
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ImagePicker _picker = ImagePicker();
 
   late final ChatBloc _bloc;
 
@@ -31,6 +36,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   /// Whether to show the "jump to latest" FAB.
   bool _showJumpToLatest = false;
+
+  /// Guard against double-taps opening two pickers at once.
+  bool _isPickingAttachment = false;
 
   @override
   void initState() {
@@ -79,7 +87,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   // ═════════════════════════════════════════════
-  // Send
+  // Send — text
   // ═════════════════════════════════════════════
   void _send() {
     final text = _controller.text.trim();
@@ -88,6 +96,125 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _bloc.add(SendChatMessage(channelId: widget.channelId, text: text));
     _controller.clear();
     _scrollToBottom();
+  }
+
+  // ═════════════════════════════════════════════
+  // Send — attachment
+  // ═════════════════════════════════════════════
+  void _showAttachmentSheet() {
+    if (_isPickingAttachment) return;
+
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Send attachment',
+                style: Theme.of(sheetContext).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.image_outlined)),
+              title: const Text('Photo'),
+              subtitle: const Text('Pick an image from your gallery'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickImage();
+              },
+            ),
+            ListTile(
+              leading: const CircleAvatar(
+                child: Icon(Icons.attach_file_rounded),
+              ),
+              title: const Text('File'),
+              subtitle: const Text('Documents, PDFs, spreadsheets, etc.'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickFile();
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    if (_isPickingAttachment) return;
+    _isPickingAttachment = true;
+    try {
+      final XFile? picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 2000,
+      );
+      if (picked == null) return;
+
+      final text = _controller.text.trim();
+      _controller.clear();
+
+      _bloc.add(
+        SendAttachment(
+          channelId: widget.channelId,
+          file: File(picked.path),
+          text: text,
+        ),
+      );
+      _scrollToBottom();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Could not pick image: $e')));
+    } finally {
+      _isPickingAttachment = false;
+    }
+  }
+
+  Future<void> _pickFile() async {
+    if (_isPickingAttachment) return;
+    _isPickingAttachment = true;
+    try {
+      final result = await FilePicker.pickFiles(
+        allowMultiple: false,
+        withData: false,
+      );
+
+      if (result == null || result.isEmpty) return;
+
+      final path = result.first.path;
+      if (path == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not read file path')),
+        );
+        return;
+      }
+
+      final text = _controller.text.trim();
+      _controller.clear();
+
+      _bloc.add(
+        SendAttachment(
+          channelId: widget.channelId,
+          file: File(path),
+          text: text,
+        ),
+      );
+      _scrollToBottom();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Could not pick file: $e')));
+    } finally {
+      _isPickingAttachment = false;
+    }
   }
 
   // ═════════════════════════════════════════════
@@ -151,10 +278,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       // reverse:true → index 0 is the bottom-most item,
                       // so pull from the end of the sorted list.
                       final msg = messages[messages.length - 1 - i];
-                      return MessageBubble(
-                        message: msg,
-                        isMine: msg.owner == 'me',
-                      );
+                      // Prefer API `is_me`; fall back to owner comparison
+                      // so optimistic bubbles (owner: 'me') still align right.
+                      final mine = msg.isMe || msg.owner == 'me';
+                      return MessageBubble(message: msg, isMine: mine);
                     },
                   ),
                 ),
@@ -179,7 +306,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   Widget _buildInput(ThemeData theme) {
     return Container(
       padding: EdgeInsets.only(
-        left: 12,
+        left: 8,
         right: 12,
         top: 8,
         bottom: MediaQuery.of(context).padding.bottom + 8,
@@ -191,7 +318,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // ── Attach button ────────────────────────────
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline_rounded),
+            onPressed: _showAttachmentSheet,
+            tooltip: 'Attach',
+            iconSize: 28,
+          ),
+
+          // ── Text field ───────────────────────────────
           Expanded(
             child: TextField(
               controller: _controller,
@@ -215,6 +352,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
           ),
           const SizedBox(width: 8),
+
+          // ── Send button ──────────────────────────────
           CircleAvatar(
             backgroundColor: theme.colorScheme.primary,
             child: IconButton(

@@ -1,113 +1,7 @@
-// // lib/features/chats/data/datasources/chat_remote_datasource.dart
-
-// import 'package:little_heroes_mobile/core/constants/api_constants.dart';
-// import 'package:little_heroes_mobile/core/network/dio_client.dart';
-
-// import '../models/chat_models.dart';
-
-// class ChatRemoteDataSource {
-//   ///   List channels for current user
-//   Future<List<ChatChannel>> listMyChannels({
-//     int page = 1,
-//     int pageSize = 20,
-//   }) async {
-//     final dioClient = await DioClient.create();
-//     final response = await dioClient.dio.get(
-//       ApiConstants.listMyChannels,
-//       queryParameters: {'page': page, 'page_size': pageSize},
-//     );
-
-//     final data = response.data['message']['data'];
-//     return (data['items'] as List)
-//         .map((e) => ChatChannel.fromJson(e as Map<String, dynamic>))
-//         .toList();
-//   }
-
-//   ///   Get paginated messages for a channel
-//   Future<List<ChatMessage>> getChannelMessages({
-//     required String channelId,
-//     int page = 1,
-//     int pageSize = 50,
-//   }) async {
-//     final dioClient = await DioClient.create();
-//     final response = await dioClient.dio.get(
-//       ApiConstants.getChannelMessages,
-//       queryParameters: {
-//         'channel_id': channelId,
-//         'page': page,
-//         'page_size': pageSize,
-//       },
-//     );
-
-//     final data = response.data['message']['data'];
-//     return (data['messages'] as List)
-//         .map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
-//         .toList();
-//   }
-
-//   ///   Send a message
-//   Future<ChatMessage> sendMessage({
-//     required String channelId,
-//     required String text,
-//   }) async {
-//     final dioClient = await DioClient.create();
-//     final response = await dioClient.dio.post(
-//       ApiConstants.sendMessage,
-//       data: {'channel_id': channelId, 'text': text},
-//     );
-
-//     final data = response.data['message']['data'];
-//     return ChatMessage.fromJson(data as Map<String, dynamic>);
-//   }
-
-//   ///   Mark channel as read
-//   Future<void> markAsRead({required String channelId}) async {
-//     final dioClient = await DioClient.create();
-//     await dioClient.dio.post(
-//       ApiConstants.markAsRead,
-//       data: {'channel_id': channelId},
-//     );
-//   }
-
-//   ///   Admin: list all channels
-//   Future<List<ChatChannel>> adminListChannels({
-//     int page = 1,
-//     int pageSize = 20,
-//     Map<String, dynamic>? filters,
-//   }) async {
-//     final dioClient = await DioClient.create();
-//     final response = await dioClient.dio.get(
-//       ApiConstants.adminListChannels,
-//       queryParameters: {
-//         'page': page,
-//         'page_size': pageSize,
-//         if (filters != null) 'filters': filters,
-//       },
-//     );
-
-//     final data = response.data['message']['data'];
-//     return (data['items'] as List)
-//         .map((e) => ChatChannel.fromJson(e as Map<String, dynamic>))
-//         .toList();
-//   }
-
-//   ///   Admin: post official intervention
-//   Future<void> adminPostIntervention({
-//     required String channelId,
-//     required String text,
-//   }) async {
-//     final dioClient = await DioClient.create();
-//     await dioClient.dio.post(
-//       ApiConstants.adminPostIntervention,
-//       data: {'channel_id': channelId, 'text': text},
-//     );
-//   }
-// }
-
-// lib/features/chats/data/datasources/chat_remote_datasource.dart
+import 'dart:io';
 
 import 'package:dio/dio.dart';
-
+import 'package:http_parser/http_parser.dart';
 import 'package:little_heroes_mobile/core/constants/api_constants.dart';
 import 'package:little_heroes_mobile/core/error/dio_error_handler.dart';
 import 'package:little_heroes_mobile/core/error/exceptions.dart';
@@ -186,24 +80,96 @@ class ChatRemoteDataSource {
   }
 
   // ═════════════════════════════════════════════════════════════
-  // SEND MESSAGE
+  // UPLOAD ATTACHMENT (Step 1 of two-step flow)
   // ═════════════════════════════════════════════════════════════
-  Future<ChatMessage> sendMessage({
+  Future<AttachmentUploadResult> uploadAttachment({
     required String channelId,
-    required String text,
+    required File file,
+    String? fileName,
+    ProgressCallback? onProgress,
   }) async {
     try {
       final dioClient = await DioClient.create();
+
+      final name = fileName ?? file.path.split(Platform.pathSeparator).last;
+      final formData = FormData.fromMap({
+        'channel_id': channelId,
+        'file': await MultipartFile.fromFile(
+          file.path,
+          filename: name,
+          contentType: _contentTypeFor(name),
+        ),
+      });
+
       final response = await dioClient.dio.post(
-        ApiConstants.sendMessage,
-        data: {'channel_id': channelId, 'text': text},
+        ApiConstants.uploadAttachment,
+        data: formData,
+        onSendProgress: onProgress,
+        options: Options(contentType: 'multipart/form-data'),
       );
 
       final data = _unwrap(response.data);
-      if (data is! Map) {
-        throw const UnknownException('Unexpected response format');
+      return AttachmentUploadResult.fromJson(data);
+    } on DioException catch (e) {
+      DioErrorHandler.handle(e);
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw UnknownException(e.toString());
+    }
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  // SEND MESSAGE (supports text, file_url, or direct multipart)
+  // ═════════════════════════════════════════════════════════════
+  Future<ChatMessage> sendMessage({
+    required String channelId,
+    String text = '',
+    String? fileUrl,
+    String? messageType,
+    // Option 2: direct multipart (skip upload_attachment call)
+    File? directFile,
+    ProgressCallback? onProgress,
+  }) async {
+    try {
+      final dioClient = await DioClient.create();
+
+      // ── Direct multipart upload path ──────────────────────
+      if (directFile != null) {
+        final name = directFile.path.split(Platform.pathSeparator).last;
+        final formData = FormData.fromMap({
+          'channel_id': channelId,
+          'text': text,
+          'file': await MultipartFile.fromFile(
+            directFile.path,
+            filename: name,
+            contentType: _contentTypeFor(name),
+          ),
+        });
+
+        final response = await dioClient.dio.post(
+          ApiConstants.sendMessage,
+          data: formData,
+          onSendProgress: onProgress,
+          options: Options(contentType: 'multipart/form-data'),
+        );
+
+        final data = _unwrap(response.data);
+        return ChatMessage.fromJson(Map<String, dynamic>.from(data));
       }
 
+      // ── Two-step / text-only JSON path ────────────────────
+      final response = await dioClient.dio.post(
+        ApiConstants.sendMessage,
+        data: {
+          'channel_id': channelId,
+          'text': text,
+          if (fileUrl != null) 'file_url': fileUrl,
+          if (messageType != null) 'message_type': messageType,
+        },
+      );
+
+      final data = _unwrap(response.data);
       return ChatMessage.fromJson(Map<String, dynamic>.from(data));
     } on DioException catch (e) {
       DioErrorHandler.handle(e);
@@ -295,6 +261,38 @@ class ChatRemoteDataSource {
   // ═════════════════════════════════════════════════════════════
   // Helpers
   // ═════════════════════════════════════════════════════════════
+
+  /// Maps a filename extension to a MIME type so the multipart upload
+  /// advertises the correct `Content-Type` to the backend.
+  MediaType? _contentTypeFor(String name) {
+    final lower = name.toLowerCase();
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+      return MediaType('image', 'jpeg');
+    }
+    if (lower.endsWith('.png')) return MediaType('image', 'png');
+    if (lower.endsWith('.gif')) return MediaType('image', 'gif');
+    if (lower.endsWith('.webp')) return MediaType('image', 'webp');
+    if (lower.endsWith('.heic')) return MediaType('image', 'heic');
+    if (lower.endsWith('.pdf')) return MediaType('application', 'pdf');
+    if (lower.endsWith('.doc')) return MediaType('application', 'msword');
+    if (lower.endsWith('.docx')) {
+      return MediaType(
+        'application',
+        'vnd.openxmlformats-officedocument.wordprocessingml.document',
+      );
+    }
+    if (lower.endsWith('.xls')) {
+      return MediaType('application', 'vnd.ms-excel');
+    }
+    if (lower.endsWith('.xlsx')) {
+      return MediaType(
+        'application',
+        'vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+    }
+    if (lower.endsWith('.txt')) return MediaType('text', 'plain');
+    return null; // let Dio guess from extension
+  }
 
   /// Frappe wraps every response as:
   ///   { "message": { "success": true, "data": { ... } } }
