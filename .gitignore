@@ -13,6 +13,7 @@
 *.jks
 *.keystore
 key.properties
+**/key.properties
 
 # 
 # Miscellaneous

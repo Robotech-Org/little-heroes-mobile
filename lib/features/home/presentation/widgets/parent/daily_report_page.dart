@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/daily_report_model.dart';
@@ -71,18 +72,14 @@ class _DailyReportPageState extends State<DailyReportPage> {
         endDate: reportDate,
       );
 
-      if (response.items.isNotEmpty) {
-        setState(() {
-          _report = response.items.first;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _report = null;
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _report = response.items.isNotEmpty ? response.items.first : null;
+        _isLoading = false;
+      });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _isError = true;
@@ -114,12 +111,11 @@ class _DailyReportPageState extends State<DailyReportPage> {
     );
 
     _noteController.clear();
-
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) Navigator.pop(context);
-    });
   }
 
+  // ═════════════════════════════════════════════════════════════
+  // BUILD
+  // ═════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -137,7 +133,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back button
+                    // ── Back button ───────────────────────
                     SizedBox(
                       height: 42,
                       child: Material(
@@ -172,7 +168,7 @@ class _DailyReportPageState extends State<DailyReportPage> {
                     ),
                     const SizedBox(height: 5),
 
-                    // Header
+                    // ── Header ────────────────────────────
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -230,39 +226,18 @@ class _DailyReportPageState extends State<DailyReportPage> {
                     else if (_report == null)
                       _buildEmptyWidget(theme, colors)
                     else ...[
-                      // ── Meal ──────────────────────────────
-                      const ReportItem(
-                        title: 'MEALS & SNACKS',
-                        values: ['Ate Most'],
-                      ),
-                      const SizedBox(height: 26),
+                      // ═══════════════════════════════════════
+                      // DATA-DRIVEN SECTIONS
+                      // ═══════════════════════════════════════
+                      ..._buildReportSections(theme, colors, _report!),
 
-                      // ── Nap ───────────────────────────────
-                      const ReportItem(
-                        title: 'NAP TIME',
-                        values: ['Short Nap'],
-                      ),
-                      const SizedBox(height: 26),
-
-                      // ── Mood ──────────────────────────────
-                      const ReportItem(
-                        title: 'MOOD & BEHAVIOR',
-                        values: ['Happy', 'Playful'],
-                      ),
-                      const SizedBox(height: 26),
-
-                      // ── Health ────────────────────────────
-                      const ReportItem(
-                        title: 'HEALTH & HYGIENE',
-                        values: ['No Concerns'],
-                      ),
                       const SizedBox(height: 32),
 
-                      // ── TEACHER'S NOTE ───────────────────
+                      // ── Teacher's note ────────────────────
                       _buildTeacherNote(theme, colors, _report!),
                       const SizedBox(height: 32),
 
-                      // ── Note to Teacher (parent input) ───
+                      // ── Parent's note input ───────────────
                       Text(
                         'NOTE TO TEACHER',
                         style: theme.textTheme.labelSmall?.copyWith(
@@ -320,7 +295,6 @@ class _DailyReportPageState extends State<DailyReportPage> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Send button
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -355,16 +329,162 @@ class _DailyReportPageState extends State<DailyReportPage> {
     );
   }
 
+  // ═════════════════════════════════════════════════════════════
+  // REPORT SECTIONS (data-driven, only shows what exists)
+  // ═════════════════════════════════════════════════════════════
+  List<Widget> _buildReportSections(
+    ThemeData theme,
+    ColorScheme colors,
+    DailyReportModel report,
+  ) {
+    final sections = <Widget>[];
+
+    void addSection({
+      required String title,
+      required IconData icon,
+      required List<String> chips,
+      String? notes,
+      String? extra,
+    }) {
+      final hasChips = chips.any((c) => c.trim().isNotEmpty);
+      final hasNotes = notes != null && notes.trim().isNotEmpty;
+      final hasExtra = extra != null && extra.trim().isNotEmpty;
+
+      if (!hasChips && !hasNotes && !hasExtra) return;
+
+      if (sections.isNotEmpty) {
+        sections.add(const SizedBox(height: 26));
+      }
+
+      sections.add(
+        ReportItem(
+          title: title,
+          icon: icon,
+          values: chips.where((c) => c.trim().isNotEmpty).toList(),
+          notes: hasNotes ? notes : null,
+          extra: hasExtra ? extra : null,
+        ),
+      );
+    }
+
+    // ── Meals & Snacks ─────────────────────────────
+    addSection(
+      title: 'MEALS & SNACKS',
+      icon: Icons.restaurant_rounded,
+      chips: [report.mealsAndSnacks],
+      notes: report.mealsAndSnacksNotes,
+    );
+
+    // ── Nap Time ───────────────────────────────────
+    addSection(
+      title: 'NAP TIME',
+      icon: Icons.bed_rounded,
+      chips: [report.napTime],
+      notes: report.napTimeNotes,
+      extra: report.napDuration.isNotEmpty
+          ? 'Duration: ${report.napDuration}'
+          : null,
+    );
+
+    // ── Mood & Behavior ────────────────────────────
+    addSection(
+      title: 'MOOD & BEHAVIOR',
+      icon: Icons.emoji_emotions_rounded,
+      chips: [report.moodAndBehavior],
+      notes: report.moodAndBehaviorNotes,
+    );
+
+    // ── Learning & Play ────────────────────────────
+    addSection(
+      title: 'LEARNING & PLAY',
+      icon: Icons.toys_rounded,
+      chips: [report.learningAndPlayActivities],
+      notes: report.learningAndPlayActivitiesNotes,
+    );
+
+    // ── Diaper / Toilet ────────────────────────────
+    addSection(
+      title: 'DIAPER / TOILET TRAINING',
+      icon: Icons.child_care_rounded,
+      chips: [report.diaperToiletTraining],
+      notes: report.diaperToiletTrainingNotes,
+    );
+
+    // ── Health & Hygiene ───────────────────────────
+    addSection(
+      title: 'HEALTH & HYGIENE',
+      icon: Icons.health_and_safety_rounded,
+      chips: [report.healthAndHygiene],
+      notes: report.healthCheckNotes,
+    );
+
+    // ── Reminders ──────────────────────────────────
+    final reminders = <String>[];
+    if (report.reminderBringClothes) {
+      reminders.add(
+        report.reminderClothesDetails.trim().isNotEmpty
+            ? 'Bring clothes: ${report.reminderClothesDetails}'
+            : 'Bring extra clothes',
+      );
+    }
+    if (report.reminderBringToyBlanket) {
+      reminders.add(
+        report.reminderToyBlanketDetails.trim().isNotEmpty
+            ? 'Bring toy/blanket: ${report.reminderToyBlanketDetails}'
+            : 'Bring toy / blanket',
+      );
+    }
+    if (report.reminderUpcomingEvent) {
+      reminders.add(
+        report.reminderUpcomingEventDetails.trim().isNotEmpty
+            ? 'Event: ${report.reminderUpcomingEventDetails}'
+            : 'Upcoming event',
+      );
+    }
+    if (report.reminderOther) {
+      reminders.add(
+        report.reminderOtherDetails.trim().isNotEmpty
+            ? report.reminderOtherDetails
+            : 'Other reminder',
+      );
+    }
+
+    if (reminders.isNotEmpty) {
+      if (sections.isNotEmpty) sections.add(const SizedBox(height: 26));
+      sections.add(
+        ReportItem(
+          title: 'REMINDERS',
+          icon: Icons.notifications_active_rounded,
+          values: reminders,
+        ),
+      );
+    }
+
+    // ── Special notes ──────────────────────────────
+    if (report.specialNotesAndReminders.trim().isNotEmpty) {
+      if (sections.isNotEmpty) sections.add(const SizedBox(height: 26));
+      sections.add(
+        ReportItem(
+          title: 'SPECIAL NOTES',
+          icon: Icons.sticky_note_2_outlined,
+          values: const [],
+          notes: report.specialNotesAndReminders,
+        ),
+      );
+    }
+
+    return sections;
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  // Teacher's note (reads dailyReportNotes)
+  // ═════════════════════════════════════════════════════════════
   Widget _buildTeacherNote(
     ThemeData theme,
     ColorScheme colors,
     DailyReportModel report,
   ) {
-    // The teacher writes into `dailyReportNotes` (the "Message to Parent"
-    // field on their side). From the parent's view we label it
-    // "Teacher's Note".
     final note = report.dailyReportNotes;
-
     if (note == null || note.trim().isEmpty) {
       return const SizedBox.shrink();
     }
@@ -521,13 +641,23 @@ class _DailyReportPageState extends State<DailyReportPage> {
 }
 
 // ═════════════════════════════════════════════════════════════
-// REPORT ITEM
+// REPORT ITEM — title + icon + chips + optional notes/extra
 // ═════════════════════════════════════════════════════════════
 class ReportItem extends StatelessWidget {
   final String title;
+  final IconData icon;
   final List<String> values;
+  final String? notes;
+  final String? extra;
 
-  const ReportItem({super.key, required this.title, required this.values});
+  const ReportItem({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.values,
+    this.notes,
+    this.extra,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -537,27 +667,69 @@ class ReportItem extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: theme.textTheme.labelSmall?.copyWith(
-            fontSize: 11,
-            letterSpacing: 0.8,
-            color: colors.onSurfaceVariant,
-            fontWeight: FontWeight.w800,
-          ),
+        // Section header
+        Row(
+          children: [
+            Icon(icon, size: 14, color: colors.primary),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: 11,
+                letterSpacing: 0.8,
+                color: colors.onSurfaceVariant,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: values.map((value) {
-            return StatusPill(
-              text: value,
-              backgroundColor: colors.secondaryContainer,
-              textColor: colors.onSecondaryContainer,
-            );
-          }).toList(),
-        ),
+
+        // Value chips
+        if (values.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: values.map((value) {
+              return StatusPill(
+                text: value,
+                backgroundColor: colors.secondaryContainer,
+                textColor: colors.onSecondaryContainer,
+              );
+            }).toList(),
+          ),
+
+        // Extra (e.g. nap duration)
+        if (extra != null && extra!.trim().isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            extra!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+
+        // Notes
+        if (notes != null && notes!.trim().isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHighest.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              notes!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurface,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
