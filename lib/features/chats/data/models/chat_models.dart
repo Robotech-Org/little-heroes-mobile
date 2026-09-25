@@ -1,3 +1,5 @@
+import 'package:little_heroes_mobile/core/utils/url_helper.dart';
+
 // ============================================================
 // SENDER MODEL (matches nested `sender` object)
 // ============================================================
@@ -177,15 +179,12 @@ class ChatChannel {
   }
 }
 
-// ============================================================
-// MESSAGE MODEL (updated with identity + attachments)
-// ============================================================
 class ChatMessage {
   final String name;
   final String channelId;
   final String owner;
 
-  // ── Identity (new) ────────────────────────────────────────
+  // identity
   final String senderName;
   final String senderRole;
   final String senderRoleLabel;
@@ -194,11 +193,17 @@ class ChatMessage {
   final bool isAdmin;
   final MessageSender sender;
 
-  // ── Content ───────────────────────────────────────────────
+  // content
   final String text;
-  final String messageType; // "Text" | "Image" | "File"
-  final String? file; // "/files/clearance.pdf"
-  final String? fileName; // "clearance.pdf"
+  final String messageType;
+
+  // ── Attachment fields (raw from backend) ─────────────
+  final String? file; // "/file/1ddb…jpg" (legacy)
+  final String? fileUrl; // "/file/1ddb…jpg"
+  final String? imageUrl; // "/file/1ddb…jpg"
+  final String? fileThumbnail; // thumbnail (nullable)
+  final bool isImage; // backend flag
+  final String? fileName;
   final int? fileSize;
   final int? imageWidth;
   final int? imageHeight;
@@ -208,9 +213,8 @@ class ChatMessage {
   final bool isEdited;
   final bool isReply;
 
-  // ── Client-only ───────────────────────────────────────────
   final MessageSendStatus sendStatus;
-  final double? uploadProgress; // 0.0 → 1.0 when uploading
+  final double? uploadProgress;
 
   ChatMessage({
     required this.name,
@@ -226,6 +230,10 @@ class ChatMessage {
     required this.text,
     this.messageType = 'Text',
     this.file,
+    this.fileUrl,
+    this.imageUrl,
+    this.fileThumbnail,
+    this.isImage = false,
     this.fileName,
     this.fileSize,
     this.imageWidth,
@@ -238,6 +246,20 @@ class ChatMessage {
     this.uploadProgress,
   });
 
+  // ══════════════════════════════════════════════════
+  // FULL URLS — use these in the UI
+  // ══════════════════════════════════════════════════
+  String get fullFileUrl => UrlHelper.resolve(fileUrl ?? file);
+  String get fullImageUrl => UrlHelper.resolve(imageUrl ?? fileUrl ?? file);
+  String get fullThumbnailUrl => UrlHelper.resolve(fileThumbnail);
+
+  bool get hasImage => isImage || messageType.toLowerCase() == 'image';
+  bool get isFileType => messageType.toLowerCase() == 'file' && fileUrl != null;
+  bool get hasAttachment => (fileUrl ?? file ?? imageUrl)?.isNotEmpty == true;
+
+  // ══════════════════════════════════════════════════
+  // fromJson — parse everything the backend sends
+  // ══════════════════════════════════════════════════
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     final senderJson = json['sender'];
     final owner = json['owner'] ?? '';
@@ -246,6 +268,18 @@ class ChatMessage {
     final sender = senderJson is Map
         ? MessageSender.fromJson(Map<String, dynamic>.from(senderJson))
         : MessageSender.fromLegacy(owner: owner, isMe: isMe);
+
+    // Backend may nest the URLs in attachments[0]
+    String? attachFileUrl;
+    String? attachImageUrl;
+    final attachments = json['attachments'];
+    if (attachments is List && attachments.isNotEmpty) {
+      final first = attachments.first;
+      if (first is Map) {
+        attachFileUrl = first['file_url'] as String?;
+        attachImageUrl = first['image_url'] as String?;
+      }
+    }
 
     return ChatMessage(
       name: json['name'] ?? '',
@@ -260,11 +294,19 @@ class ChatMessage {
       sender: sender,
       text: json['text'] ?? '',
       messageType: json['message_type'] ?? 'Text',
-      file: json['file'],
+
+      // attachment URLs (accept top-level OR nested)
+      file: json['file'] ?? attachFileUrl,
+      fileUrl: json['file_url'] ?? attachFileUrl,
+      imageUrl: json['image_url'] ?? attachImageUrl,
+      fileThumbnail: json['file_thumbnail'],
+      isImage: json['is_image'] == true || json['is_image'] == 1,
+
       fileName: json['file_name'],
       fileSize: json['file_size'],
       imageWidth: json['image_width'],
       imageHeight: json['image_height'],
+
       creation: _parseDate(json['creation']),
       modified: _parseDate(json['modified'] ?? json['creation']),
       isEdited: json['is_edited'] == 1 || json['is_edited'] == true,
@@ -281,25 +323,16 @@ class ChatMessage {
     }
   }
 
-  // ── Convenience getters ───────────────────────────────────
-  MessageType get type => messageTypeFromString(messageType);
-  bool get isImage => type == MessageType.image;
-  bool get isFile => type == MessageType.file;
-  bool get hasAttachment => file != null && file!.isNotEmpty;
-
-  bool get isUploading => sendStatus == MessageSendStatus.sending;
-  bool get isFailed => sendStatus == MessageSendStatus.failed;
-
-  /// True if this message was sent by the current user.
-  /// Prefer `isMe` from the API; fallback to owner comparison.
-  bool isMine(String currentUserEmail) => isMe || owner == currentUserEmail;
-
   ChatMessage copyWith({
     String? name,
     String? channelId,
     String? text,
     String? messageType,
     String? file,
+    String? fileUrl,
+    String? imageUrl,
+    String? fileThumbnail,
+    bool? isImage,
     String? fileName,
     MessageSendStatus? sendStatus,
     double? uploadProgress,
@@ -318,6 +351,10 @@ class ChatMessage {
       text: text ?? this.text,
       messageType: messageType ?? this.messageType,
       file: file ?? this.file,
+      fileUrl: fileUrl ?? this.fileUrl,
+      imageUrl: imageUrl ?? this.imageUrl,
+      fileThumbnail: fileThumbnail ?? this.fileThumbnail,
+      isImage: isImage ?? this.isImage,
       fileName: fileName ?? this.fileName,
       fileSize: fileSize,
       imageWidth: imageWidth,

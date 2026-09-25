@@ -296,4 +296,40 @@ class ApiConstants {
   // In your ApiConstants class, add:
   static const String uploadAttachment =
       '/api/method/little_heroes.api.v1.communications.upload_attachment';
+
+  // ============================================================
+  // THREE MONTH REPORT APIs
+  // ============================================================
+
+  /// POST — Create a Three Month Report (Teacher)
+  static const String createThreeMonthReport =
+      '/api/method/little_heroes.api.v1.three_month_reports.create_three_month_report';
+
+  /// PUT — Update a Three Month Report (Teacher)
+  static const String updateThreeMonthReport =
+      '/api/method/little_heroes.api.v1.three_month_reports.update_three_month_report';
+
+  /// GET — Get a single Three Month Report
+  static const String getThreeMonthReport =
+      '/api/method/little_heroes.api.v1.three_month_reports.get_three_month_report';
+
+  /// GET — List Three Month Reports (paginated)
+  static const String listThreeMonthReports =
+      '/api/method/little_heroes.api.v1.three_month_reports.list_three_month_reports';
+
+  /// GET — Get the PDF download URL
+  static const String getThreeMonthReportPdf =
+      '/api/method/little_heroes.api.v1.three_month_reports.get_three_month_report_pdf';
+
+  /// POST — Admin approves → moves to "Shared with Parent"
+  static const String approveThreeMonthReport =
+      '/api/method/little_heroes.api.v1.three_month_reports.approve_three_month_report';
+
+  /// POST — Admin rejects → moves back to "Needs Revision"
+  static const String rejectThreeMonthReport =
+      '/api/method/little_heroes.api.v1.three_month_reports.reject_three_month_report';
+
+  /// DELETE — Delete a Three Month Report
+  static const String deleteThreeMonthReport =
+      '/api/method/little_heroes.api.v1.three_month_reports.delete_three_month_report';
 }

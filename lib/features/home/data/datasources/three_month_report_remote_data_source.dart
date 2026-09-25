@@ -16,12 +16,10 @@ abstract class ThreeMonthReportRemoteDataSource {
 
   Future<ThreeMonthReportModel> getThreeMonthReport(String reportName);
 
-  // CREATE: Create new three month report
   Future<ThreeMonthReportModel> createThreeMonthReport(
     Map<String, dynamic> data,
   );
 
-  // UPDATE: Update three month report
   Future<ThreeMonthReportModel> updateThreeMonthReport({
     required String reportName,
     required Map<String, dynamic> data,
@@ -34,6 +32,9 @@ class ThreeMonthReportRemoteDataSourceImpl
 
   ThreeMonthReportRemoteDataSourceImpl(this.dio);
 
+  // ═════════════════════════════════════════════════════════════
+  // LIST
+  // ═════════════════════════════════════════════════════════════
   @override
   Future<ThreeMonthReportResponseModel> getThreeMonthReports({
     int page = 1,
@@ -58,9 +59,8 @@ class ThreeMonthReportRemoteDataSourceImpl
         queryParams['year'] = year;
       }
 
-      // Using the existing constant from ApiConstants
       final response = await dio.get(
-        ApiConstants.listMonthlyReports,
+        ApiConstants.listThreeMonthReports, // ✅ fixed
         queryParameters: queryParams,
       );
 
@@ -76,15 +76,15 @@ class ThreeMonthReportRemoteDataSourceImpl
       throw Exception(e.toString());
     }
   }
-  // ============================================================
-  // GET SINGLE THREE MONTH REPORT
-  // ============================================================
 
+  // ═════════════════════════════════════════════════════════════
+  // GET SINGLE
+  // ═════════════════════════════════════════════════════════════
   @override
   Future<ThreeMonthReportModel> getThreeMonthReport(String reportName) async {
     try {
       final response = await dio.get(
-        ApiConstants.getMonthlyReport,
+        ApiConstants.getThreeMonthReport, // ✅ fixed
         queryParameters: {'name': reportName},
       );
 
@@ -105,17 +105,16 @@ class ThreeMonthReportRemoteDataSourceImpl
     }
   }
 
-  // ============================================================
-  // CREATE THREE MONTH REPORT
-  // ============================================================
-
+  // ═════════════════════════════════════════════════════════════
+  // CREATE
+  // ═════════════════════════════════════════════════════════════
   @override
   Future<ThreeMonthReportModel> createThreeMonthReport(
     Map<String, dynamic> data,
   ) async {
     try {
       final response = await dio.post(
-        ApiConstants.createMonthlyReport,
+        ApiConstants.createThreeMonthReport, // ✅ fixed
         data: data,
       );
 
@@ -136,10 +135,9 @@ class ThreeMonthReportRemoteDataSourceImpl
     }
   }
 
-  // ============================================================
-  // UPDATE THREE MONTH REPORT
-  // ============================================================
-
+  // ═════════════════════════════════════════════════════════════
+  // UPDATE
+  // ═════════════════════════════════════════════════════════════
   @override
   Future<ThreeMonthReportModel> updateThreeMonthReport({
     required String reportName,
@@ -147,7 +145,7 @@ class ThreeMonthReportRemoteDataSourceImpl
   }) async {
     try {
       final response = await dio.put(
-        ApiConstants.updateMonthlyReport,
+        ApiConstants.updateThreeMonthReport, // ✅ fixed
         queryParameters: {'name': reportName},
         data: data,
       );
