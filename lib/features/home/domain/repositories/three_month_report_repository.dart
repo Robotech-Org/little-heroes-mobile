@@ -22,6 +22,5 @@ abstract class ThreeMonthReportRepository {
     required String reportName,
     required Map<String, dynamic> data,
   });
-
- 
+  Future<String> getThreeMonthReportPdf(String reportName);
 }

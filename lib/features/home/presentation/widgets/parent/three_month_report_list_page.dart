@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:little_heroes_mobile/core/utils/url_helper.dart';
+import 'package:little_heroes_mobile/core/widgets/document_viewer/document_viewer_page.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/three_month_report_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
-import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/three_month_report_detail_page.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
 
 class ParentThreeMonthReportListPage extends StatefulWidget {
@@ -30,6 +31,9 @@ class _ParentThreeMonthReportListPageState
   bool _isLoading = true;
   bool _isError = false;
   String _errorMessage = '';
+
+  /// Which report is currently fetching its PDF (shows spinner on that card).
+  String? _loadingPdfFor;
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -66,6 +70,7 @@ class _ParentThreeMonthReportListPageState
       }
 
       final repository = di.sl<ThreeMonthReportRepository>();
+
       final response = await repository.getThreeMonthReports(
         page: 1,
         pageSize: 100,
@@ -73,14 +78,20 @@ class _ParentThreeMonthReportListPageState
 
       // Filter to this student (by id, fallback to name)
       final visible = response.items.where((r) {
-        if (widget.studentId.isNotEmpty && r.student == widget.studentId) {
+        if (widget.studentId.isNotEmpty &&
+            r.student.isNotEmpty &&
+            r.student == widget.studentId) {
           return true;
         }
         return r.studentName.toLowerCase() == widget.studentName.toLowerCase();
       }).toList();
 
-      // Sort by name or creation date descending
-      visible.sort((a, b) => b.name.compareTo(a.name));
+      // Newest first
+      visible.sort((a, b) {
+        final aDate = _parseDate(a.periodEndDate ?? a.creation);
+        final bDate = _parseDate(b.periodEndDate ?? b.creation);
+        return bDate.compareTo(aDate);
+      });
 
       if (!mounted) return;
 
@@ -99,8 +110,13 @@ class _ParentThreeMonthReportListPageState
     }
   }
 
+  DateTime _parseDate(String? raw) {
+    if (raw == null || raw.isEmpty) return DateTime(1970);
+    return DateTime.tryParse(raw.replaceFirst(' ', 'T')) ?? DateTime(1970);
+  }
+
   // ═════════════════════════════════════════════════════════════
-  // SEARCH
+  // SEARCH  (null-safe)
   // ═════════════════════════════════════════════════════════════
   void _applySearch() {
     final query = _searchController.text.trim().toLowerCase();
@@ -110,22 +126,61 @@ class _ParentThreeMonthReportListPageState
         return;
       }
       _filteredReports = _reports.where((r) {
-        return r.classroom.toLowerCase().contains(query) ||
-            r.name.toLowerCase().contains(query) ||
-            r.status.toLowerCase().contains(query);
+        final classroom = r.classroom.toLowerCase();
+        final name = r.name.toLowerCase();
+        final status = r.status.toLowerCase();
+        final start = (r.periodStartDate ?? '').toLowerCase();
+        final end = (r.periodEndDate ?? '').toLowerCase();
+
+        return classroom.contains(query) ||
+            name.contains(query) ||
+            status.contains(query) ||
+            start.contains(query) ||
+            end.contains(query);
       }).toList();
     });
   }
 
   // ═════════════════════════════════════════════════════════════
-  // NAVIGATION
+  // OPEN PDF DIRECTLY
   // ═════════════════════════════════════════════════════════════
-  void _openReport(ThreeMonthReportModel report) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ThreeMonthReportDetailPage(reportName: report.name),
-      ),
-    );
+  Future<void> _openReportPdf(ThreeMonthReportModel report) async {
+    if (_loadingPdfFor != null) return; // prevent double-tap
+
+    setState(() => _loadingPdfFor = report.name);
+
+    try {
+      final repository = di.sl<ThreeMonthReportRepository>();
+      final rawUrl = await repository.getThreeMonthReportPdf(report.name);
+      final pdfUrl = UrlHelper.resolve(rawUrl);
+
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              DocumentViewerPage(url: pdfUrl, title: '3-Month Report'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open report: ${_cleanError(e)}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _loadingPdfFor = null);
+    }
+  }
+
+  String _cleanError(Object e) {
+    return e
+        .toString()
+        .replaceFirst('Exception: ', '')
+        .replaceFirst('DioException [bad response]: ', '');
   }
 
   // ═════════════════════════════════════════════════════════════
@@ -176,13 +231,10 @@ class _ParentThreeMonthReportListPageState
         onRefresh: _loadReports,
         child: Column(
           children: [
-            // ── Search bar ─────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: _buildSearchBar(theme, colors),
             ),
-
-            // ── Content ────────────────────────────────
             Expanded(child: _buildContent(theme, colors)),
           ],
         ),
@@ -190,9 +242,6 @@ class _ParentThreeMonthReportListPageState
     );
   }
 
-  // ═════════════════════════════════════════════════════════════
-  // SEARCH BAR
-  // ═════════════════════════════════════════════════════════════
   Widget _buildSearchBar(ThemeData theme, ColorScheme colors) {
     return TextField(
       controller: _searchController,
@@ -228,18 +277,13 @@ class _ParentThreeMonthReportListPageState
     );
   }
 
-  // ═════════════════════════════════════════════════════════════
-  // CONTENT
-  // ═════════════════════════════════════════════════════════════
   Widget _buildContent(ThemeData theme, ColorScheme colors) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-
     if (_isError) {
       return _buildError(theme, colors);
     }
-
     if (_filteredReports.isEmpty) {
       return _buildEmpty(theme, colors);
     }
@@ -250,17 +294,19 @@ class _ParentThreeMonthReportListPageState
       itemCount: _filteredReports.length,
       itemBuilder: (_, i) {
         final report = _filteredReports[i];
+        final isLoadingThis = _loadingPdfFor == report.name;
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: _ReportCard(report: report, onTap: () => _openReport(report)),
+          child: _ReportCard(
+            report: report,
+            isLoading: isLoadingThis,
+            onTap: () => _openReportPdf(report),
+          ),
         );
       },
     );
   }
 
-  // ═════════════════════════════════════════════════════════════
-  // ERROR
-  // ═════════════════════════════════════════════════════════════
   Widget _buildError(ThemeData theme, ColorScheme colors) {
     return Center(
       child: Padding(
@@ -296,9 +342,6 @@ class _ParentThreeMonthReportListPageState
     );
   }
 
-  // ═════════════════════════════════════════════════════════════
-  // EMPTY
-  // ═════════════════════════════════════════════════════════════
   Widget _buildEmpty(ThemeData theme, ColorScheme colors) {
     final hasSearch = _searchController.text.isNotEmpty;
 
@@ -361,14 +404,13 @@ class _ParentThreeMonthReportListPageState
 class _ReportCard extends StatelessWidget {
   final ThreeMonthReportModel report;
   final VoidCallback onTap;
+  final bool isLoading;
 
-  const _ReportCard({required this.report, required this.onTap});
-
-  String get _initial {
-    final name = report.studentName.trim();
-    if (name.isEmpty) return '?';
-    return name.characters.first.toUpperCase();
-  }
+  const _ReportCard({
+    required this.report,
+    required this.onTap,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -377,122 +419,145 @@ class _ReportCard extends StatelessWidget {
 
     final statusText = _statusText(report.status);
     final statusColor = _statusColor(report.status, colors);
+    final period = _formatPeriod(report.periodStartDate, report.periodEndDate);
 
     return Material(
       color: colors.surface,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onTap,
+        onTap: isLoading ? null : onTap,
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: colors.outline.withValues(alpha: 0.06)),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      colors.primaryContainer,
-                      colors.primaryContainer.withValues(alpha: 0.5),
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  _initial,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: colors.onPrimaryContainer,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      report.studentName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colors.onSurface,
+              // ── Top row ───────────────────────────────
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          colors.primaryContainer,
+                          colors.primaryContainer.withValues(alpha: 0.5),
+                        ],
                       ),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.picture_as_pdf_rounded,
+                      color: colors.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.class_outlined,
-                          size: 14,
-                          color: colors.onSurfaceVariant,
+                        Text(
+                          'Three Month Report',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: colors.onSurface,
+                          ),
                         ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            report.classroom,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
+                        const SizedBox(height: 2),
+                        Text(
+                          period,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                  ),
+                  if (isLoading)
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.onSurfaceVariant.withValues(alpha: 0.5),
+                      size: 24,
+                    ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // ── Classroom ─────────────────────────────
+              Row(
+                children: [
+                  Icon(
+                    Icons.class_outlined,
+                    size: 14,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      report.classroom,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              // ── Status pill ───────────────────────────
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 5,
-                      ),
+                      width: 6,
+                      height: 6,
                       decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
+                        color: statusColor,
+                        shape: BoxShape.circle,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: statusColor,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            statusText,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: statusColor,
-                            ),
-                          ),
-                        ],
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
                       ),
                     ),
                   ],
                 ),
-              ),
-
-              Icon(
-                Icons.chevron_right_rounded,
-                color: colors.onSurfaceVariant.withValues(alpha: 0.5),
-                size: 24,
               ),
             ],
           ),
@@ -501,16 +566,45 @@ class _ReportCard extends StatelessWidget {
     );
   }
 
+  String _formatPeriod(String? start, String? end) {
+    if (start == null || end == null || start.isEmpty || end.isEmpty) {
+      return '';
+    }
+    return '${_shortDate(start)} – ${_shortDate(end)}';
+  }
+
+  String _shortDate(String raw) {
+    final dt = DateTime.tryParse(raw.replaceFirst(' ', 'T'));
+    if (dt == null) return raw;
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  }
+
   String _statusText(String status) {
     switch (status.toLowerCase()) {
+      case 'shared with parent':
+        return 'Shared';
       case 'submitted':
         return 'Complete';
+      case 'needs revision':
+        return 'Needs Revision';
       case 'saved':
         return 'In Progress';
       case 'draft':
-        return 'Not Started';
-      case 'pending':
-        return 'Pending';
+        return 'Draft';
       default:
         return status;
     }
@@ -518,14 +612,16 @@ class _ReportCard extends StatelessWidget {
 
   Color _statusColor(String status, ColorScheme colors) {
     switch (status.toLowerCase()) {
-      case 'submitted':
+      case 'shared with parent':
         return Colors.green;
+      case 'submitted':
+        return Colors.blue;
+      case 'needs revision':
+        return Colors.orange;
       case 'saved':
         return Colors.orange;
       case 'draft':
         return Colors.grey;
-      case 'pending':
-        return Colors.amber;
       default:
         return colors.primary;
     }

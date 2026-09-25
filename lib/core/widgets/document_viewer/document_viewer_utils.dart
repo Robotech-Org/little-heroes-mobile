@@ -4,11 +4,20 @@ import 'document_type.dart';
 
 class DocumentViewerUtils {
   static DocumentType getDocumentType(String url) {
+    final lower = url.toLowerCase();
+
+    // ── 1) Known Frappe PDF endpoints ─────────────────
+    if (lower.contains('/download_pdf') ||
+        lower.contains('print_format') ||
+        lower.contains('format=three%20month%20report')) {
+      return DocumentType.pdf;
+    }
+
+    // ── 2) Fall back to file extension ────────────────
     final cleanUrl = url.split('?').first;
     final extension = path.extension(cleanUrl).toLowerCase();
 
     switch (extension) {
-      // Images
       case '.jpg':
       case '.jpeg':
       case '.png':
@@ -17,22 +26,18 @@ class DocumentViewerUtils {
       case '.bmp':
         return DocumentType.image;
 
-      // PDF
       case '.pdf':
         return DocumentType.pdf;
 
-      // Word
       case '.doc':
       case '.docx':
         return DocumentType.word;
 
-      // Excel
       case '.xls':
       case '.xlsx':
       case '.csv':
         return DocumentType.excel;
 
-      // PowerPoint
       case '.ppt':
       case '.pptx':
         return DocumentType.powerpoint;
@@ -52,17 +57,12 @@ class DocumentViewerUtils {
     return path.basename(cleanUrl);
   }
 
-  static bool isImage(String url) {
-    return getDocumentType(url) == DocumentType.image;
-  }
+  static bool isImage(String url) => getDocumentType(url) == DocumentType.image;
 
-  static bool isPdf(String url) {
-    return getDocumentType(url) == DocumentType.pdf;
-  }
+  static bool isPdf(String url) => getDocumentType(url) == DocumentType.pdf;
 
   static bool isOfficeDocument(String url) {
     final type = getDocumentType(url);
-
     return type == DocumentType.word ||
         type == DocumentType.excel ||
         type == DocumentType.powerpoint;

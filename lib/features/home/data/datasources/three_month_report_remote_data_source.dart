@@ -24,6 +24,7 @@ abstract class ThreeMonthReportRemoteDataSource {
     required String reportName,
     required Map<String, dynamic> data,
   });
+  Future<String> getThreeMonthReportPdf(String reportName);
 }
 
 class ThreeMonthReportRemoteDataSourceImpl
@@ -159,6 +160,34 @@ class ThreeMonthReportRemoteDataSourceImpl
       }
 
       throw Exception('Failed to update report');
+    } on DioException catch (e) {
+      DioErrorHandler.handle(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  // GET PDF URL
+  // ═════════════════════════════════════════════════════════════
+  @override
+  Future<String> getThreeMonthReportPdf(String reportName) async {
+    try {
+      final response = await dio.get(
+        ApiConstants.getThreeMonthReportPdf,
+        queryParameters: {'name': reportName},
+      );
+
+      final responseData = response.data as Map<String, dynamic>;
+      final message = responseData['message'] ?? {};
+      final data = message['data'] ?? {};
+
+      final fileUrl = data['file_url']?.toString() ?? '';
+      if (fileUrl.isEmpty) {
+        throw Exception('PDF URL not available');
+      }
+      return fileUrl;
     } on DioException catch (e) {
       DioErrorHandler.handle(e);
       rethrow;

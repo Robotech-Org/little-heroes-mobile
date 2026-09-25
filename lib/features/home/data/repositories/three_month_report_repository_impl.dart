@@ -52,5 +52,8 @@ class ThreeMonthReportRepositoryImpl implements ThreeMonthReportRepository {
     );
   }
 
-  
+  @override
+  Future<String> getThreeMonthReportPdf(String reportName) {
+    return remoteDataSource.getThreeMonthReportPdf(reportName);
+  }
 }

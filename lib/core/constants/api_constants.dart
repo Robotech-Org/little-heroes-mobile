@@ -321,14 +321,6 @@ class ApiConstants {
   static const String getThreeMonthReportPdf =
       '/api/method/little_heroes.api.v1.three_month_reports.get_three_month_report_pdf';
 
-  /// POST — Admin approves → moves to "Shared with Parent"
-  static const String approveThreeMonthReport =
-      '/api/method/little_heroes.api.v1.three_month_reports.approve_three_month_report';
-
-  /// POST — Admin rejects → moves back to "Needs Revision"
-  static const String rejectThreeMonthReport =
-      '/api/method/little_heroes.api.v1.three_month_reports.reject_three_month_report';
-
   /// DELETE — Delete a Three Month Report
   static const String deleteThreeMonthReport =
       '/api/method/little_heroes.api.v1.three_month_reports.delete_three_month_report';
