@@ -37,12 +37,6 @@ class SendChatMessage extends ChatEvent {
   SendChatMessage({required this.channelId, required this.text});
 }
 
-/// Send a text + file/image attachment.
-///
-/// Uses the two-step flow documented in
-/// `Messaging Updates — Summary for Mobile Developers`:
-///   1. `upload_attachment` → returns `file_url` + `message_type`
-///   2. `send_message`      → posts the message referencing that URL
 class SendAttachment extends ChatEvent {
   final String channelId;
   final File file;
@@ -181,34 +175,49 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     _activeChannelId = event.channelId;
 
-    // Best-effort socket
-    unawaited(socketService.connect());
+    // Best-effort socket — never block the open on it
+    unawaited(
+      socketService.connect().catchError((e) {
+        // debugPrint('Socket connect failed, relying on polling: $e');
+      }),
+    );
     socketService.joinChannel(event.channelId);
 
     emit(ChannelOpen(channelId: event.channelId, isLoading: true));
 
+    // ── 1) mark-as-read is best-effort — never block the open on it ──
     try {
       await repository.markAsRead(channelId: event.channelId);
+    } catch (_) {
+      // ignore — read receipts are non-critical
+    }
 
-      final messages = await repository.getChannelMessages(
+    // ── 2) fetch messages — but tolerate failures ──
+    List<ChatMessage> messages = const [];
+    try {
+      messages = await repository.getChannelMessages(
         channelId: event.channelId,
         page: 1,
       );
-
-      emit(
-        ChannelOpen(
-          channelId: event.channelId,
-          messages: messages,
-          hasMore: messages.length >= 50,
-          page: 1,
-        ),
-      );
-
-      // Start polling for new messages
-      _startPolling(event.channelId);
     } catch (e) {
-      emit(ChatError(e.toString()));
+      // debugPrint('Open channel failed for ${event.channelId}: $e');
+      messages = const [];
     }
+
+    // Guard: user may have closed the channel while we were fetching
+    if (_activeChannelId != event.channelId) return;
+
+    emit(
+      ChannelOpen(
+        channelId: event.channelId,
+        messages: messages,
+        hasMore: messages.length >= 50,
+        page: 1,
+      ),
+    );
+
+    // ── 3) Always start polling, even on empty/error ──
+    _startPolling(event.channelId);
   }
 
   void _onCloseChannel(CloseChannel event, Emitter<ChatState> emit) {

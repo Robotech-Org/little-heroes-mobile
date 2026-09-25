@@ -42,9 +42,6 @@ class ChatRemoteDataSource {
     }
   }
 
-  // ═════════════════════════════════════════════════════════════
-  // GET CHANNEL MESSAGES
-  // ═════════════════════════════════════════════════════════════
   Future<List<ChatMessage>> getChannelMessages({
     required String channelId,
     int page = 1,
@@ -62,13 +59,25 @@ class ChatRemoteDataSource {
       );
 
       final data = _unwrap(response.data);
-      final messages = data['messages'];
-      if (messages is! List) {
-        throw const UnknownException('Unexpected response format');
+
+      //  Accept null, missing key, or non-list → return empty
+      final raw = data['messages'];
+      if (raw == null) return const [];
+      if (raw is! List) {
+        // Some backends return { "items": [...] } instead
+        final items = data['items'];
+        if (items is List) {
+          return items
+              .whereType<Map>()
+              .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+        }
+        return const [];
       }
 
-      return messages
-          .map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
+      return raw
+          .whereType<Map>()
+          .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } on DioException catch (e) {
       DioErrorHandler.handle(e);

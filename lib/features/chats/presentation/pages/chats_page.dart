@@ -57,18 +57,29 @@ class _ChatsPageState extends State<ChatsPage> {
 
     if (_searchQuery.isNotEmpty) {
       list = channels.where((c) {
-        return c.studentName.toLowerCase().contains(_searchQuery) ||
-            c.classroom.toLowerCase().contains(_searchQuery) ||
-            (c.lastMessagePreview?.toLowerCase().contains(_searchQuery) ??
-                false);
+        final name = (c.studentName ?? '').toLowerCase();
+        final room = (c.classroom ?? '').toLowerCase();
+        final preview = (c.lastMessagePreview ?? '').toLowerCase();
+        final title = (c.title ?? '').toLowerCase();
+        final subtitle = (c.subtitle ?? '').toLowerCase();
+        return name.contains(_searchQuery) ||
+            room.contains(_searchQuery) ||
+            preview.contains(_searchQuery) ||
+            title.contains(_searchQuery) ||
+            subtitle.contains(_searchQuery);
       }).toList();
     }
 
     final sorted = List<ChatChannel>.from(list)
       ..sort((a, b) {
-        final aT = a.lastMessageTime ?? DateTime(1970);
-        final bT = b.lastMessageTime ?? DateTime(1970);
-        return bT.compareTo(aT);
+        // Pinned first
+        final ap = (a.isPinned == true) ? 1 : 0;
+        final bp = (b.isPinned == true) ? 1 : 0;
+        if (ap != bp) return bp.compareTo(ap);
+
+        final at = a.lastMessageTime ?? a.creationTime ?? DateTime(1970);
+        final bt = b.lastMessageTime ?? b.creationTime ?? DateTime(1970);
+        return bt.compareTo(at);
       });
     return sorted;
   }
@@ -153,36 +164,57 @@ class _ChatsPageState extends State<ChatsPage> {
     );
   }
 
-  // ═════════════════════════════════════════════
-  // Widgets
-  // ═════════════════════════════════════════════
   Widget _channelTile(ThemeData theme, ChatChannel channel) {
+    final isAdmin = channel.isAdmin;
+    final titleText = channel.displayTitle;
+    final subtitleText = channel.displaySubtitle;
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: CircleAvatar(
         radius: 26,
-        backgroundColor: theme.colorScheme.primaryContainer.withValues(
-          alpha: 0.6,
-        ),
-        child: Text(
-          _initials(channel.studentName),
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: theme.colorScheme.onPrimaryContainer,
+        backgroundColor: isAdmin
+            ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.7)
+            : theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+        child: isAdmin
+            ? Icon(
+                Icons.support_agent_rounded,
+                color: theme.colorScheme.onSecondaryContainer,
+                size: 26,
+              )
+            : Text(
+                _initials(channel.studentName),
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+      ),
+      title: Row(
+        children: [
+          if (channel.isPinned == true) ...[
+            Icon(
+              Icons.push_pin_rounded,
+              size: 14,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 4),
+          ],
+          Expanded(
+            child: Text(
+              titleText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
-        ),
+        ],
       ),
-      title: Text(
-        channel.studentName,
-        style: const TextStyle(fontWeight: FontWeight.w700),
-      ),
-      subtitle: Text(
-        channel.lastMessagePreview ?? channel.classroom,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+      subtitle: subtitleText.isEmpty
+          ? null
+          : Text(subtitleText, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: Text(
-        _formatRelative(channel.lastMessageTime),
+        _formatRelative(channel.lastMessageTime ?? channel.creationTime),
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
@@ -195,12 +227,11 @@ class _ChatsPageState extends State<ChatsPage> {
               create: (_) => di.sl<ChatBloc>(),
               child: ChatRoomScreen(
                 channelId: channel.ravenChannel,
-                title: channel.studentName,
+                title: titleText, //  never null/empty
               ),
             ),
           ),
         ).then((_) {
-          // Returning from a room → refresh immediately
           if (mounted) {
             context.read<ChatBloc>().add(LoadChannels(silent: true));
           }
@@ -341,20 +372,27 @@ class _ChatsPageState extends State<ChatsPage> {
     );
   }
 
-  // ═════════════════════════════════════════════
-  // Helpers
-  // ═════════════════════════════════════════════
-  String _initials(String name) {
-    final parts = name.trim().split(' ');
+  String _initials(String? name) {
+    if (name == null) return '?';
+
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+
     if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts[0][0].toUpperCase();
+    if (parts.length == 1) {
+      final p = parts.first;
+      return p.isNotEmpty ? p[0].toUpperCase() : '?';
+    }
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
   }
 
   String _formatRelative(DateTime? time) {
     if (time == null) return '';
     final diff = DateTime.now().difference(time);
-    if (diff.inMinutes < 1) return 'now';
+    if (diff.isNegative || diff.inMinutes < 1) return 'now';
     if (diff.inHours < 1) return '${diff.inMinutes}m';
     if (diff.inDays < 1) return '${diff.inHours}h';
     if (diff.inDays < 7) return '${diff.inDays}d';

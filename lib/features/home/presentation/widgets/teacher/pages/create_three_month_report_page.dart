@@ -38,11 +38,14 @@ class _CreateThreeMonthReportPageState
   ClassroomModel? _selectedClassroom;
   String _selectedMonth = 'January';
   int _selectedYear = DateTime.now().year;
-  String _selectedStatus = 'Draft';
+  String _selectedStatus = 'Submitted';
 
   // Competency selection
   String? _selectedDomain;
   final Map<String, TextEditingController> _noteControllers = {};
+
+  final TextEditingController _introductionController = TextEditingController();
+  final TextEditingController _summaryController = TextEditingController();
 
   /// The teacher-built list of assessments (filled as they rate competencies).
   final List<AssessmentModel> _assessments = [];
@@ -84,6 +87,8 @@ class _CreateThreeMonthReportPageState
     for (final c in _noteControllers.values) {
       c.dispose();
     }
+    _introductionController.dispose();
+    _summaryController.dispose();
     super.dispose();
   }
 
@@ -233,9 +238,11 @@ class _CreateThreeMonthReportPageState
         'month': _selectedMonth,
         'year': _selectedYear,
         'report_date': DateTime.now().toIso8601String().split('T').first,
-        'status': _selectedStatus,
+        // 'status': "Submitted",
         'teacher': authState.user.fullName,
         'assessments': assessmentsData,
+        'report_introduction': _wrapHtml(_introductionController.text.trim()),
+        'report_summary': _wrapHtml(_summaryController.text.trim()),
       };
 
       final repo = di.sl<ThreeMonthReportRepository>();
@@ -259,6 +266,16 @@ class _CreateThreeMonthReportPageState
         'Failed to create: ${e.toString().replaceFirst('Exception: ', '')}',
       );
     }
+  }
+
+  /// Wrap plain text in <p>...</p> so Frappe renders it in rich text fields.
+  /// Each blank-line-separated paragraph becomes its own <p> tag.
+  String _wrapHtml(String input) {
+    if (input.isEmpty) return '';
+    return input
+        .split(RegExp(r'\n\s*\n'))
+        .map((para) => '<p>${para.trim().replaceAll('\n', '<br>')}</p>')
+        .join();
   }
 
   // ═════════════════════════════════════════════════════════════
@@ -319,6 +336,9 @@ class _CreateThreeMonthReportPageState
                   // ── Setup card ───────────────────────────
                   _buildSetupCard(theme, colorScheme, isDark),
                   const SizedBox(height: 20),
+                  // ── NEW: Report Introduction & Summary ───
+                  _buildNarrativeCard(theme, colorScheme, isDark),
+                  const SizedBox(height: 20),
 
                   // ── Domain selector ──────────────────────
                   _buildDomainSelector(theme, colorScheme),
@@ -366,6 +386,125 @@ class _CreateThreeMonthReportPageState
                 ],
               ),
             ),
+    );
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  // NEW — Report Introduction & Summary
+  // ═════════════════════════════════════════════════════════════
+  Widget _buildNarrativeCard(
+    ThemeData theme,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.edit_note_rounded,
+                size: 20,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Report Narrative',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ── Introduction ─────────────────────────
+          _fieldLabel(theme, colorScheme, 'Introduction'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _introductionController,
+            maxLines: 4,
+            minLines: 3,
+            textCapitalization: TextCapitalization.sentences,
+            enabled: !_isSubmitting,
+            decoration: InputDecoration(
+              hintText: 'General introduction about the child\'s progress this period...',
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              ),
+              filled: true,
+              fillColor: colorScheme.surfaceVariant.withValues(alpha: 0.25),
+              contentPadding: const EdgeInsets.all(12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.15),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.15),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colorScheme.primary),
+              ),
+            ),
+            style: TextStyle(fontSize: 13, color: colorScheme.onSurface),
+          ),
+          const SizedBox(height: 14),
+
+          // ── Summary ──────────────────────────────
+          _fieldLabel(theme, colorScheme, 'Summary (Optional)'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _summaryController,
+            maxLines: 3,
+            minLines: 2,
+            textCapitalization: TextCapitalization.sentences,
+            enabled: !_isSubmitting,
+            decoration: InputDecoration(
+              hintText: 'Brief summary / overall observations for this reporting period...',
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              ),
+              filled: true,
+              fillColor: colorScheme.surfaceVariant.withValues(alpha: 0.25),
+              contentPadding: const EdgeInsets.all(12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.15),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.15),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colorScheme.primary),
+              ),
+            ),
+            style: TextStyle(fontSize: 13, color: colorScheme.onSurface),
+          ),
+        ],
+      ),
     );
   }
 
@@ -560,7 +699,7 @@ class _CreateThreeMonthReportPageState
   }
 
   Widget _buildStatusSelector(ThemeData theme, ColorScheme colorScheme) {
-    final options = ['Draft', 'Saved'];
+    final options = ['Submitted'];
     return Wrap(
       spacing: 8,
       runSpacing: 8,

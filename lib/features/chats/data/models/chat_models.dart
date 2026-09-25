@@ -1,131 +1,3 @@
-// // lib/features/chats/data/models/chat_models.dart
-
-// // ============================================================
-// // CHANNEL MODEL (matches list_my_channels response)
-// // ============================================================
-// class ChatChannel {
-//   final String name;
-//   final String student;
-//   final String studentName;
-//   final String classroom;
-//   final String academicYear;
-//   final String ravenChannel;
-//   final String status;
-//   final String? lastMessagePreview;
-//   final String? lastMessageBy;
-//   final String? lastMessageAt;
-//   final String creation;
-
-//   ChatChannel({
-//     required this.name,
-//     required this.student,
-//     required this.studentName,
-//     required this.classroom,
-//     required this.academicYear,
-//     required this.ravenChannel,
-//     required this.status,
-//     this.lastMessagePreview,
-//     this.lastMessageBy,
-//     this.lastMessageAt,
-//     required this.creation,
-//   });
-
-//   factory ChatChannel.fromJson(Map<String, dynamic> json) {
-//     return ChatChannel(
-//       name: json['name'] ?? '',
-//       student: json['student'] ?? '',
-//       studentName: json['student_name'] ?? '',
-//       classroom: json['classroom'] ?? '',
-//       academicYear: json['academic_year'] ?? '',
-//       ravenChannel: json['raven_channel'] ?? '',
-//       status: json['status'] ?? '',
-//       lastMessagePreview: json['last_message_preview'],
-//       lastMessageBy: json['last_message_by'],
-//       lastMessageAt: json['last_message_at'],
-//       creation: json['creation'] ?? '',
-//     );
-//   }
-
-//   /// Parsed DateTime of last message
-//   DateTime? get lastMessageTime {
-//     if (lastMessageAt == null || lastMessageAt!.isEmpty) return null;
-//     try {
-//       return DateTime.parse(lastMessageAt!.replaceFirst(' ', 'T'));
-//     } catch (_) {
-//       return null;
-//     }
-//   }
-// }
-
-// // ============================================================
-// // MESSAGE MODEL (matches get_channel_messages response)
-// // ============================================================
-// class ChatMessage {
-//   final String name;
-//   final String owner;
-//   final String text;
-//   final String messageType;
-//   final DateTime creation;
-//   final DateTime modified;
-//   final bool isEdited;
-//   final bool isReply;
-//   final MessageSendStatus sendStatus;
-
-//   ChatMessage({
-//     required this.name,
-//     required this.owner,
-//     required this.text,
-//     this.messageType = 'Text',
-//     required this.creation,
-//     required this.modified,
-//     this.isEdited = false,
-//     this.isReply = false,
-//     this.sendStatus = MessageSendStatus.sent,
-//   });
-
-//   factory ChatMessage.fromJson(Map<String, dynamic> json) {
-//     return ChatMessage(
-//       name: json['name'] ?? '',
-//       owner: json['owner'] ?? '',
-//       text: json['text'] ?? '',
-//       messageType: json['message_type'] ?? 'Text',
-//       creation: _parseDate(json['creation']),
-//       modified: _parseDate(json['modified'] ?? json['creation']),
-//       isEdited: json['is_edited'] == 1 || json['is_edited'] == true,
-//       isReply: json['is_reply'] == 1 || json['is_reply'] == true,
-//     );
-//   }
-
-//   static DateTime _parseDate(dynamic value) {
-//     if (value == null) return DateTime.now();
-//     try {
-//       return DateTime.parse(value.toString().replaceFirst(' ', 'T'));
-//     } catch (_) {
-//       return DateTime.now();
-//     }
-//   }
-
-//   ChatMessage copyWith({String? name, MessageSendStatus? sendStatus}) {
-//     return ChatMessage(
-//       name: name ?? this.name,
-//       owner: owner,
-//       text: text,
-//       messageType: messageType,
-//       creation: creation,
-//       modified: modified,
-//       isEdited: isEdited,
-//       isReply: isReply,
-//       sendStatus: sendStatus ?? this.sendStatus,
-//     );
-//   }
-
-//   bool isMine(String currentUserEmail) => owner == currentUserEmail;
-// }
-
-// enum MessageSendStatus { sending, sent, failed }
-
-// lib/features/chats/data/models/chat_models.dart
-
 // ============================================================
 // SENDER MODEL (matches nested `sender` object)
 // ============================================================
@@ -195,59 +67,113 @@ MessageType messageTypeFromString(String? raw) {
   }
 }
 
-// ============================================================
-// CHANNEL MODEL (unchanged)
-// ============================================================
 class ChatChannel {
   final String name;
-  final String student;
-  final String studentName;
-  final String classroom;
-  final String academicYear;
+  final String? student;
+  final String? studentName;
+  final String? classroom;
+  final String? academicYear;
   final String ravenChannel;
-  final String status;
+  final String? status;
   final String? lastMessagePreview;
   final String? lastMessageBy;
   final String? lastMessageAt;
-  final String creation;
+  final String? creation;
+  final String? channelType;
+  final bool? isAdminChannel;
+  final bool? isPinned;
+  final String? title;
+  final String? subtitle;
+  final String? avatarUrl;
+  final String? parentsDisplay;
+  final String? teachersDisplay;
 
   ChatChannel({
     required this.name,
-    required this.student,
-    required this.studentName,
-    required this.classroom,
-    required this.academicYear,
+    this.student,
+    this.studentName,
+    this.classroom,
+    this.academicYear,
     required this.ravenChannel,
-    required this.status,
+    this.status,
     this.lastMessagePreview,
     this.lastMessageBy,
     this.lastMessageAt,
-    required this.creation,
+    this.creation,
+    this.channelType,
+    this.isAdminChannel,
+    this.isPinned,
+    this.title,
+    this.subtitle,
+    this.avatarUrl,
+    this.parentsDisplay,
+    this.teachersDisplay,
   });
 
   factory ChatChannel.fromJson(Map<String, dynamic> json) {
     return ChatChannel(
       name: json['name'] ?? '',
-      student: json['student'] ?? '',
-      studentName: json['student_name'] ?? '',
-      classroom: json['classroom'] ?? '',
-      academicYear: json['academic_year'] ?? '',
+      student: json['student'],
+      studentName: json['student_name'],
+      classroom: json['classroom'],
+      academicYear: json['academic_year'],
       ravenChannel: json['raven_channel'] ?? '',
-      status: json['status'] ?? '',
+      status: json['status'],
       lastMessagePreview: json['last_message_preview'],
       lastMessageBy: json['last_message_by'],
       lastMessageAt: json['last_message_at'],
-      creation: json['creation'] ?? '',
+      creation: json['creation'],
+      channelType: json['channel_type'],
+      isAdminChannel: json['is_admin_channel'],
+      isPinned: json['is_pinned'],
+      title: json['title'],
+      subtitle: json['subtitle'],
+      avatarUrl: json['avatar_url'],
+      parentsDisplay: json['parents_display'],
+      teachersDisplay: json['teachers_display'],
     );
   }
 
   DateTime? get lastMessageTime {
-    if (lastMessageAt == null || lastMessageAt!.isEmpty) return null;
+    final raw = lastMessageAt;
+    if (raw == null || raw.isEmpty) return null;
     try {
-      return DateTime.parse(lastMessageAt!.replaceFirst(' ', 'T'));
+      return DateTime.parse(raw.replaceFirst(' ', 'T'));
     } catch (_) {
       return null;
     }
+  }
+
+  DateTime? get creationTime {
+    final raw = creation;
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return DateTime.parse(raw.replaceFirst(' ', 'T'));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool get isAdmin => isAdminChannel == true || channelType == 'Admin Support';
+
+  /// Display name: student name → title → fallback
+  String get displayTitle {
+    final s = studentName?.trim();
+    if (s != null && s.isNotEmpty) return s;
+    final t = title?.trim();
+    if (t != null && t.isNotEmpty) return t;
+    return 'Chat';
+  }
+
+  /// Display subtitle: preview → classroom → subtitle → ''
+  String get displaySubtitle {
+    final p = lastMessagePreview?.trim();
+    if (p != null && p.isNotEmpty) return p;
+    final c = classroom?.trim();
+    if (c != null && c.isNotEmpty) return c;
+    final s = subtitle?.trim();
+    if (s != null && s.isNotEmpty) return s;
+    return '';
   }
 }
 

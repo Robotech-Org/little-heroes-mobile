@@ -6,7 +6,6 @@ class ApiConstants {
   // BASE URL
 
   static String get baseUrl => dotenv.env['API_BASE_URL'] ?? '';
-  
 
   static String get socketUrl => dotenv.env['SOCKET_URL'] ?? baseUrl;
 
