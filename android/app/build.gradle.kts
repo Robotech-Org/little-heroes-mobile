@@ -52,7 +52,7 @@ android {
 
     buildTypes {
         release {
-            // ✅ Use the release keystore instead of the debug one
+            //    Use the release keystore instead of the debug one
             signingConfig = signingConfigs.getByName("release")
         }
     }

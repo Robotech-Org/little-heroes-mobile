@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:little_heroes_mobile/core/router/app_routes.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
@@ -157,7 +158,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
         const _SectionTitle(title: 'Attendance'),
         const SizedBox(height: 12),
-        const AttendanceSection(isPermitted: false),
+        const AttendanceSection(isPermitted: true),
+        // AttendanceSection(isPermitted: true),
       ],
     );
   }
@@ -480,7 +482,7 @@ class TeacherTools extends StatelessWidget {
       case AppRoutes.observations:
       case AppRoutes.addMoment:
       case AppRoutes.Compile_3_onth_report:
-        // context.push(tool.route);
+        context.push(tool.route); //  UNCOMMENT THIS
         break;
       default:
         break;

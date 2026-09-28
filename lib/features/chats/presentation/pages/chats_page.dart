@@ -588,7 +588,7 @@ class _ChatsPageState extends State<ChatsPage> {
     final isAdmin = channel.isAdmin;
     final titleText = channel.displayTitle;
 
-    // ✅ Prefer the API preview (stripped of HTML), fall back to displaySubtitle
+    //    Prefer the API preview (stripped of HTML), fall back to displaySubtitle
     final rawPreview = channel.lastMessagePreview;
     final subtitleText = (rawPreview != null && rawPreview.trim().isNotEmpty)
         ? _stripHtml(rawPreview)

@@ -248,7 +248,7 @@ class _DocumentViewerPageState extends State<DocumentViewerPage> {
       );
     }
 
-    // ✅ In-app rendering, no browser, no Frappe page.
+    //    In-app rendering, no browser, no Frappe page.
     return SfPdfViewer.memory(
       _pdfBytes!,
       canShowScrollHead: true,

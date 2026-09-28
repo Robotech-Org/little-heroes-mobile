@@ -1053,7 +1053,7 @@ class _ReportCard extends StatelessWidget {
     final statusColor = _statusColor(report.status, colors);
     final period = _formatPeriod(report.periodStartDate, report.periodEndDate);
 
-    // ✅ Fall back to a placeholder if the name is missing
+    //    Fall back to a placeholder if the name is missing
     final studentName = report.studentName.trim().isNotEmpty
         ? report.studentName
         : 'Student';
@@ -1105,7 +1105,7 @@ class _ReportCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ✅ Student name (bold, prominent)
+                        //    Student name (bold, prominent)
                         Text(
                           studentName,
                           maxLines: 1,
@@ -1116,7 +1116,7 @@ class _ReportCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        // ✅ Period below the name
+                        //    Period below the name
                         Text(
                           period.isEmpty ? 'Three Month Report' : period,
                           maxLines: 1,
