@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/common/home_header.dart';
-import '../widgets/common/recent_activity.dart';
 import '../widgets/common/section_header.dart';
-import '../widgets/common/upcoming_card.dart';
 import '../widgets/teacher/teacher_dashboard.dart';
-import '../widgets/teacher/teacher_qr_scanner_card.dart';
-import '../widgets/teacher/teacher_quick_actions.dart';
 
 class TeacherHomePage extends StatelessWidget {
   const TeacherHomePage({super.key});
@@ -28,7 +23,7 @@ class TeacherHomePage extends StatelessWidget {
                 const SizedBox(height: 28),
                 const SectionHeader(title: 'Quick Actions'),
                 const SizedBox(height: 14),
-                const TeacherQrScannerCard(),
+                // const TeacherQrScannerCard(),
                 const SizedBox(height: 28),
               ],
             ),

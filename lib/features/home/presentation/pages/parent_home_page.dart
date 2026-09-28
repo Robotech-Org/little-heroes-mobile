@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/common/home_header.dart';
-import '../widgets/common/recent_activity.dart';
-import '../widgets/common/section_header.dart';
-import '../widgets/common/upcoming_card.dart';
 import '../widgets/parent/parent_dashboard.dart';
 
 class ParentHomePage extends StatelessWidget {
@@ -33,7 +29,6 @@ class ParentHomePage extends StatelessWidget {
                   const ParentDashboard(),
 
                   const SizedBox(height: 28),
-
                 ]),
               ),
             ),

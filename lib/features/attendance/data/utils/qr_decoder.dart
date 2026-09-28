@@ -1,23 +1,21 @@
 import 'dart:convert';
 
-class QrCardPayload {
-  final String card; // ← "SIDC-2026-00004" — used as student_id
+class QrCard {
+  final String card;
   final String token;
   final int version;
 
-  const QrCardPayload({
+  const QrCard({
     required this.card,
     required this.token,
     required this.version,
   });
 }
 
-class QrPayloadDecoder {
-  QrPayloadDecoder._();
+class QrDecoder {
+  QrDecoder._();
 
-  /// QR format: `<base64url(json)>.<signature>`.
-  /// We decode only the first segment; the signature is verified server-side.
-  static QrCardPayload? tryDecode(String raw) {
+  static QrCard? tryDecode(String raw) {
     try {
       final parts = raw.split('.');
       if (parts.isEmpty) return null;
@@ -32,7 +30,7 @@ class QrPayloadDecoder {
       final card = json['card']?.toString() ?? '';
       if (card.isEmpty) return null;
 
-      return QrCardPayload(
+      return QrCard(
         card: card,
         token: json['token']?.toString() ?? '',
         version: (json['v'] as num?)?.toInt() ?? 1,

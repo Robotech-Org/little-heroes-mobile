@@ -1,11 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:little_heroes_mobile/core/network/socket/socket_service.dart';
-import 'package:little_heroes_mobile/features/attendance/data/datasources/attendance_remote_data_source.dart';
-import 'package:little_heroes_mobile/features/attendance/data/repositories/attendance_repository_impl.dart';
-import 'package:little_heroes_mobile/features/attendance/data/services/attendance_session_service.dart';
-import 'package:little_heroes_mobile/features/attendance/domain/repositories/attendance_repository.dart';
-import 'package:little_heroes_mobile/features/attendance/domain/usecases/sync_pending_sessions.dart';
+import 'package:little_heroes_mobile/features/attendance/data/datasources/classroom_attendance_datasource.dart';
+import 'package:little_heroes_mobile/features/attendance/data/datasources/gate_attendance_datasource.dart';
+import 'package:little_heroes_mobile/features/attendance/data/repositories/classroom_attendance_repository_impl.dart';
+import 'package:little_heroes_mobile/features/attendance/data/repositories/gate_attendance_repository_impl.dart';
+import 'package:little_heroes_mobile/features/attendance/data/services/gate_queue_service.dart';
+import 'package:little_heroes_mobile/features/attendance/domain/repositories/classroom_attendance_repository.dart';
+import 'package:little_heroes_mobile/features/attendance/domain/repositories/gate_attendance_repository.dart';
 import 'package:little_heroes_mobile/features/chats/data/datasources/chat_remote_datasource.dart';
 import 'package:little_heroes_mobile/features/chats/data/repositories/chat_repository_impl.dart';
 import 'package:little_heroes_mobile/features/chats/domain/repositories/chat_repository.dart';
@@ -482,37 +484,6 @@ Future<void> initDependencies() async {
   }
 
   // ============================================================
-  // ATTENDANCE
-  // ============================================================
-  if (!sl.isRegistered<AttendanceRemoteDataSource>()) {
-    sl.registerLazySingleton<AttendanceRemoteDataSource>(
-      () => AttendanceRemoteDataSourceImpl(sl<Dio>()),
-    );
-  }
-
-  if (!sl.isRegistered<AttendanceRepository>()) {
-    sl.registerLazySingleton<AttendanceRepository>(
-      () => AttendanceRepositoryImpl(
-        remoteDataSource: sl<AttendanceRemoteDataSource>(),
-      ),
-    );
-  }
-
-  if (!sl.isRegistered<AttendanceSessionService>()) {
-    sl.registerLazySingleton<AttendanceSessionService>(
-      () => AttendanceSessionService(),
-    );
-  }
-
-  if (!sl.isRegistered<SyncPendingSessions>()) {
-    sl.registerLazySingleton<SyncPendingSessions>(
-      () => SyncPendingSessions(
-        repository: sl<AttendanceRepository>(),
-        sessionService: sl<AttendanceSessionService>(),
-      ),
-    );
-  }
-  // ============================================================
   // PAYMENTS
   // ============================================================
   if (!sl.isRegistered<PaymentRemoteDataSource>()) {
@@ -581,6 +552,43 @@ Future<void> initDependencies() async {
   if (!sl.isRegistered<NewsletterRepository>()) {
     sl.registerLazySingleton<NewsletterRepository>(
       () => NewsletterRepositoryImpl(remote: sl<NewsletterRemoteDataSource>()),
+    );
+  }
+
+  // ============================================================
+  // ATTENDANCE — GATE (scanner)
+  // ============================================================
+  if (!sl.isRegistered<GateQueueService>()) {
+    sl.registerLazySingleton<GateQueueService>(() => GateQueueService());
+  }
+
+  if (!sl.isRegistered<GateAttendanceDataSource>()) {
+    sl.registerLazySingleton<GateAttendanceDataSource>(
+      () => GateAttendanceDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<GateAttendanceRepository>()) {
+    sl.registerLazySingleton<GateAttendanceRepository>(
+      () =>
+          GateAttendanceRepositoryImpl(remote: sl<GateAttendanceDataSource>()),
+    );
+  }
+
+  // ============================================================
+  // ATTENDANCE — CLASSROOM (list-based)
+  // ============================================================
+  if (!sl.isRegistered<ClassroomAttendanceDataSource>()) {
+    sl.registerLazySingleton<ClassroomAttendanceDataSource>(
+      () => ClassroomAttendanceDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<ClassroomAttendanceRepository>()) {
+    sl.registerLazySingleton<ClassroomAttendanceRepository>(
+      () => ClassroomAttendanceRepositoryImpl(
+        remote: sl<ClassroomAttendanceDataSource>(),
+      ),
     );
   }
 }

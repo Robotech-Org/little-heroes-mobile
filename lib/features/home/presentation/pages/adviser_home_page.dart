@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/teacher_dashboard.dart';
-import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/teacher_qr_scanner_card.dart';
 
 import '../widgets/adviser/adviser_dashboard.dart';
 import '../widgets/common/home_header.dart';
@@ -32,8 +31,7 @@ class AdviserHomePage extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   // const HomeStatCard(),
-                  const TeacherQrScannerCard(),
-
+                  // const TeacherQrScannerCard(),
                   const SizedBox(height: 28),
 
                   const SectionHeader(

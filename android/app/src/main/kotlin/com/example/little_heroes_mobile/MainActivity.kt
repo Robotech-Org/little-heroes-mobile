@@ -1,4 +1,4 @@
-package com.example.little_heroes_mobile
+package com.robotics.little_heroes_mobile 
 
 import io.flutter.embedding.android.FlutterActivity
 

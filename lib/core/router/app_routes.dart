@@ -55,4 +55,28 @@ class AppRoutes {
   static const String announcementDetail = '/announcement-detail';
   static const String momentDetail = '/moment-detail';
   static const String chat = '/chat';
+
+  static const String gateAttendance = '/teacher/gate-attendance';
+  static const String classroomAttendance = '/teacher/classroom-attendance';
+
+  // ═══════════════════════════════════════════════════════════
+  // ATTENDANCE ROUTES
+  // ═══════════════════════════════════════════════════════════
+
+  /// Gate scanner — used by the assigned gate teacher
+  /// Handles BOTH morning punch-in and evening punch-out
+
+  /// Classroom teacher — punch IN to class
+  static const String classroomPunchIn = '/teacher/classroom-punch-in';
+
+  /// Classroom teacher — punch OUT of class
+  static const String classroomPunchOut = '/teacher/classroom-punch-out';
+
+  // ═══════════════════════════════════════════════════════════
+  // ATTENDANCE
+  // ═══════════════════════════════════════════════════════════
+  // static const String gateAttendance = '/teacher/gate-attendance';
+  static const String attendanceList = '/teacher/attendance-list';
+  // static const String classroomPunchIn = '/teacher/classroom-punch-in';
+  // static const String classroomPunchOut = '/teacher/classroom-punch-out';
 }

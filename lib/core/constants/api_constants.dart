@@ -233,26 +233,6 @@ class ApiConstants {
       '/api/method/little_heroes.api.v1.moments.upload_moment_file';
 
   // ============================================================
-  // ATTENDANCE
-  // ============================================================
-  static const String scanQr =
-      '/api/method/little_heroes.api.v1.attendance.scan_qr';
-  static const String punchIn =
-      '/api/method/little_heroes.api.v1.attendance.punch_in';
-
-  static const String punchOut =
-      '/api/method/little_heroes.api.v1.attendance.punch_out';
-
-  static const String todayStatus =
-      '/api/method/little_heroes.api.v1.attendance.today_status';
-
-  static const String getAttendancePunch =
-      '/api/method/little_heroes.api.v1.attendance.get_attendance_punch';
-
-  static const String listAttendancePunches =
-      '/api/method/little_heroes.api.v1.attendance.list_attendance_punches';
-
-  // ============================================================
   // PAYMENTS
   // ============================================================
 
@@ -324,4 +304,37 @@ class ApiConstants {
   /// DELETE — Delete a Three Month Report
   static const String deleteThreeMonthReport =
       '/api/method/little_heroes.api.v1.three_month_reports.delete_three_month_report';
+
+  // ═══════════════════════════════════════════════════════════
+  // ATTENDANCE
+  // ═══════════════════════════════════════════════════════════
+
+  // Gate Teacher
+  static const String gatePunchIn =
+      '/api/method/little_heroes.api.v1.attendance.gate_punch_in';
+  static const String gatePunchOut =
+      '/api/method/little_heroes.api.v1.attendance.gate_punch_out';
+
+  // Classroom Teacher
+  static const String listArrivedStudents =
+      '/api/method/little_heroes.api.v1.attendance.list_arrived_students';
+  static const String punchIn =
+      '/api/method/little_heroes.api.v1.attendance.punch_in';
+  static const String punchOut =
+      '/api/method/little_heroes.api.v1.attendance.punch_out';
+
+  // Shared
+  static const String todayStatus =
+      '/api/method/little_heroes.api.v1.attendance.today_status';
+  // Classroom Teacher — roster-based punch from the classroom page
+  // static const String listArrivedStudents =
+  // '/api/method/little_heroes.api.v1.attendance.list_arrived_students';
+  static const String classroomPunchIn =
+      '/api/method/little_heroes.api.v1.attendance.punch_in';
+  static const String classroomPunchOut =
+      '/api/method/little_heroes.api.v1.attendance.punch_out';
+
+  /// Gate Scanner — assigned gate person scans QR cards
+  /// (morning punch-in, evening punch-out)
+  static const String gateAttendance = '/teacher/gate-attendance';
 }
