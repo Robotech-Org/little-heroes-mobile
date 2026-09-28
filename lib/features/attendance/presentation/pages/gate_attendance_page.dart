@@ -47,134 +47,195 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
   }
 
   // ═════════════════════════════════════════════════════════════
-  // SCAN
+  // SCAN LOOP — keeps reopening scanner until user taps Done
   // ═════════════════════════════════════════════════════════════
-  Future<void> _scan() async {
-    final result = await Navigator.push<QrScannerResult>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => QrScannerPage(
-          title: _mode == GateMode.morning
-              ? 'Morning — Scan Student'
-              : 'Evening — Scan Student',
-          instruction: 'Place the student QR card inside the frame',
+  Future<void> _startScanning() async {
+    while (mounted) {
+      // 1) Open scanner
+      final result = await Navigator.push<QrScannerResult>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QrScannerPage(
+            title: _mode == GateMode.morning
+                ? 'Morning — Scan Student'
+                : 'Evening — Scan Student',
+            instruction: 'Place the student QR card inside the frame',
+          ),
         ),
-      ),
-    );
-    if (!mounted || result == null) return;
-
-    final card = QrDecoder.tryDecode(result.value);
-    if (card == null || card.card.isEmpty) {
-      _showFeedback(
-        type: _FeedbackType.error,
-        title: 'Invalid card',
-        message: 'This QR code is not a student ID card.',
       );
-      return;
-    }
 
-    final existingIndex = _queue.indexWhere((s) => s.studentId == card.card);
-    if (existingIndex >= 0) {
-      final existing = _queue[existingIndex];
-      _showFeedback(
-        type: _FeedbackType.duplicate,
-        title: 'Already scanned',
-        message:
-            '${card.card} was already scanned at ${_fmt(existing.scannedAt)}.\n'
-            'It will not be added twice.',
+      // User backed out with system back → exit loop
+      if (!mounted || result == null) return;
+
+      // 2) Decode & validate
+      final card = QrDecoder.tryDecode(result.value);
+      if (card == null || card.card.isEmpty) {
+        final keepGoing = await _showScanResultDialog(
+          title: 'Invalid card',
+          message: 'This QR code is not a student ID card.\nTry again.',
+          icon: Icons.error_outline_rounded,
+          color: const Color(0xFFDC2626),
+          showDone: false,
+        );
+        if (!keepGoing) return;
+        continue;
+      }
+
+      // 3) Duplicate check
+      final existingIndex = _queue.indexWhere((s) => s.studentId == card.card);
+      if (existingIndex >= 0) {
+        final existing = _queue[existingIndex];
+        final keepGoing = await _showScanResultDialog(
+          title: 'Already scanned',
+          message:
+              '${card.card}\n\nWas already scanned at ${_fmt(existing.scannedAt)}.',
+          icon: Icons.info_outline_rounded,
+          color: const Color(0xFFF59E0B),
+          showDone: false,
+        );
+        if (!keepGoing) return;
+        continue;
+      }
+
+      // 4) Add to queue
+      final scan = PendingScan(
+        studentId: card.card,
+        qrPayload: result.value,
+        scannedAt: DateTime.now(),
       );
-      return;
+
+      final svc = di.sl<GateQueueService>();
+      if (_mode == GateMode.morning) {
+        await svc.addMorning(scan);
+      } else {
+        await svc.addEvening(scan);
+      }
+
+      await _loadQueue();
+      if (!mounted) return;
+      setState(() => _lastAddedId = card.card);
+
+      // 5) Show result dialog
+      final keepGoing = await _showScanResultDialog(
+        title: 'Scanned ✓',
+        message: '${card.card}\n\nTotal scanned: ${_queue.length}',
+        icon: Icons.check_rounded,
+        color: const Color(0xFF16A34A),
+        showDone: true,
+      );
+
+      // Done → exit loop; Scan Next → reopen scanner
+      if (!keepGoing) return;
     }
-
-    final scan = PendingScan(
-      studentId: card.card,
-      qrPayload: result.value,
-      scannedAt: DateTime.now(),
-    );
-
-    final svc = di.sl<GateQueueService>();
-    if (_mode == GateMode.morning) {
-      await svc.addMorning(scan);
-    } else {
-      await svc.addEvening(scan);
-    }
-
-    await _loadQueue();
-    if (!mounted) return;
-    setState(() => _lastAddedId = card.card);
-
-    _showFeedback(
-      type: _FeedbackType.success,
-      title: 'Scanned',
-      message: '${card.card}\nAdded to queue (${_queue.length} total).',
-    );
   }
 
-  void _showFeedback({
-    required _FeedbackType type,
+  // ═════════════════════════════════════════════════════════════
+  // RESULT DIALOG — returns true to keep scanning, false to stop
+  // ═════════════════════════════════════════════════════════════
+  Future<bool> _showScanResultDialog({
     required String title,
     required String message,
-  }) {
-    Color color;
-    IconData icon;
+    required IconData icon,
+    required Color color,
+    required bool showDone,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
 
-    switch (type) {
-      case _FeedbackType.success:
-        color = const Color(0xFF16A34A);
-        icon = Icons.check_rounded;
-        break;
-      case _FeedbackType.duplicate:
-        color = const Color(0xFFF59E0B);
-        icon = Icons.info_outline_rounded;
-        break;
-      case _FeedbackType.error:
-        color = const Color(0xFFDC2626);
-        icon = Icons.error_outline_rounded;
-        break;
-    }
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: color,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-          margin: const EdgeInsets.all(12),
+        return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
           ),
-          content: Row(
+          contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 8),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: Colors.white, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      message,
-                      style: const TextStyle(fontSize: 12, color: Colors.white),
-                    ),
-                  ],
+              // Icon circle
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 40),
+              ),
+              const SizedBox(height: 16),
+
+              // Title
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Message
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.5,
                 ),
               ),
             ],
           ),
-        ),
-      );
+          actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          actions: [
+            // Primary button
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: color,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  showDone ? 'Scan Next' : 'Try Again',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ),
+            // Secondary "Done" button (only on success)
+            if (showDone) ...[
+              const SizedBox(height: 4),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text(
+                    'Done',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+
+    return result ?? true;
   }
 
+  // ═════════════════════════════════════════════════════════════
+  // GPS
+  // ═════════════════════════════════════════════════════════════
   Future<Position?> _getPosition() async {
     var p = await Geolocator.checkPermission();
     if (p == LocationPermission.denied) {
@@ -196,7 +257,7 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
   }
 
   // ═════════════════════════════════════════════════════════════
-  // SAVE & CLEAR — shows per-student result sheet
+  // SAVE & CLEAR
   // ═════════════════════════════════════════════════════════════
   Future<void> _saveAndClear() async {
     if (_queue.isEmpty || _busy) return;
@@ -225,7 +286,7 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
 
       if (!mounted) return;
 
-      // Clear local queue after save (success or partial)
+      // Clear local queue
       final svc = di.sl<GateQueueService>();
       if (_mode == GateMode.morning) {
         await svc.clearMorning();
@@ -236,8 +297,7 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
       await _loadQueue();
       if (!mounted) return;
 
-      // ── SHOW PER-STUDENT RESULT SHEET ────────────────
-      await _showSaveResultSheet(mode: _mode, response: res);
+      await _showSaveResultSheet(response: res);
     } catch (e) {
       if (!mounted) return;
       SnackbarUtils.showError(
@@ -250,25 +310,49 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
   }
 
   // ═════════════════════════════════════════════════════════════
-  // RESULT SHEET — successful + failed lists
+  // SAVE RESULT SHEET — successful + failed lists
   // ═════════════════════════════════════════════════════════════
-  Future<void> _showSaveResultSheet({
-    required GateMode mode,
-    required PunchResponse response,
-  }) async {
+  Future<void> _showSaveResultSheet({required PunchResponse response}) async {
     final allOk = response.failedCount == 0 && response.successCount > 0;
 
-    // If everything succeeded → quick snackbar is enough
+    // Quick success — just a snackbar
     if (allOk) {
-      _showFeedback(
-        type: _FeedbackType.success,
-        title: 'All saved',
-        message: '${response.successCount} student(s) saved successfully.',
-      );
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'All saved — ${response.successCount} student(s).',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
       return;
     }
 
-    // Otherwise → show the detailed result sheet
+    // Partial/failed — full sheet
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -287,7 +371,6 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
           builder: (_, scrollController) {
             return Column(
               children: [
-                // ── Drag handle ─────────────────────────
                 Container(
                   margin: const EdgeInsets.only(top: 12, bottom: 8),
                   width: 40,
@@ -297,8 +380,6 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-
-                // ── Title ───────────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
@@ -323,20 +404,15 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
-                // ── Body ────────────────────────────────
                 Expanded(
                   child: ListView(
                     controller: scrollController,
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                     children: [
-                      // ✅ Successful section
                       if (response.successfulScans.isNotEmpty) ...[
                         _sectionHeader(
                           theme,
-                          colors,
                           icon: Icons.check_circle_rounded,
                           color: const Color(0xFF16A34A),
                           label: 'Successful (${response.successCount})',
@@ -355,13 +431,10 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
                           ),
                         ),
                       ],
-
-                      // ❌ Failed section
                       if (response.failedScans.isNotEmpty) ...[
                         const SizedBox(height: 20),
                         _sectionHeader(
                           theme,
-                          colors,
                           icon: Icons.cancel_rounded,
                           color: const Color(0xFFDC2626),
                           label: 'Failed (${response.failedCount})',
@@ -403,9 +476,9 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
                                   'Ask the parent to visit the office to fix '
                                   'these cards. Successful students are already '
                                   'saved.',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12,
-                                    color: const Color(0xFF92400E),
+                                    color: Color(0xFF92400E),
                                     height: 1.4,
                                   ),
                                 ),
@@ -417,8 +490,6 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
                     ],
                   ),
                 ),
-
-                // ── Done button ─────────────────────────
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
@@ -454,8 +525,7 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
   }
 
   Widget _sectionHeader(
-    ThemeData theme,
-    ColorScheme colors, {
+    ThemeData theme, {
     required IconData icon,
     required Color color,
     required String label,
@@ -531,12 +601,10 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
     );
   }
 
-  /// Maps raw server reasons to friendly copy.
   String _friendlyFailure(String? raw) {
     if (raw == null || raw.isEmpty) return 'Server rejected this scan';
 
     final r = raw.toLowerCase();
-
     if (r.contains('missing qr_payload')) return 'Nothing was scanned.';
     if (r.contains('invalid qr')) return 'This is not a student card.';
     if (r.contains('signature verification')) {
@@ -544,7 +612,6 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
     }
     if (r.contains('voided')) return 'This card is no longer active.';
     if (r.contains('not found')) return 'Card not recognised.';
-
     return raw;
   }
 
@@ -627,17 +694,20 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
       ),
       body: Column(
         children: [
+          // ── Mode tabs ────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: _modeTabs(theme, colors),
           ),
+
+          // ── Scan button ──────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: SizedBox(
               width: double.infinity,
               height: 56,
               child: ElevatedButton.icon(
-                onPressed: _busy ? null : _scan,
+                onPressed: _busy ? null : _startScanning,
                 icon: const Icon(Icons.qr_code_scanner_rounded, size: 22),
                 label: Text(
                   isMorning ? 'Scan Arriving Student' : 'Scan Leaving Student',
@@ -656,6 +726,8 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
               ),
             ),
           ),
+
+          // ── Queue counter ────────────────────────────
           if (_queue.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -684,6 +756,8 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
                 ),
               ),
             ),
+
+          // ── Queue list ───────────────────────────────
           Expanded(child: _buildQueue(theme, colors)),
         ],
       ),
@@ -954,5 +1028,3 @@ class _GateAttendancePageState extends State<GateAttendancePage> {
         '${l.minute.toString().padLeft(2, '0')}';
   }
 }
-
-enum _FeedbackType { success, duplicate, error }
