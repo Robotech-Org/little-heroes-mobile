@@ -6,7 +6,9 @@ import 'attendance_action_bar.dart';
 import 'attendance_action_grid_card.dart';
 
 class AttendanceSection extends StatelessWidget {
-  const AttendanceSection({super.key});
+  final bool isPermitted;
+
+  const AttendanceSection({super.key, this.isPermitted = false});
 
   @override
   Widget build(BuildContext context) {
@@ -16,31 +18,32 @@ class AttendanceSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // ══════════════════════════════════════════════
-        // Row 1: two grid cards
+        // Row 1: two grid cards — ONLY when permitted
         // ══════════════════════════════════════════════
-        Row(
-          children: [
-            Expanded(
-              child: AttendanceActionGridCard(
-                title: 'Gate Scanner',
-                description: 'Scan QR cards',
-                icon: Icons.qr_code_scanner_rounded,
-                onTap: () => context.push(AppRoutes.gateAttendance),
+        if (isPermitted) ...[
+          Row(
+            children: [
+              Expanded(
+                child: AttendanceActionGridCard(
+                  title: 'Gate Scanner',
+                  description: 'Scan QR cards',
+                  icon: Icons.qr_code_scanner_rounded,
+                  onTap: () => context.push(AppRoutes.gateAttendance),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AttendanceActionGridCard(
-                title: 'Attendance List',
-                description: 'Scanned today',
-                icon: Icons.list_alt_rounded,
-                onTap: () => context.push(AppRoutes.attendanceList),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AttendanceActionGridCard(
+                  title: 'Attendance List',
+                  description: 'Scanned today',
+                  icon: Icons.list_alt_rounded,
+                  onTap: () => context.push(AppRoutes.attendanceList),
+                ),
               ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
 
         // ══════════════════════════════════════════════
         // Row 2: full-width Punch In
