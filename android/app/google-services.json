@@ -7,26 +7,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:293817589861:android:3339e311e0405c3c2e268c",
-        "android_client_info": {
-          "package_name": "com.example.little_heroes_mobile"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDlhy9870oESCR-2kHbLQATIJAyuJvl8z4"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:293817589861:android:77868fcfe46ae1812e268c",
+        "mobilesdk_app_id": "1:293817589861:android:8617e9b5f5398a542e268c",
         "android_client_info": {
           "package_name": "com.robotics.little_heroes_mobile"
         }

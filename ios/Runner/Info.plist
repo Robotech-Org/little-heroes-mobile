@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Little Heroes Mobile</string>
+	<string>Little Heroes</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- ══════════════════════════════════════════════════════ -->
+	<!-- FLUTTER SCENE MANIFEST (keep as-is)                    -->
+	<!-- ══════════════════════════════════════════════════════ -->
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -47,6 +51,7 @@
 			</array>
 		</dict>
 	</dict>
+
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -66,5 +71,61 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
+	<!-- ══════════════════════════════════════════════════════ -->
+	<!-- CAMERA — for QR scanning                               -->
+	<!-- ══════════════════════════════════════════════════════ -->
+	<key>NSCameraUsageDescription</key>
+	<string>Little Heroes needs camera access to scan student ID cards for attendance.</string>
+
+	<!-- ══════════════════════════════════════════════════════ -->
+	<!-- LOCATION — for attendance GPS                          -->
+	<!-- ══════════════════════════════════════════════════════ -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Little Heroes uses your location to record attendance at the school gate.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Little Heroes uses your location to record attendance at the school gate.</string>
+
+	<!-- ══════════════════════════════════════════════════════ -->
+	<!-- PHOTOS — for chat attachments / moments                -->
+	<!-- ══════════════════════════════════════════════════════ -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Little Heroes needs photo access so you can attach images to messages.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Little Heroes needs permission to save photos to your library.</string>
+
+	<!-- ══════════════════════════════════════════════════════ -->
+	<!-- MICROPHONE — uncomment only if you record voice        -->
+	<!-- ══════════════════════════════════════════════════════ -->
+	<!--
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Little Heroes needs microphone access to record voice messages.</string>
+	-->
+
+	<!-- ══════════════════════════════════════════════════════ -->
+	<!-- DEEP LINKS — for Chapa callback and external links     -->
+	<!-- ══════════════════════════════════════════════════════ -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>et.assetflow.littleheroes</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>littleheroes</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- ══════════════════════════════════════════════════════ -->
+	<!-- APNs trust — HTTPS-only                                -->
+	<!-- ══════════════════════════════════════════════════════ -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
 </dict>
 </plist>
