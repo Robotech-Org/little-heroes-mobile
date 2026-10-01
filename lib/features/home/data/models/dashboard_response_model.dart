@@ -33,30 +33,6 @@ class DashboardResponse {
   }
 }
 
-// ============================================================
-// TEACHER DATA
-// ============================================================
-
-// class TeacherData {
-//   final TeacherInfo teacher;
-//   final ThemeInfo theme;
-//   final DashboardMetrics dashboard;
-
-//   TeacherData({
-//     required this.teacher,
-//     required this.theme,
-//     required this.dashboard,
-//   });
-
-//   factory TeacherData.fromJson(Map<String, dynamic> json) {
-//     return TeacherData(
-//       teacher: TeacherInfo.fromJson(json['teacher'] ?? {}),
-//       theme: ThemeInfo.fromJson(json['theme'] ?? {}),
-//       dashboard: DashboardMetrics.fromJson(json['dashboard'] ?? {}),
-//     );
-//   }
-// }
-
 // ════════════════════════════════════════════════════════════
 // TEACHER DATA
 // ════════════════════════════════════════════════════════════
@@ -84,7 +60,7 @@ class TeacherData {
 }
 
 // ════════════════════════════════════════════════════════════
-// ATTENDANCE PERMISSION — NEW
+// ATTENDANCE PERMISSION
 // ════════════════════════════════════════════════════════════
 class AttendancePermission {
   /// True when the teacher is allowed to use the Gate Scanner and
@@ -94,10 +70,13 @@ class AttendancePermission {
   const AttendancePermission({required this.isPermitted});
 
   factory AttendancePermission.fromJson(Map<String, dynamic> json) {
-    // Accepts `is_permitted` OR `isPermitted` — tolerant to snake/camel case
-    final value = json['is_permitted'] ?? json['isPermitted'];
+    // Backend uses `is_gate_permitted`. Fall back to other common keys
+    // for backward compatibility.
+    final value =
+        json['is_gate_permitted'] ??
+        json['is_permitted'] ??
+        json['isPermitted'];
 
-    // Default to false if backend hasn't added the field yet
     return AttendancePermission(
       isPermitted: value == true || value == 1 || value == 'true',
     );

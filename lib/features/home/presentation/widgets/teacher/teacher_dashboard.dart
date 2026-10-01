@@ -158,8 +158,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
         const _SectionTitle(title: 'Attendance'),
         const SizedBox(height: 12),
-        const AttendanceSection(isPermitted: true),
-        // AttendanceSection(isPermitted: true),
+
+        AttendanceSection(isPermitted: data.attendance.isPermitted),
       ],
     );
   }
