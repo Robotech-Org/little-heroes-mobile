@@ -16,7 +16,7 @@ abstract class ThreeMonthReportRemoteDataSource {
 
   Future<ThreeMonthReportModel> getThreeMonthReport(String reportName);
 
-  Future<ThreeMonthReportModel> createThreeMonthReport(
+  Future<ThreeMonthReportModel> createThreeMonthReportInternal(
     Map<String, dynamic> data,
   );
 
@@ -25,6 +25,9 @@ abstract class ThreeMonthReportRemoteDataSource {
     required Map<String, dynamic> data,
   });
   Future<String> getThreeMonthReportPdf(String reportName);
+  Future<ThreeMonthReportModel> createThreeMonthReportTmr(
+    Map<String, dynamic> data,
+  );
 }
 
 class ThreeMonthReportRemoteDataSourceImpl
@@ -110,12 +113,12 @@ class ThreeMonthReportRemoteDataSourceImpl
   // CREATE
   // ═════════════════════════════════════════════════════════════
   @override
-  Future<ThreeMonthReportModel> createThreeMonthReport(
+  Future<ThreeMonthReportModel> createThreeMonthReportInternal(
     Map<String, dynamic> data,
   ) async {
     try {
       final response = await dio.post(
-        ApiConstants.createThreeMonthReport, //    fixed
+        ApiConstants.createThreeMonthReportInternal, //    fixed
         data: data,
       );
 
@@ -188,6 +191,33 @@ class ThreeMonthReportRemoteDataSourceImpl
         throw Exception('PDF URL not available');
       }
       return fileUrl;
+    } on DioException catch (e) {
+      DioErrorHandler.handle(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  @override
+  Future<ThreeMonthReportModel> createThreeMonthReportTmr(
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await dio.post(
+        ApiConstants.createThreeMonthReportTmr,
+        data: data,
+      );
+
+      final responseData = response.data as Map<String, dynamic>;
+      final message = responseData['message'] ?? {};
+      final reportData = message['data'] ?? {};
+
+      if (reportData is Map<String, dynamic>) {
+        return ThreeMonthReportModel.fromJson(reportData);
+      }
+
+      throw Exception('Failed to create TMR');
     } on DioException catch (e) {
       DioErrorHandler.handle(e);
       rethrow;

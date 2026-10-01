@@ -282,8 +282,10 @@ class ApiConstants {
   // ============================================================
 
   /// POST — Create a Three Month Report (Teacher)
-  static const String createThreeMonthReport =
-      '/api/method/little_heroes.api.v1.three_month_reports.create_three_month_report';
+  // static const String createThreeMonthReport =
+  //     '/api/method/little_heroes.api.v1.three_month_reports.create_three_month_report';
+  static const String createThreeMonthReportInternal =
+      '/api/method/little_heroes.api.v1.internal_three_month_reports.create_internal_three_month_report';
 
   /// PUT — Update a Three Month Report (Teacher)
   static const String updateThreeMonthReport =
@@ -291,11 +293,11 @@ class ApiConstants {
 
   /// GET — Get a single Three Month Report
   static const String getThreeMonthReport =
-      '/api/method/little_heroes.api.v1.three_month_reports.get_three_month_report';
+      '/api/method/little_heroes.api.v1.internal_three_month_reports.get_internal_three_month_report';
 
   /// GET — List Three Month Reports (paginated)
   static const String listThreeMonthReports =
-      '/api/method/little_heroes.api.v1.three_month_reports.list_three_month_reports';
+      '/api/method/little_heroes.api.v1.internal_three_month_reports.list_internal_three_month_reports';
 
   /// GET — Get the PDF download URL
   static const String getThreeMonthReportPdf =
@@ -304,6 +306,13 @@ class ApiConstants {
   /// DELETE — Delete a Three Month Report
   static const String deleteThreeMonthReport =
       '/api/method/little_heroes.api.v1.three_month_reports.delete_three_month_report';
+
+  ///////////////////////////////////for parent-facing three month report (TMR) APIs
+
+  /// POST — Create a Parent-Facing Three Month Report (TMR)
+  static const String createThreeMonthReportTmr =
+      '/api/method/little_heroes.api.v1.three_month_reports.create_three_month_report';
+  ////////////////////////////////// end of parent-facing three month report (TMR) APIs
 
   // ═══════════════════════════════════════════════════════════
   // ATTENDANCE

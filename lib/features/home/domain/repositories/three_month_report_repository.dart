@@ -23,4 +23,8 @@ abstract class ThreeMonthReportRepository {
     required Map<String, dynamic> data,
   });
   Future<String> getThreeMonthReportPdf(String reportName);
+
+  Future<ThreeMonthReportModel> createThreeMonthReportTmr(
+    Map<String, dynamic> data,
+  );
 }

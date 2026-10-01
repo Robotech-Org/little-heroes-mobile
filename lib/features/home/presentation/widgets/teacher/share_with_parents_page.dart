@@ -8,6 +8,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.
 import 'package:little_heroes_mobile/features/home/data/models/framework_domain_model.dart';
 import 'package:little_heroes_mobile/features/home/data/models/three_month_narrative_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/framework_domain_repository.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
 import 'package:little_heroes_mobile/features/students/domain/entities/student.dart';
 import 'package:little_heroes_mobile/features/students/domain/repositories/student_repository.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
@@ -33,16 +34,23 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
   final Map<String, DomainNarrativeEntry> _entries = {};
 
   // ── Step tracking
-  int _step = 0; // 0 = student picker, 1..N = domain editors, N+1 = review
+  int _step = 0;
   bool _isSaving = false;
 
-  // One controller per domain, created lazily.
+  // ── Report metadata
+  DateTime _periodStart = DateTime.now().subtract(const Duration(days: 90));
+  DateTime _periodEnd = DateTime.now();
+  final TextEditingController _introductionController = TextEditingController();
+  final TextEditingController _academicYearController = TextEditingController();
+
+  // One controller per domain
   final Map<String, TextEditingController> _narrativeControllers = {};
   final Map<String, TextEditingController> _summaryControllers = {};
 
   @override
   void initState() {
     super.initState();
+    _academicYearController.text = _currentAcademicYear();
     _loadData();
   }
 
@@ -54,6 +62,8 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
     for (final c in _summaryControllers.values) {
       c.dispose();
     }
+    _introductionController.dispose();
+    _academicYearController.dispose();
     super.dispose();
   }
 
@@ -94,7 +104,6 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
       if (!mounted) return;
       setState(() {
         _domains = sorted;
-        // Seed an empty entry + controllers for each domain
         for (final d in sorted) {
           _entries[d.domainCode] = DomainNarrativeEntry(
             domainCode: d.domainCode,
@@ -118,9 +127,11 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
       SnackbarUtils.showError(context, 'Select a student first');
       return;
     }
-    if (_step > 0 && _step <= _domains.length) {
-      // Persist current domain entry
-      final domain = _domains[_step - 1];
+
+    // Persist domain editor on the domain steps
+    final domainIndex = _step - 2;
+    if (domainIndex >= 0 && domainIndex < _domains.length) {
+      final domain = _domains[domainIndex];
       _entries[domain.domainCode] = DomainNarrativeEntry(
         domainCode: domain.domainCode,
         domainTitle: domain.domainTitle,
@@ -128,6 +139,7 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
         summary: _summaryControllers[domain.domainCode]?.text.trim() ?? '',
       );
     }
+
     setState(() => _step++);
   }
 
@@ -136,13 +148,17 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
   }
 
   void _jumpToDomain(int domainIndex) {
-    setState(() => _step = domainIndex + 1);
+    setState(() => _step = domainIndex + 2);
   }
 
+  // ═════════════════════════════════════════════════════════════
+  // SUBMIT — wired to real TMR API
+  // ═════════════════════════════════════════════════════════════
   Future<void> _submit() async {
-    // Persist last domain
-    if (_step > 0 && _step <= _domains.length) {
-      final domain = _domains[_step - 1];
+    // Persist last domain if applicable
+    final lastDomainIndex = _step - 2;
+    if (lastDomainIndex >= 0 && lastDomainIndex < _domains.length) {
+      final domain = _domains[lastDomainIndex];
       _entries[domain.domainCode] = DomainNarrativeEntry(
         domainCode: domain.domainCode,
         domainTitle: domain.domainTitle,
@@ -174,18 +190,38 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
         return;
       }
 
-      final model = ThreeMonthNarrativeModel(
-        studentId: _selectedStudent!.id,
-        studentName: _selectedStudent!.name,
-        monthRange: _getMonthRange(),
-        domains: _entries.values.toList(),
-        savedAt: DateTime.now(),
-      );
+      // ── Build the TMR payload matching the API schema
+      final assessments = _domains
+          .where((d) => (_entries[d.domainCode]?.narrative ?? '').isNotEmpty)
+          .map(
+            (d) => {
+              'domain': d.domainTitle,
+              'teacher_notes': _entries[d.domainCode]!.narrative,
+            },
+          )
+          .toList();
 
-      // TODO: wire to real repository
-      // final repo = di.sl<ThreeMonthNarrativeRepository>();
-      // await repo.submit(model);
-      await Future.delayed(const Duration(milliseconds: 800));
+      final intro = _introductionController.text.trim();
+      final reportIntroduction = intro.isEmpty
+          ? '<p>Three month progress report.</p>'
+          : '<p>$intro</p>';
+
+      final academicYear = _academicYearController.text.trim().isEmpty
+          ? _currentAcademicYear()
+          : _academicYearController.text.trim();
+
+      final payload = {
+        'student': _selectedStudent!.id,
+        'classroom': _getClassroomForStudent(),
+        'academic_year': academicYear,
+        'period_start_date': _formatDate(_periodStart),
+        'period_end_date': _formatDate(_periodEnd),
+        'report_introduction': reportIntroduction,
+        'assessments': assessments,
+      };
+
+      final repo = di.sl<ThreeMonthReportRepository>();
+      final report = await repo.createThreeMonthReportTmr(payload);
 
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -193,7 +229,7 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
         context,
         'Submitted for ${_selectedStudent!.name}',
       );
-      Navigator.pop(context);
+      Navigator.pop(context, report);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -201,8 +237,22 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
     }
   }
 
-  String _getMonthRange() {
+  // ── Helpers
+  String _formatDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  String _currentAcademicYear() {
     final now = DateTime.now();
+    final startYear = now.month >= 9 ? now.year : now.year - 1;
+    return '$startYear-${startYear + 1}';
+  }
+
+  String _getClassroomForStudent() {
+    // TODO: replace with real classroom source from student
+    return 'Test Room 3';
+  }
+
+  String _getMonthRange() {
     const names = [
       'January',
       'February',
@@ -217,8 +267,28 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
       'November',
       'December',
     ];
-    final start = now.subtract(const Duration(days: 90));
-    return '${names[start.month - 1]} – ${names[now.month - 1]} ${now.year}';
+    return '${names[_periodStart.month - 1]} ${_periodStart.day} – '
+        '${names[_periodEnd.month - 1]} ${_periodEnd.day}, ${_periodEnd.year}';
+  }
+
+  Future<void> _pickPeriodStart() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _periodStart,
+      firstDate: DateTime(2020),
+      lastDate: _periodEnd,
+    );
+    if (picked != null) setState(() => _periodStart = picked);
+  }
+
+  Future<void> _pickPeriodEnd() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _periodEnd,
+      firstDate: _periodStart,
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _periodEnd = picked);
   }
 
   @override
@@ -258,13 +328,16 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
 
     if (_step == 0) return _buildStudentStep(theme);
 
-    // Step index in domain list
-    final domainIndex = _step - 1;
-    if (domainIndex < _domains.length) {
+    // Step 1: Meta (academic year, period dates, intro)
+    if (_step == 1) return _buildMetaStep(theme, isDark);
+
+    // Steps 2..N+1: Domain editors
+    final domainIndex = _step - 2;
+    if (domainIndex >= 0 && domainIndex < _domains.length) {
       return _buildDomainEditor(theme, isDark, domainIndex);
     }
 
-    // Review step
+    // Final: Review
     return _buildReviewStep(theme, isDark);
   }
 
@@ -298,10 +371,12 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceVariant.withValues(alpha: 0.2),
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.4,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text('No students available'),
+              child: const Text('No students available'),
             )
           else
             ..._students.map((s) {
@@ -384,7 +459,197 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
   }
 
   // ═════════════════════════════════════════════════════════════
-  // STEP 1..N — Domain editor
+  // STEP 1 — Academic Year + Period dates + Introduction
+  // ═════════════════════════════════════════════════════════════
+  Widget _buildMetaStep(ThemeData theme, bool isDark) {
+    final colorScheme = theme.colorScheme;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Report Details',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Set the academic year, period dates, and a short introduction.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Academic Year
+          Text(
+            'Academic Year',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Format: YYYY-YYYY (e.g. 2026-2027)',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.2),
+              ),
+            ),
+            child: TextField(
+              controller: _academicYearController,
+              keyboardType: TextInputType.text,
+              decoration: InputDecoration(
+                hintText: '2026-2027',
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(16),
+                hintStyle: TextStyle(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+                prefixIcon: Icon(
+                  Icons.school_outlined,
+                  color: colorScheme.primary,
+                ),
+              ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Period Start
+          _dateField(
+            theme: theme,
+            label: 'Period Start',
+            value: _periodStart,
+            onTap: _pickPeriodStart,
+          ),
+          const SizedBox(height: 16),
+
+          // Period End
+          _dateField(
+            theme: theme,
+            label: 'Period End',
+            value: _periodEnd,
+            onTap: _pickPeriodEnd,
+          ),
+          const SizedBox(height: 24),
+
+          // Introduction
+          Text(
+            'Report Introduction',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'A short welcome message that appears at the top of the report.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.2),
+              ),
+            ),
+            child: TextField(
+              controller: _introductionController,
+              minLines: 3,
+              maxLines: 6,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'Welcome to the first term report!',
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(16),
+                hintStyle: TextStyle(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dateField({
+    required ThemeData theme,
+    required String label,
+    required DateTime value,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.calendar_today_rounded,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _formatDate(value),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  // STEP 2..N+1 — Domain editor
   // ═════════════════════════════════════════════════════════════
   Widget _buildDomainEditor(ThemeData theme, bool isDark, int domainIndex) {
     final domain = _domains[domainIndex];
@@ -396,7 +661,6 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Progress indicator
           Row(
             children: [
               Text(
@@ -428,7 +692,6 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
           ),
           const SizedBox(height: 24),
 
-          // Domain header
           Row(
             children: [
               Container(
@@ -483,7 +746,6 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
           ),
           const SizedBox(height: 24),
 
-          // Narrative
           Text(
             'Narrative',
             style: theme.textTheme.titleSmall?.copyWith(
@@ -526,7 +788,6 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
           ),
           const SizedBox(height: 20),
 
-          // Summary
           Text(
             'Summary',
             style: theme.textTheme.titleSmall?.copyWith(
@@ -571,7 +832,7 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
   }
 
   // ═════════════════════════════════════════════════════════════
-  // FINAL STEP — Review & Submit
+  // FINAL — Review & Submit
   // ═════════════════════════════════════════════════════════════
   Widget _buildReviewStep(ThemeData theme, bool isDark) {
     final colorScheme = theme.colorScheme;
@@ -596,7 +857,6 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
           ),
           const SizedBox(height: 20),
 
-          // Student summary card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -606,35 +866,77 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
                 color: colorScheme.primary.withValues(alpha: 0.2),
               ),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.person_rounded, color: colorScheme.primary),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                Row(
+                  children: [
+                    Icon(Icons.person_rounded, color: colorScheme.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
                         _selectedStudent?.name ?? '',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      Text(
-                        _getMonthRange(),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.school_outlined,
+                      size: 14,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _academicYearController.text.trim().isEmpty
+                          ? _currentAcademicYear()
+                          : _academicYearController.text.trim(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 14,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _getMonthRange(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_introductionController.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    _introductionController.text.trim(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.5,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          // Domain list
           ..._domains.asMap().entries.map((e) {
             final i = e.key;
             final d = e.value;
@@ -729,13 +1031,12 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
   }
 
   // ═════════════════════════════════════════════════════════════
-  // Bottom bar — Back / Next / Submit
+  // Bottom bar
   // ═════════════════════════════════════════════════════════════
   Widget _buildBottomBar(ThemeData theme) {
     final colorScheme = theme.colorScheme;
-    final totalSteps = _domains.length + 1; // student + domains + review
-    final isReview = _step > _domains.length;
-    final isStudent = _step == 0;
+    final isReview = _step > _domains.length + 1;
+    final isFirst = _step == 0;
 
     return SafeArea(
       child: Container(
@@ -748,8 +1049,7 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
         ),
         child: Row(
           children: [
-            // Back button (hidden on first step)
-            if (!isStudent) ...[
+            if (!isFirst) ...[
               Expanded(
                 child: OutlinedButton(
                   onPressed: _isSaving ? null : _back,
@@ -800,7 +1100,7 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              isStudent
+                              isFirst
                                   ? 'Start'
                                   : isReview
                                   ? 'Submit to Admin'

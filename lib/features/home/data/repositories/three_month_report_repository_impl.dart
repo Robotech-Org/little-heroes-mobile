@@ -35,7 +35,7 @@ class ThreeMonthReportRepositoryImpl implements ThreeMonthReportRepository {
   Future<ThreeMonthReportModel> createThreeMonthReport(
     Map<String, dynamic> data,
   ) {
-    return remoteDataSource.createThreeMonthReport(data);
+    return remoteDataSource.createThreeMonthReportInternal(data);
   }
 
   @override
@@ -52,5 +52,12 @@ class ThreeMonthReportRepositoryImpl implements ThreeMonthReportRepository {
   @override
   Future<String> getThreeMonthReportPdf(String reportName) {
     return remoteDataSource.getThreeMonthReportPdf(reportName);
+  }
+
+  @override
+  Future<ThreeMonthReportModel> createThreeMonthReportTmr(
+    Map<String, dynamic> data,
+  ) {
+    return remoteDataSource.createThreeMonthReportTmr(data);
   }
 }
