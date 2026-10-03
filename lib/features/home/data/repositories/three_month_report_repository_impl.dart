@@ -27,6 +27,19 @@ class ThreeMonthReportRepositoryImpl implements ThreeMonthReportRepository {
   }
 
   @override
+  Future<ThreeMonthReportResponseModel> getThreeMonthReportsParent({
+    int page = 1,
+    int pageSize = 20,
+    String? student,
+  }) {
+    return remoteDataSource.getThreeMonthReportsParent(
+      page: page,
+      pageSize: pageSize,
+      student: student,
+    );
+  }
+
+  @override
   Future<ThreeMonthReportModel> getThreeMonthReport(String reportName) {
     return remoteDataSource.getThreeMonthReport(reportName);
   }

@@ -10,7 +10,11 @@ abstract class ThreeMonthReportRepository {
     String? month,
     int? year,
   });
-
+  Future<ThreeMonthReportResponseModel> getThreeMonthReportsParent({
+    int page = 1,
+    int pageSize = 20,
+    String? student,
+  });
   Future<ThreeMonthReportModel> getThreeMonthReport(String reportName);
 
   Future<ThreeMonthReportModel> createThreeMonthReport(

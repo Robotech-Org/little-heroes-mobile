@@ -13,6 +13,11 @@ abstract class ThreeMonthReportRemoteDataSource {
     String? month,
     int? year,
   });
+  Future<ThreeMonthReportResponseModel> getThreeMonthReportsParent({
+    int page = 1,
+    int pageSize = 20,
+    String? student,
+  });
 
   Future<ThreeMonthReportModel> getThreeMonthReport(String reportName);
 
@@ -101,6 +106,44 @@ class ThreeMonthReportRemoteDataSourceImpl
       }
 
       throw Exception('Report not found');
+    } on DioException catch (e) {
+      DioErrorHandler.handle(e);
+      rethrow;
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // PARENT-FACING LIST
+  //   Parents only see reports with status "Shared with Parent"
+  // ─────────────────────────────────────────────
+  @override
+  Future<ThreeMonthReportResponseModel> getThreeMonthReportsParent({
+    int page = 1,
+    int pageSize = 20,
+    String? student,
+  }) async {
+    try {
+      final Map<String, dynamic> queryParams = {
+        'page': page,
+        'page_size': pageSize,
+      };
+
+      if (student != null && student.isNotEmpty) {
+        queryParams['student'] = student;
+      }
+
+      final response = await dio.get(
+        ApiConstants.listThreeMonthReportsparents, // ← parent-facing endpoint
+        queryParameters: queryParams,
+      );
+
+      if (response.data is Map<String, dynamic>) {
+        return ThreeMonthReportResponseModel.fromJson(response.data);
+      }
+
+      throw Exception('Invalid response format');
     } on DioException catch (e) {
       DioErrorHandler.handle(e);
       rethrow;

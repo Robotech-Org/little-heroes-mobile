@@ -299,6 +299,10 @@ class ApiConstants {
   static const String listThreeMonthReports =
       '/api/method/little_heroes.api.v1.internal_three_month_reports.list_internal_three_month_reports';
 
+  /// GET — List Three Month Reports (paginated)
+  static const String listThreeMonthReportsparents =
+      '/api/method/little_heroes.api.v1.three_month_reports.list_three_month_reports';
+
   /// GET — Get the PDF download URL
   static const String getThreeMonthReportPdf =
       '/api/method/little_heroes.api.v1.three_month_reports.get_three_month_report_pdf';

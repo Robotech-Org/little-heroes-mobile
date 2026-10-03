@@ -5,8 +5,10 @@ import 'package:little_heroes_mobile/core/constants/app_colors.dart';
 import 'package:little_heroes_mobile/core/utils/snackbar_utils.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
+import 'package:little_heroes_mobile/features/home/data/models/classroom_model.dart';
 import 'package:little_heroes_mobile/features/home/data/models/framework_domain_model.dart';
 import 'package:little_heroes_mobile/features/home/data/models/three_month_narrative_model.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/classroom_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/framework_domain_repository.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/three_month_report_repository.dart';
 import 'package:little_heroes_mobile/features/students/domain/entities/student.dart';
@@ -29,9 +31,12 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
   // ── Domains
   List<FrameworkDomainModel> _domains = [];
   bool _isLoadingDomains = true;
+  ClassroomModel? _selectedClassroom;
 
   // ── Entries (one per domain)
   final Map<String, DomainNarrativeEntry> _entries = {};
+  bool _isLoadingClassrooms = true;
+  bool _isSubmitting = false;
 
   // ── Step tracking
   int _step = 0;
@@ -46,6 +51,7 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
   // One controller per domain
   final Map<String, TextEditingController> _narrativeControllers = {};
   final Map<String, TextEditingController> _summaryControllers = {};
+  List<ClassroomModel> _classrooms = [];
 
   @override
   void initState() {
@@ -68,7 +74,7 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
   }
 
   Future<void> _loadData() async {
-    await Future.wait([_loadStudents(), _loadDomains()]);
+    await Future.wait([_loadStudents(), _loadDomains(), _loadClassrooms()]);
   }
 
   Future<void> _loadStudents() async {
@@ -212,10 +218,11 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
 
       final payload = {
         'student': _selectedStudent!.id,
-        'classroom': _getClassroomForStudent(),
-        'academic_year': academicYear,
-        'period_start_date': _formatDate(_periodStart),
-        'period_end_date': _formatDate(_periodEnd),
+        // 'classroom': _getClassroomForStudent(),
+        'classroom': _selectedClassroom!.classroomName,
+        // 'academic_year': academicYear,
+        // 'period_start_date': _formatDate(_periodStart),
+        // 'period_end_date': _formatDate(_periodEnd),
         'report_introduction': reportIntroduction,
         'assessments': assessments,
       };
@@ -247,9 +254,25 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
     return '$startYear-${startYear + 1}';
   }
 
-  String _getClassroomForStudent() {
-    // TODO: replace with real classroom source from student
-    return 'Test Room 3';
+  Future<void> _loadClassrooms() async {
+    setState(() => _isLoadingClassrooms = true);
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        setState(() => _isLoadingClassrooms = false);
+        return;
+      }
+      final repo = di.sl<ClassroomRepository>();
+      final response = await repo.getClassrooms(page: 1, pageSize: 20);
+      if (!mounted) return;
+      setState(() {
+        _classrooms = response.items;
+        _isLoadingClassrooms = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingClassrooms = false);
+    }
   }
 
   String _getMonthRange() {
@@ -339,6 +362,39 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
 
     // Final: Review
     return _buildReviewStep(theme, isDark);
+  }
+
+  Widget _buildClassroomDropdown(
+    ThemeData theme,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceVariant.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<ClassroomModel>(
+          value: _selectedClassroom,
+          isExpanded: true,
+          hint: const Text('Select a classroom...'),
+          icon: Icon(Icons.arrow_drop_down, color: colorScheme.primary),
+          dropdownColor: isDark ? AppColors.darkCard : AppColors.lightCard,
+          items: _classrooms.map((c) {
+            return DropdownMenuItem<ClassroomModel>(
+              value: c,
+              child: Text(c.classroomName),
+            );
+          }).toList(),
+          onChanged: _isSubmitting
+              ? null
+              : (v) => setState(() => _selectedClassroom = v),
+        ),
+      ),
+    );
   }
 
   // ═════════════════════════════════════════════════════════════
@@ -530,21 +586,23 @@ class _ShareWithParentsPageState extends State<ShareWithParentsPage> {
           const SizedBox(height: 24),
 
           // Period Start
-          _dateField(
-            theme: theme,
-            label: 'Period Start',
-            value: _periodStart,
-            onTap: _pickPeriodStart,
-          ),
-          const SizedBox(height: 16),
+          // _dateField(
+          //   theme: theme,
+          //   label: 'Period Start',
+          //   value: _periodStart,
+          //   onTap: _pickPeriodStart,
+          // ),
+          // const SizedBox(height: 16),
 
-          // Period End
-          _dateField(
-            theme: theme,
-            label: 'Period End',
-            value: _periodEnd,
-            onTap: _pickPeriodEnd,
-          ),
+          // // Period End
+          // _dateField(
+          //   theme: theme,
+          //   label: 'Period End',
+          //   value: _periodEnd,
+          //   onTap: _pickPeriodEnd,
+          // ),
+          // _buildClassroomDropdown(),
+          _buildClassroomDropdown(theme, colorScheme, isDark),
           const SizedBox(height: 24),
 
           // Introduction
