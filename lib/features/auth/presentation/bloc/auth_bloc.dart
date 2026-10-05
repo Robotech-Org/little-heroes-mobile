@@ -160,6 +160,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // ========================================================
 
       final storage = StorageService.instance;
+      await storage.saveUserRole(user.role.name);
 
       // Save login status
       await storage.setLoggedIn(true);

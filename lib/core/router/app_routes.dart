@@ -29,7 +29,7 @@ class AppRoutes {
   static const dailyReport = '/daily-report';
   static const dailyReport_teachers = '/daily-report-teachers';
   static const threeMonthReports = '/three-month-reports';
-  static const threeMonthReportsParents = '/three-month-reports';
+  static const threeMonthReportsParents = '/three-month-reports-parents';
   static const weeklyPlanner = '/weekly-planner';
   static const observations = '/observations';
 
@@ -46,6 +46,8 @@ class AppRoutes {
   // static const String threeMonthReportsParents = '/three-month-reports-parents';
   static const String photoGallery = '/photo-gallery';
   static const String galleryPhoto = '/gallery-photo';
+  
+  static const String parentDailyReport = '/parent-daily-report';
 
   // ============================================================
   // Deep-link targets (used by push notifications)

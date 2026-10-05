@@ -13,10 +13,12 @@ import 'package:little_heroes_mobile/features/auth/presentation/pages/otp_verifi
 import 'package:little_heroes_mobile/features/chats/presentation/bloc/chat_bloc.dart';
 import 'package:little_heroes_mobile/features/chats/presentation/pages/chats_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/bloc/gallery_bloc.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_list_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/moment_show.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/newsletter_detail_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/newsletter_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/photo_gallery_page.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/three_month_report_list_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/add_moment_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/parent/daily_report_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/add_observation_page.dart';
@@ -113,6 +115,59 @@ class AppRouter {
         name: 'splash',
         builder: (context, state) {
           return const SplashPage();
+        },
+      ),
+      // ═══════════════════════════════════════════════════════════
+      // PARENT — 3-MONTH REPORT LIST
+      // ═══════════════════════════════════════════════════════════
+      GoRoute(
+        path: AppRoutes.threeMonthReportsParents,
+        name: 'threeMonthReportsParents',
+        builder: (context, state) {
+          // Accept either a Map (from notifications) or a String (id only)
+          final extra = state.extra;
+
+          String studentId = '';
+          String studentName = '';
+
+          if (extra is Map) {
+            studentId = extra['studentId']?.toString() ?? '';
+            studentName = extra['studentName']?.toString() ?? '';
+          } else if (extra is String) {
+            studentId = extra;
+          }
+
+          return ParentThreeMonthReportListPage(
+            studentId: studentId,
+            studentName: studentName,
+          );
+        },
+      ),
+
+      // ═══════════════════════════════════════════════════════════
+      // PARENT — DAILY REPORT LIST
+      // ═══════════════════════════════════════════════════════════
+      GoRoute(
+        path: AppRoutes.parentDailyReport,
+        name: 'parentDailyReport',
+        builder: (context, state) {
+          // Accept Map (from notifications) or String (id only)
+          final extra = state.extra;
+
+          String studentId = '';
+          String studentName = '';
+
+          if (extra is Map) {
+            studentId = extra['studentId']?.toString() ?? '';
+            studentName = extra['studentName']?.toString() ?? '';
+          } else if (extra is String) {
+            studentId = extra;
+          }
+
+          return ParentDailyReportListPage(
+            studentId: studentId,
+            studentName: studentName,
+          );
         },
       ),
 

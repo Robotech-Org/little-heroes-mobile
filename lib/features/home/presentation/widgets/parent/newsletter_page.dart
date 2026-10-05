@@ -116,41 +116,7 @@ class _NewsletterPageState extends State<NewsletterPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _applySearch,
-              decoration: InputDecoration(
-                hintText: 'Search newsletters...',
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: colors.onSurfaceVariant,
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded),
-                        onPressed: () {
-                          _searchController.clear();
-                          _applySearch('');
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: colors.surfaceVariant.withValues(alpha: 0.3),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 4),
-              ),
-            ),
-          ),
-          Expanded(child: _buildBody(theme, colors)),
-        ],
-      ),
+      body: Column(children: [Expanded(child: _buildBody(theme, colors))]),
     );
   }
 

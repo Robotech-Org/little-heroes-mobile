@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/storage_constants.dart';
+import '../constants/user_role.dart';
 
 class StorageService {
   StorageService._();
@@ -183,6 +184,35 @@ class StorageService {
     return getString(StorageConstants.userId);
   }
 
+  // ═════════════════════════════════════════════════════════
+  // USER ROLE   👈 NEW SECTION
+  // ═════════════════════════════════════════════════════════
+
+  /// Persist the user's role as a string (e.g. "parent", "teacher").
+  Future<void> saveUserRole(String role) async {
+    await saveString(StorageConstants.userRole, role);
+  }
+
+  /// Raw string version — null if never set.
+  String? getUserRoleRaw() {
+    return getString(StorageConstants.userRole);
+  }
+
+  /// Typed version — always returns a [UserRole]. Defaults to parent.
+  UserRole getUserRole() {
+    final raw = getUserRoleRaw();
+    if (raw == null || raw.isEmpty) return UserRole.parent;
+
+    return UserRole.values.firstWhere(
+      (r) => r.name.toLowerCase() == raw.toLowerCase(),
+      orElse: () => UserRole.parent,
+    );
+  }
+
+  Future<void> removeUserRole() async {
+    await remove(StorageConstants.userRole);
+  }
+
   // ONBOARDING
 
   Future<void> setOnboardingCompleted(bool value) async {
@@ -269,6 +299,8 @@ class StorageService {
     await remove(StorageConstants.userId);
 
     await remove(StorageConstants.user);
+
+    await remove(StorageConstants.userRole); // 👈 NEW
 
     // Theme preference is intentionally NOT removed.
     // The user's appearance preference should remain on the device.

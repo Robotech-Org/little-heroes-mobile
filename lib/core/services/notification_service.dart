@@ -2,9 +2,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/widgets.dart'; // 👈 needed for WidgetsBinding
 import 'package:flutter/foundation.dart';
+
+import 'package:little_heroes_mobile/core/constants/user_role.dart';
 import 'package:little_heroes_mobile/core/router/app_router.dart';
 import 'package:little_heroes_mobile/core/router/app_routes.dart';
+import 'package:little_heroes_mobile/core/services/storage_service.dart';
+import 'package:little_heroes_mobile/features/home/domain/repositories/daily_report_repository.dart';
 import 'package:little_heroes_mobile/features/notifications/domain/usecases/register_device.dart';
 import 'package:little_heroes_mobile/features/notifications/domain/usecases/unregister_device.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
@@ -13,73 +18,57 @@ class NotificationService {
   NotificationService._();
 
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-
   static String? _currentToken;
-
   static String? get currentToken => _currentToken;
 
   // ─────────────────────────────────────────────
-  // INIT (called once from main.dart)
+  // PENDING ROUTE QUEUE (for cold start)
+  // ─────────────────────────────────────────────
+  static String? _pendingRoute;
+  static Map<String, dynamic>? _pendingData;
+
+  // ─────────────────────────────────────────────
+  // INIT
   // ─────────────────────────────────────────────
   static Future<void> initialize() async {
     await _requestPermission();
 
-    // Fetch and cache the current token
     _currentToken = await _messaging.getToken();
     debugPrint('FCM TOKEN xyz: $_currentToken');
 
-    // Foreground
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-    // App in background → user tapped notification
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
 
-    // App was terminated → launched from notification
     final initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
       _handleNotificationTap(initialMessage);
     }
 
-    // Token rotation
     _messaging.onTokenRefresh.listen((newToken) async {
-      // debugPrint('FCM TOKEN REFRESHED: $newToken');
       _currentToken = newToken;
-
       await _safeRegister(newToken);
     });
   }
 
   // ─────────────────────────────────────────────
-  // CALLED FROM AUTH BLOC
+  // REGISTER / UNREGISTER
   // ─────────────────────────────────────────────
-
-  /// Register this device with the backend. Called on login success.
   static Future<void> registerCurrentDevice() async {
     final token = _currentToken ?? await _messaging.getToken();
-    if (token == null || token.isEmpty) {
-      debugPrint('NotificationService: no FCM token to register');
-      return;
-    }
+    if (token == null || token.isEmpty) return;
     _currentToken = token;
     await _safeRegister(token);
   }
 
-  /// Unregister this device. Called on logout.
   static Future<void> unregisterCurrentDevice() async {
     final token = _currentToken ?? await _messaging.getToken();
     if (token == null || token.isEmpty) return;
-
     try {
       await di.sl<UnregisterDevice>()(fcmToken: token);
-      debugPrint('NotificationService: device unregistered');
     } catch (e) {
-      debugPrint('NotificationService unregister failed: $e');
+      debugPrint('unregister failed: $e');
     }
   }
-
-  // ─────────────────────────────────────────────
-  // INTERNALS
-  // ─────────────────────────────────────────────
 
   static Future<void> _safeRegister(String token) async {
     try {
@@ -87,108 +76,248 @@ class NotificationService {
         fcmToken: token,
         platform: Platform.isIOS ? 'iOS' : 'Android',
       );
-      // debugPrint('NotificationService: device registered ($token)');
     } catch (e) {
-      debugPrint('NotificationService register failed: $e');
+      debugPrint('register failed: $e');
     }
   }
 
   static Future<void> _requestPermission() async {
-    final settings = await _messaging.requestPermission(
+    await _messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
       provisional: false,
     );
-    debugPrint('Notification permission: ${settings.authorizationStatus}');
   }
 
   static void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('Notification received in foreground');
-    debugPrint('Title: ${message.notification?.title}');
-    debugPrint('Body: ${message.notification?.body}');
-    debugPrint('Data: ${message.data}');
-
-    // If you later add local notifications, show them here.
-    // For now, routing the tap is enough.
+    debugPrint('FCM foreground: ${message.data}');
   }
 
+  // ─────────────────────────────────────────────
+  // TAP HANDLER
+  // ─────────────────────────────────────────────
   static void _handleNotificationTap(RemoteMessage message) {
     debugPrint('Notification tapped: ${message.data}');
 
     final route = message.data['route'] as String?;
     if (route == null || route.isEmpty) return;
 
-    _navigateToRoute(route);
+    _pendingRoute = route;
+    _pendingData = message.data;
+
+    _tryFlushPending();
   }
 
-  /// Map backend route (e.g. `/daily-reports/DR-2026-0042`)
-  /// to Flutter GoRouter path.
-  static void _navigateToRoute(String route, {String? title}) {
+  /// Call from SplashPage / AuthBloc once auth has settled.
+  static void onAppReady() => _tryFlushPending();
+
+  static void _tryFlushPending() {
+    if (_pendingRoute == null) return;
+
+    // Wait until we know whether the user is logged in
     try {
-      if (route.startsWith('/daily-reports/')) {
-        final id = route.split('/').last;
-        AppRouter.router.push('/daily-report-detail', extra: id);
+      if (!StorageService.instance.isLoggedIn()) {
+        debugPrint('⏸ Auth not ready — queueing notification route');
         return;
       }
+    } catch (_) {
+      debugPrint('⏸ Storage not ready — queueing notification route');
+      return;
+    }
+
+    final route = _pendingRoute!;
+    final data = _pendingData;
+    _pendingRoute = null;
+    _pendingData = null;
+
+    //  THE FIX — defer to the next frame so the tree is not mid-dispose
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navigateToRoute(route, data: data);
+    });
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  // ROUTER
+  // ═════════════════════════════════════════════════════════════
+  static Future<void> _navigateToRoute(
+    String route, {
+    String? title,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final role = _safeRole();
+      final isParent = role == UserRole.parent;
+
+      // ── Daily report ────────────────────────────────────
+      if (route.startsWith('/daily-reports')) {
+        final reportId = route.split('/').last;
+
+        String studentId = data?['studentId']?.toString() ?? '';
+        String studentName = data?['studentName']?.toString() ?? '';
+
+        //  Fallback: FCM didn't send student info — fetch it from the report
+        if (studentId.isEmpty && reportId.isNotEmpty) {
+          try {
+            final repo = di.sl<DailyReportRepository>();
+            final response = await repo.getDailyReports(page: 1, pageSize: 100);
+
+            final match = response.items.firstWhere(
+              (r) => r.name == reportId,
+              orElse: () => throw StateError('report not found'),
+            );
+            studentId = match.student;
+            studentName = match.studentName;
+          } catch (e) {
+            debugPrint('⚠️ Could not fetch report $reportId: $e');
+          }
+        }
+
+        // Guard — if still empty, fall back to home
+        if (isParent && studentId.isEmpty && studentName.isEmpty) {
+          debugPrint('❌ No student info — cannot route to parent daily report');
+          _goHome();
+          return;
+        }
+
+        if (isParent) {
+          AppRouter.router.push(
+            AppRoutes.parentDailyReport,
+            extra: {
+              'studentId': studentId,
+              'studentName': studentName,
+              'reportId': reportId,
+            },
+          );
+        } else {
+          AppRouter.router.push(AppRoutes.dailyReportDetail, extra: reportId);
+        }
+        return;
+      }
+
+      // ── Three-month report ──────────────────────────────
+      if (route.startsWith('/three-month-report')) {
+        final id = route.split('/').last;
+        if (isParent) {
+          AppRouter.router.push(
+            AppRoutes.threeMonthReportsParents,
+            extra: {
+              'studentId': data?['studentId']?.toString() ?? '',
+              'studentName': data?['studentName']?.toString() ?? '',
+            },
+          );
+        } else {
+          AppRouter.router.push(AppRoutes.threeMonthReports, extra: id);
+        }
+        return;
+      }
+
+      // ── Observations (teacher only) ─────────────────────
       if (route.startsWith('/observations/')) {
+        if (isParent) {
+          _goHome();
+          return;
+        }
         final id = route.split('/').last;
-        AppRouter.router.push('/observation-detail', extra: id);
+        AppRouter.router.push(AppRoutes.observationDetail, extra: id);
         return;
       }
+
+      // ── Announcements (both) ────────────────────────────
       if (route.startsWith('/announcements/')) {
         final id = route.split('/').last;
-        AppRouter.router.push('/announcement-detail', extra: id);
+        AppRouter.router.push(AppRoutes.announcementDetail, extra: id);
         return;
       }
-      // if (route.startsWith('/chat/')) {
-      //   final id = route.split('/').last;
-      //   AppRouter.router.push('/chat', extra: id);
-      //   return;
-      // }
+
+      // ── Chat (both) ─────────────────────────────────────
       if (route.startsWith('/chat/')) {
         final segments = route.split('/').where((s) => s.isNotEmpty).toList();
         if (segments.length < 2) {
-          debugPrint('Chat notification has no channel id: $route');
+          _goHome();
           return;
         }
-        final channelId = segments[1];
-
         AppRouter.router.push(
           AppRoutes.chat,
-          extra: {'channelId': channelId, 'title': title ?? 'Chat'},
+          extra: {'channelId': segments[1], 'title': title ?? 'Chat'},
         );
         return;
       }
-      // ── Photo Gallery (list) ────────────────────────
-      // Backend sends `/gallery` or `/galleries` (no id) → open the grid.
+
+      // ── Gallery (parent only) ───────────────────────────
       if (route == '/gallery' || route == '/galleries') {
+        if (!isParent) {
+          _goHome();
+          return;
+        }
         AppRouter.router.push(AppRoutes.photoGallery);
         return;
       }
-
-      // ── Photo Gallery (single photo) ────────────────
-      // Backend sends `/galleries/<galleryItemId>` → open the viewer.
-      // The route handler will fetch the item (or accept a pre-loaded one
-      // via `extra`) — here we just pass the id.
       if (route.startsWith('/galleries/')) {
+        if (!isParent) {
+          _goHome();
+          return;
+        }
         final id = route.split('/').last;
         AppRouter.router.push(AppRoutes.galleryPhoto, extra: {'itemId': id});
         return;
       }
-      // if (route.startsWith('/moments/')) {
-      //   final id = route.split('/').last;
-      //   AppRouter.router.push('/moment-detail', extra: id);
-      //   return;
-      // }
+
+      // ── Moment (both) ───────────────────────────────────
       if (route.startsWith('/moments/')) {
         final id = route.split('/').last;
         AppRouter.router.push(AppRoutes.momentDetail, extra: id);
         return;
       }
-      debugPrint('Unknown notification route: $route');
+
+      // ── Newsletter (both) ───────────────────────────────
+      if (route.startsWith('/newsletters/')) {
+        final id = route.split('/').last;
+        AppRouter.router.push(AppRoutes.newsletterDetail, extra: id);
+        return;
+      }
+
+      // ── Attendance (teacher only) ───────────────────────
+      if (route.startsWith('/attendance')) {
+        if (isParent) {
+          _goHome();
+          return;
+        }
+        AppRouter.router.push(AppRoutes.attendanceList);
+        return;
+      }
+
+      debugPrint('Unknown notification route: $route — going home');
+      _goHome();
     } catch (e) {
       debugPrint('Route navigation failed: $e');
+      _goHome();
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // FALLBACK
+  // ─────────────────────────────────────────────
+  static void _goHome() {
+    try {
+      // Also defer — same reason
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        AppRouter.router.go(AppRoutes.main);
+      });
+    } catch (e) {
+      debugPrint('Could not navigate home: $e');
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // ROLE HELPER
+  // ─────────────────────────────────────────────
+  static UserRole _safeRole() {
+    try {
+      return StorageService.instance.getUserRole();
+    } catch (e) {
+      debugPrint('role read failed: $e');
+      return UserRole.parent;
     }
   }
 }
