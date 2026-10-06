@@ -48,6 +48,17 @@ class MessageSender {
     );
   }
 
+  ///  NEW — serialize for offline cache
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'role': role,
+    'role_label': roleLabel,
+    'avatar_url': avatarUrl,
+    'docname': docname,
+    'is_me': isMe,
+  };
+
   bool get isAdmin => role == 'admin';
   bool get isTeacher => role == 'teacher';
   bool get isParent => role == 'parent';
@@ -135,6 +146,29 @@ class ChatChannel {
       teachersDisplay: json['teachers_display'],
     );
   }
+
+  ///  NEW — serialize for offline cache
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'student': student,
+    'student_name': studentName,
+    'classroom': classroom,
+    'academic_year': academicYear,
+    'raven_channel': ravenChannel,
+    'status': status,
+    'last_message_preview': lastMessagePreview,
+    'last_message_by': lastMessageBy,
+    'last_message_at': lastMessageAt,
+    'creation': creation,
+    'channel_type': channelType,
+    'is_admin_channel': isAdminChannel,
+    'is_pinned': isPinned,
+    'title': title,
+    'subtitle': subtitle,
+    'avatar_url': avatarUrl,
+    'parents_display': parentsDisplay,
+    'teachers_display': teachersDisplay,
+  };
 
   DateTime? get lastMessageTime {
     final raw = lastMessageAt;
@@ -323,6 +357,35 @@ class ChatMessage {
     }
   }
 
+  ///  NEW — serialize for offline cache
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'channel_id': channelId,
+    'owner': owner,
+    'sender_name': senderName,
+    'sender_role': senderRole,
+    'sender_role_label': senderRoleLabel,
+    'sender_avatar': senderAvatar,
+    'is_me': isMe,
+    'is_admin': isAdmin,
+    'sender': sender.toJson(),
+    'text': text,
+    'message_type': messageType,
+    'file': file,
+    'file_url': fileUrl,
+    'image_url': imageUrl,
+    'file_thumbnail': fileThumbnail,
+    'is_image': isImage,
+    'file_name': fileName,
+    'file_size': fileSize,
+    'image_width': imageWidth,
+    'image_height': imageHeight,
+    'creation': creation.toIso8601String(),
+    'modified': modified.toIso8601String(),
+    'is_edited': isEdited,
+    'is_reply': isReply,
+  };
+
   ChatMessage copyWith({
     String? name,
     String? channelId,
@@ -401,4 +464,14 @@ class AttachmentUploadResult {
       imageHeight: json['image_height'],
     );
   }
+
+  ///  NEW — serialize for offline cache
+  Map<String, dynamic> toJson() => {
+    'file_url': fileUrl,
+    'file_name': fileName,
+    'message_type': messageType,
+    'file_size': fileSize,
+    'image_width': imageWidth,
+    'image_height': imageHeight,
+  };
 }

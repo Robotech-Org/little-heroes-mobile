@@ -360,4 +360,7 @@ class ApiConstants {
 
   static const String updateProfile =
       '/api/method/little_heroes.api.v1.user_settings.update_profile';
+
+  static const String getMyProfile =
+      '/api/method/little_heroes.api.v1.user_settings.get_my_profile';
 }

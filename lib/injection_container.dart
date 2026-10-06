@@ -70,6 +70,15 @@ import 'package:little_heroes_mobile/features/payments/domain/usecases/get_my_in
 import 'package:little_heroes_mobile/features/payments/domain/usecases/initialize_payment.dart';
 import 'package:little_heroes_mobile/features/payments/domain/usecases/verify_payment.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_bloc.dart';
+import 'package:little_heroes_mobile/features/settings/data/datasources/settings_remote_data_source.dart';
+import 'package:little_heroes_mobile/features/settings/data/repositories/settings_repository_impl.dart';
+import 'package:little_heroes_mobile/features/settings/domain/repositories/settings_repository.dart';
+import 'package:little_heroes_mobile/features/settings/domain/usecases/change_password.dart';
+import 'package:little_heroes_mobile/features/settings/domain/usecases/get_my_profile.dart';
+import 'package:little_heroes_mobile/features/settings/domain/usecases/get_preferences.dart';
+import 'package:little_heroes_mobile/features/settings/domain/usecases/update_preferences.dart';
+import 'package:little_heroes_mobile/features/settings/domain/usecases/update_profile.dart';
+import 'package:little_heroes_mobile/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:little_heroes_mobile/features/students/data/datasources/student_remote_data_source.dart';
 import 'package:little_heroes_mobile/features/students/data/repositories/student_repository_impl.dart';
 import 'package:little_heroes_mobile/features/students/domain/repositories/student_repository.dart';
@@ -590,5 +599,49 @@ Future<void> initDependencies() async {
         remote: sl<ClassroomAttendanceDataSource>(),
       ),
     );
+  }
+
+  // ── Settings ────────────────────────────────────────
+  if (!sl.isRegistered<SettingsRemoteDataSource>()) {
+    sl.registerLazySingleton<SettingsRemoteDataSource>(
+      () => SettingsRemoteDataSourceImpl(sl<Dio>()),
+    );
+  }
+
+  if (!sl.isRegistered<SettingsRepository>()) {
+    sl.registerLazySingleton<SettingsRepository>(
+      () => SettingsRepositoryImpl(sl<SettingsRemoteDataSource>()),
+    );
+  }
+
+  if (!sl.isRegistered<GetPreferences>()) {
+    sl.registerLazySingleton(() => GetPreferences(sl()));
+  }
+  if (!sl.isRegistered<UpdatePreferences>()) {
+    sl.registerLazySingleton(() => UpdatePreferences(sl()));
+  }
+  if (!sl.isRegistered<UpdateProfile>()) {
+    sl.registerLazySingleton(() => UpdateProfile(sl()));
+  }
+
+  //  Use the RENAMED settings class (no conflict with auth's ChangePassword)
+  if (!sl.isRegistered<ChangePasswordSettings>()) {
+    sl.registerLazySingleton(() => ChangePasswordSettings(sl()));
+  }
+
+  if (!sl.isRegistered<SettingsBloc>()) {
+    sl.registerFactory(
+      () => SettingsBloc(
+        getPreferences: sl(),
+        updatePreferences: sl(),
+        changePassword: sl<ChangePasswordSettings>(), //
+        updateProfile: sl(),
+        getMyProfile: sl(), // ← NEW
+      ),
+    );
+  }
+
+  if (!sl.isRegistered<GetMyProfile>()) {
+    sl.registerLazySingleton(() => GetMyProfile(sl()));
   }
 }

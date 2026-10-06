@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:little_heroes_mobile/core/services/newsletter_cache_service.dart';
 
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
@@ -21,9 +22,12 @@ class _NewsletterPageState extends State<NewsletterPage> {
 
   List<NewsletterModel> _all = [];
   List<NewsletterModel> _filtered = [];
-  bool _isLoading = true;
+
+  bool _isLoading = true; // true only when there's nothing to show yet
   bool _isError = false;
+  bool _isOffline = false; // ← true when showing cached data due to API failure
   String _errorMessage = '';
+  DateTime? _cachedAt;
 
   @override
   void initState() {
@@ -37,21 +41,42 @@ class _NewsletterPageState extends State<NewsletterPage> {
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _isLoading = true;
-      _isError = false;
-    });
+  // ══════════════════════════════════════════════════
+  // LOAD — cache first, then network
+  // ══════════════════════════════════════════════════
 
+  Future<void> _load() async {
+    //  Try cache first — instant display
+    final cached = NewsletterCacheService.instance.load();
+    if (cached != null && cached.isNotEmpty) {
+      setState(() {
+        _all = cached;
+        _filtered = cached;
+        _isLoading = false;
+        _isOffline = false;
+        _isError = false;
+        _cachedAt = NewsletterCacheService.instance.lastUpdated();
+      });
+    } else {
+      setState(() {
+        _isLoading = true;
+        _isError = false;
+      });
+    }
+
+    // 2️ Then hit the network
     try {
       final authState = context.read<AuthBloc>().state;
       if (authState is! AuthAuthenticated) {
         if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          _isError = true;
-          _errorMessage = 'Please login to view newsletters';
-        });
+        // If we have cache, keep showing it; only show error if we don't
+        if (cached == null || cached.isEmpty) {
+          setState(() {
+            _isLoading = false;
+            _isError = true;
+            _errorMessage = 'Please login to view newsletters';
+          });
+        }
         return;
       }
 
@@ -59,20 +84,46 @@ class _NewsletterPageState extends State<NewsletterPage> {
       final response = await repo.listNewsletters(page: 1, pageSize: 50);
 
       if (!mounted) return;
+
+      // 3️ Success — update UI + save to cache
+      await NewsletterCacheService.instance.save(response.items);
+
       setState(() {
         _all = response.items;
         _filtered = response.items;
         _isLoading = false;
+        _isError = false;
+        _isOffline = false;
+        _cachedAt = DateTime.now();
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _isError = true;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      });
+
+      final message = e.toString().replaceFirst('Exception: ', '');
+
+      // 4️ Network failed — if we have cache, stay offline (don't error)
+      if (cached != null && cached.isNotEmpty) {
+        setState(() {
+          _isLoading = false;
+          _isError = false;
+          _isOffline = true;
+          _errorMessage = message;
+        });
+      } else {
+        // No cache to fall back to — show full error screen
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _isOffline = false;
+          _errorMessage = message;
+        });
+      }
     }
   }
+
+  // ══════════════════════════════════════════════════
+  // SEARCH
+  // ══════════════════════════════════════════════════
 
   void _applySearch(String q) {
     final query = q.trim().toLowerCase();
@@ -87,6 +138,10 @@ class _NewsletterPageState extends State<NewsletterPage> {
       }).toList();
     });
   }
+
+  // ══════════════════════════════════════════════════
+  // BUILD
+  // ══════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -116,14 +171,96 @@ class _NewsletterPageState extends State<NewsletterPage> {
           ),
         ],
       ),
-      body: Column(children: [Expanded(child: _buildBody(theme, colors))]),
+      body: Column(
+        children: [
+          // ══════════ OFFLINE BANNER ══════════
+          if (_isOffline) _buildOfflineBanner(theme, colors),
+
+          // ══════════ SEARCH BAR ══════════
+          if (!_isLoading && !_isError && _all.isNotEmpty)
+            _buildSearchBar(theme, colors),
+
+          Expanded(child: _buildBody(theme, colors)),
+        ],
+      ),
     );
   }
 
+  // ─── Offline banner ───────────────────────────────
+  Widget _buildOfflineBanner(ThemeData theme, ColorScheme colors) {
+    return Material(
+      color: Colors.orange.withValues(alpha: 0.12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            const Icon(Icons.cloud_off_rounded, size: 16, color: Colors.orange),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _cachedAt != null
+                    ? 'Offline — showing cached data from ${_fmtDate(_cachedAt!)}'
+                    : 'Offline — showing cached data',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.orange.shade900,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: _load,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 32),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Search bar ───────────────────────────────────
+  Widget _buildSearchBar(ThemeData theme, ColorScheme colors) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: TextField(
+        controller: _searchController,
+        onChanged: _applySearch,
+        decoration: InputDecoration(
+          hintText: 'Search newsletters…',
+          prefixIcon: const Icon(Icons.search_rounded, size: 20),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () {
+                    _searchController.clear();
+                    _applySearch('');
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: colors.surfaceVariant.withValues(alpha: 0.4),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Body ─────────────────────────────────────────
   Widget _buildBody(ThemeData theme, ColorScheme colors) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+
     if (_isError) {
       return Center(
         child: Padding(
@@ -158,6 +295,7 @@ class _NewsletterPageState extends State<NewsletterPage> {
         ),
       );
     }
+
     if (_filtered.isEmpty) {
       return Center(
         child: Padding(
@@ -218,11 +356,36 @@ class _NewsletterPageState extends State<NewsletterPage> {
       ),
     );
   }
+
+  // ─── Date formatter ───────────────────────────────
+  String _fmtDate(DateTime d) {
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CARD
+// CARD (unchanged)
 // ═══════════════════════════════════════════════════════════════
+
 class _NewsletterCard extends StatelessWidget {
   final NewsletterModel newsletter;
   final VoidCallback onTap;

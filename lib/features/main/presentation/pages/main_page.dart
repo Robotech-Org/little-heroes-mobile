@@ -10,6 +10,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.
 import 'package:little_heroes_mobile/features/chats/presentation/pages/chats_page.dart';
 import 'package:little_heroes_mobile/features/home/presentation/pages/home_page.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
+import 'package:little_heroes_mobile/features/settings/presentation/pages/settings_page.dart';
 import 'package:little_heroes_mobile/features/students/presentation/pages/students_page.dart';
 
 import '../widgets/bottom_navigation.dart';

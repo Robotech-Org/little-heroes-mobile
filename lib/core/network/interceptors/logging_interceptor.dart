@@ -19,8 +19,6 @@ class LoggingInterceptor extends Interceptor {
   }
 }
 
-// lib/core/network/interceptors/logging_interceptor.dart
-
 // import 'dart:convert';
 
 // import 'package:dio/dio.dart';

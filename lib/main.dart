@@ -15,6 +15,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 import 'package:little_heroes_mobile/features/chats/presentation/bloc/chat_bloc.dart';
 import 'package:little_heroes_mobile/features/home/presentation/bloc/gallery_bloc.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_bloc.dart';
+import 'package:little_heroes_mobile/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:little_heroes_mobile/injection_container.dart';
 
 import 'core/router/app_router.dart';
@@ -38,6 +39,7 @@ Future<void> main() async {
         BlocProvider<GalleryBloc>(
           create: (_) => sl<GalleryBloc>(),
         ), // ← was probably here
+        BlocProvider<SettingsBloc>(create: (_) => sl<SettingsBloc>()),
       ],
       child: const LittleHeroesApp(),
     ),

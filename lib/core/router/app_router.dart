@@ -34,6 +34,7 @@ import 'package:little_heroes_mobile/features/main/presentation/pages/settings_p
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notification_detail_page.dart';
 import 'package:little_heroes_mobile/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:little_heroes_mobile/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:little_heroes_mobile/features/settings/presentation/pages/settings_page.dart';
 import 'package:little_heroes_mobile/features/splash/presentation/pages/splash_page.dart';
 import 'package:little_heroes_mobile/injection_container.dart';
 

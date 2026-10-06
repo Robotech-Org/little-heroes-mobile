@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:little_heroes_mobile/core/services/parent_dashboard_cache_service.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/dashboard_response_model.dart';
@@ -24,7 +25,9 @@ class _ParentDashboardState extends State<ParentDashboard> {
   ParentData? _dashboardData;
   bool _isLoading = true;
   bool _isError = false;
+  bool _isOffline = false;
   String _errorMessage = '';
+  DateTime? _cachedAt;
 
   /// Children list — cached across scoped requests.
   List<ChildInfo> _children = [];
@@ -42,23 +45,42 @@ class _ParentDashboardState extends State<ParentDashboard> {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // LOAD
+  // LOAD — cache first, then network
   // ═══════════════════════════════════════════════════════════
   Future<void> _loadDashboard() async {
-    setState(() {
-      _isLoading = true;
-      _isError = false;
-    });
+    final cache = ParentDashboardCacheService.instance;
 
+    // 1️ Try cached data for the current scope (null = All Children)
+    final cached = cache.load(_selectedStudentId);
+
+    if (cached != null) {
+      setState(() {
+        _dashboardData = cached;
+        _children = cached.children.isNotEmpty ? cached.children : _children;
+        _isLoading = false;
+        _isError = false;
+        _isOffline = false;
+        _cachedAt = cache.lastUpdated(_selectedStudentId);
+      });
+    } else {
+      setState(() {
+        _isLoading = true;
+        _isError = false;
+      });
+    }
+
+    // 2️ Hit the network
     try {
       final authState = context.read<AuthBloc>().state;
       if (authState is! AuthAuthenticated) {
         if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          _isError = true;
-          _errorMessage = 'Please login to view dashboard';
-        });
+        if (cached == null) {
+          setState(() {
+            _isLoading = false;
+            _isError = true;
+            _errorMessage = 'Please login to view dashboard';
+          });
+        }
         return;
       }
 
@@ -78,8 +100,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
             ? incomingChildren
             : (_selectedStudentId == null ? incomingChildren : _children);
 
-        // 👇 Auto-select the only child so the dropdown isn't sitting on
-        // "All Children" for a parent who has just one.
+        // Auto-select the only child
         String? autoSelected = _selectedStudentId;
         bool needsRefetch = false;
         if (children.length == 1 &&
@@ -90,34 +111,52 @@ class _ParentDashboardState extends State<ParentDashboard> {
           needsRefetch = true;
         }
 
+        // 3️ Persist for next time
+        await cache.save(_selectedStudentId, data);
+
         setState(() {
           _dashboardData = data;
           _children = children;
           _selectedStudentId = autoSelected;
           _isLoading = false;
           _isError = false;
+          _isOffline = false;
+          _cachedAt = DateTime.now();
         });
 
-        // If we just auto-selected a child, fetch their scoped dashboard once.
         if (needsRefetch) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _loadDashboard();
           });
         }
       } else {
-        setState(() {
-          _isLoading = false;
-          _isError = true;
-          _errorMessage = 'Invalid dashboard data for parent';
-        });
+        if (cached == null) {
+          setState(() {
+            _isLoading = false;
+            _isError = true;
+            _errorMessage = 'Invalid dashboard data for parent';
+          });
+        }
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _isError = true;
-        _errorMessage = e.toString();
-      });
+
+      // 4️ Network failed → fall back to cache if we have it
+      if (cached != null) {
+        setState(() {
+          _isLoading = false;
+          _isError = false;
+          _isOffline = true;
+          _errorMessage = e.toString();
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+          _isOffline = false;
+          _errorMessage = e.toString();
+        });
+      }
     }
   }
 
@@ -141,10 +180,16 @@ class _ParentDashboardState extends State<ParentDashboard> {
       children: [
         // ── Header (always visible) ────────────────────
         const HomeHeader(),
+
+        // ── Offline banner ─────────────────────────────
+        if (_isOffline) ...[
+          const SizedBox(height: 10),
+          _OfflineBanner(cachedAt: _cachedAt, onRetry: _loadDashboard),
+        ],
+
         const SizedBox(height: 12),
 
         // ── Child selector ─────────────────────────────
-        // Show placeholder skeleton while loading first time.
         if (_isLoading && !showSelector) ...[
           const _ChildSelectorSkeleton(),
           const SizedBox(height: 5),
@@ -152,9 +197,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
           _ChildSelector(
             children: _children,
             selectedId: _selectedStudentId,
-            // Disable while a request is in-flight.
             onChanged: _isLoading ? null : _onChildSelected,
-            // 👇 Hide "All Children" when there's only one child.
             allowAll: !hasSingleChild,
           ),
           const SizedBox(height: 8),
@@ -246,43 +289,6 @@ class _ParentDashboardState extends State<ParentDashboard> {
 
         const SizedBox(height: 10),
 
-        // Row(
-        //   crossAxisAlignment: CrossAxisAlignment.start,
-        //   children: [
-        //     Expanded(
-        //       child: _QuickAccessCard(
-        //         icon: Icons.photo_library_outlined,
-        //         title: data.quickAccess.photoGallery.label,
-        //         subtitle: data.quickAccess.photoGallery.newCount != null
-        //             ? '${data.quickAccess.photoGallery.newCount} new photos'
-        //             : 'View photos',
-        //         onTap: () {
-        //           Navigator.of(context).push(
-        //             MaterialPageRoute(builder: (_) => const PhotoGalleryPage()),
-        //           );
-        //         },
-        //       ),
-        //     ),
-        //     const SizedBox(width: 5),
-        //     Expanded(
-        //       child: _QuickAccessCard(
-        //         icon: Icons.payment_outlined,
-        //         title: data.quickAccess.billingAndPayment.label,
-        //         subtitle: 'View payments',
-        //         onTap: () {
-        //           Navigator.of(context).push(
-        //             MaterialPageRoute(
-        //               builder: (_) => BlocProvider(
-        //                 create: (_) => di.sl<PaymentBloc>(),
-        //                 child: const PaymentHistoryPage(),
-        //               ),
-        //             ),
-        //           );
-        //         },
-        //       ),
-        //     ),
-        //   ],
-        // ),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -303,7 +309,6 @@ class _ParentDashboardState extends State<ParentDashboard> {
             const SizedBox(width: 10),
             Expanded(
               child: _QuickAccessCard(
-                // 👇 Newsletter tile
                 icon: Icons.mark_email_read_outlined,
                 title: 'Newsletters',
                 subtitle: 'News & updates',
@@ -340,7 +345,6 @@ class _ParentDashboardState extends State<ParentDashboard> {
               ),
             ),
             const SizedBox(width: 10),
-            // Keeps the grid symmetric
             const Expanded(child: SizedBox.shrink()),
           ],
         ),
@@ -602,15 +606,67 @@ class _ParentDashboardState extends State<ParentDashboard> {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// OFFLINE BANNER
+// ═══════════════════════════════════════════════════════════════
+class _OfflineBanner extends StatelessWidget {
+  final DateTime? cachedAt;
+  final VoidCallback onRetry;
+
+  const _OfflineBanner({required this.cachedAt, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.orange.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          children: [
+            const Icon(Icons.cloud_off_rounded, size: 16, color: Colors.orange),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                cachedAt != null
+                    ? 'Offline — showing cached data (${_fmtAgo(cachedAt!)})'
+                    : 'Offline — showing cached data',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.orange.shade900,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: onRetry,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 32),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _fmtAgo(DateTime d) {
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // CHILD SELECTOR
 // ═══════════════════════════════════════════════════════════════
 class _ChildSelector extends StatelessWidget {
   final List<ChildInfo> children;
   final String? selectedId;
   final ValueChanged<String?>? onChanged;
-
-  /// When false, the "All Children" option is hidden. Used when the
-  /// parent has only one child — showing "All" doesn't make sense.
   final bool allowAll;
 
   const _ChildSelector({
@@ -626,7 +682,6 @@ class _ChildSelector extends StatelessWidget {
     final colors = theme.colorScheme;
     final enabled = onChanged != null;
 
-    // Build the item list based on allowAll.
     final items = <DropdownMenuItem<String?>>[];
     if (allowAll) {
       items.add(
@@ -686,7 +741,6 @@ class _ChildSelector extends StatelessWidget {
       ),
     );
 
-    // Make sure the value always matches one of the visible items.
     final safeValue = items.any((i) => i.value == selectedId)
         ? selectedId
         : (items.isNotEmpty ? items.first.value : null);
