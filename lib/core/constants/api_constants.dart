@@ -350,4 +350,14 @@ class ApiConstants {
   /// Gate Scanner — assigned gate person scans QR cards
   /// (morning punch-in, evening punch-out)
   static const String gateAttendance = '/teacher/gate-attendance';
+
+  // ── User Settings ─────────────────────────────
+  static const String getPreferences =
+      '/api/method/little_heroes.api.v1.user_settings.get_preferences';
+
+  static const String updatePreferences =
+      '/api/method/little_heroes.api.v1.user_settings.update_preferences';
+
+  static const String updateProfile =
+      '/api/method/little_heroes.api.v1.user_settings.update_profile';
 }

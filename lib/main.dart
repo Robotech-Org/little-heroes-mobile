@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:little_heroes_mobile/core/router/app_routes.dart';
+import 'package:little_heroes_mobile/core/services/deep_link_service.dart';
 import 'package:little_heroes_mobile/core/services/notification_service.dart';
 import 'package:little_heroes_mobile/core/services/session_manager.dart';
 import 'package:little_heroes_mobile/core/utils/snackbar_utils.dart';
@@ -24,6 +25,7 @@ import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await DeepLinkService.instance.init(); //
   await _initializeApp();
 
   runApp(

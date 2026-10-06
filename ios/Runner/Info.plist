@@ -26,6 +26,7 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
+
 		<!-- ══════════════════════════════════════════════════════ -->
 		<!-- FLUTTER SCENE MANIFEST (keep as-is)                    -->
 		<!-- ══════════════════════════════════════════════════════ -->
@@ -50,12 +51,14 @@
 				</array>
 			</dict>
 		</dict>
+
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>UILaunchStoryboardName</key>
 		<string>LaunchScreen</string>
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
+
 		<key>UISupportedInterfaceOrientations</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
@@ -69,11 +72,13 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
+
 		<!-- ══════════════════════════════════════════════════════ -->
 		<!-- CAMERA — for QR scanning                               -->
 		<!-- ══════════════════════════════════════════════════════ -->
 		<key>NSCameraUsageDescription</key>
 		<string>Little Heroes needs camera access to scan student ID cards for attendance.</string>
+
 		<!-- ══════════════════════════════════════════════════════ -->
 		<!-- LOCATION — for attendance GPS                          -->
 		<!-- ══════════════════════════════════════════════════════ -->
@@ -81,6 +86,7 @@
 		<string>Little Heroes uses your location to record attendance at the school gate.</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>Little Heroes uses your location to record attendance at the school gate.</string>
+
 		<!-- ══════════════════════════════════════════════════════ -->
 		<!-- PHOTOS — for chat attachments / moments                -->
 		<!-- ══════════════════════════════════════════════════════ -->
@@ -88,13 +94,15 @@
 		<string>Little Heroes needs photo access so you can attach images to messages.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>Little Heroes needs permission to save photos to your library.</string>
+
 		<!-- ══════════════════════════════════════════════════════ -->
 		<!-- MICROPHONE — uncomment only if you record voice        -->
 		<!-- ══════════════════════════════════════════════════════ -->
 		<!--
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Little Heroes needs microphone access to record voice messages.</string>
-	-->
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Little Heroes needs microphone access to record voice messages.</string>
+		-->
+
 		<!-- ══════════════════════════════════════════════════════ -->
 		<!-- DEEP LINKS — for Chapa callback and external links     -->
 		<!-- ══════════════════════════════════════════════════════ -->
@@ -111,6 +119,21 @@
 				</array>
 			</dict>
 		</array>
+
+		<!-- ══════════════════════════════════════════════════════ -->
+		<!-- URL LAUNCHER — allows canLaunchUrl() to return true    -->
+		<!-- for https / http / tel / mailto                        -->
+		<!-- ══════════════════════════════════════════════════════ -->
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>https</string>
+			<string>http</string>
+			<string>tel</string>
+			<string>mailto</string>
+			<string>sms</string>
+			<string>itms-apps</string>
+		</array>
+
 		<!-- ══════════════════════════════════════════════════════ -->
 		<!-- APNs trust — HTTPS-only                                -->
 		<!-- ══════════════════════════════════════════════════════ -->
@@ -119,6 +142,7 @@
 			<key>NSAllowsArbitraryLoads</key>
 			<false/>
 		</dict>
+
 		<key>UIStatusBarHidden</key>
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
