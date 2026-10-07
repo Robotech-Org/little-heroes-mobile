@@ -250,20 +250,17 @@
 //   }
 // }
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:little_heroes_mobile/core/constants/app_colors.dart';
-import 'package:little_heroes_mobile/core/services/deep_link_service.dart';
 import 'package:little_heroes_mobile/core/utils/snackbar_utils.dart';
 import 'package:little_heroes_mobile/features/payments/data/models/invoice_model.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_bloc.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_event.dart';
 import 'package:little_heroes_mobile/features/payments/presentation/bloc/payment_state.dart';
 
+import 'chapa_webview_page.dart';
 import 'payment_result_page.dart';
 
 class PaymentPage extends StatefulWidget {
@@ -275,70 +272,56 @@ class PaymentPage extends StatefulWidget {
   State<PaymentPage> createState() => _PaymentPageState();
 }
 
-class _PaymentPageState extends State<PaymentPage> with WidgetsBindingObserver {
-  StreamSubscription<String>? _deepLinkSub;
-  String? _pendingTxRef;
-
+class _PaymentPageState extends State<PaymentPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-
-    // Listen for deep-link callbacks from Chapa
-    _deepLinkSub = DeepLinkService.instance.txRefStream.listen(_onDeepLink);
-
-    // Kick off session creation
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PaymentBloc>().add(StartPayment(widget.invoice.name));
     });
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _deepLinkSub?.cancel();
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // When user manually returns from the browser, check if a tx is pending
-    if (state == AppLifecycleState.resumed && _pendingTxRef != null) {
-      _goToResult(_pendingTxRef!);
-      _pendingTxRef = null;
-    }
-  }
-
-  void _onDeepLink(String txRef) {
-    if (!mounted) return;
-    _goToResult(txRef);
-  }
-
+  // ══════════════════════════════════════════════════
+  // OPEN CHAPA IN-APP
+  // ══════════════════════════════════════════════════
   Future<void> _openCheckout(String checkoutUrl, String txRef) async {
-    _pendingTxRef = txRef;
+    // Wait a frame so the PaymentPage is fully mounted
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
 
-    final uri = Uri.parse(checkoutUrl);
-    // externalApplication → opens the real browser/Safari.
-    // This is the ONLY mode that reliably supports custom URL callbacks
-    // on both iOS (Safari) and Android (Chrome).
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-
-    if (!ok) {
-      if (mounted) SnackbarUtils.showError(context, 'Could not open checkout');
-      _pendingTxRef = null;
-    }
-  }
-
-  void _goToResult(String txRef) {
-    Navigator.pushReplacement(
+    final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            PaymentResultPage(txRef: txRef, invoiceName: widget.invoice.name),
+        fullscreenDialog: true,
+        builder: (_) => ChapaWebViewPage(
+          checkoutUrl: checkoutUrl,
+          invoiceName: widget.invoice.name,
+          // If your backend uses a specific path, put it here:
+          // returnUrlPattern: 'payment/callback',
+        ),
       ),
     );
+
+    if (!mounted) return;
+
+    if (result == true) {
+      // WebView said "success" → verify with backend
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              PaymentResultPage(txRef: txRef, invoiceName: widget.invoice.name),
+        ),
+      );
+    } else if (result == false) {
+      // User cancelled or closed
+      SnackbarUtils.showError(context, 'Payment cancelled or incomplete.');
+    }
   }
 
+  // ══════════════════════════════════════════════════
+  // BUILD
+  // ══════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -513,40 +496,12 @@ class _PaymentPageState extends State<PaymentPage> with WidgetsBindingObserver {
           ),
           const SizedBox(height: 10),
           Text(
-            'You will be redirected to Chapa\'s secure payment page. '
+            'Complete your payment directly in the app. '
             'Choose from Telebirr, CBE, or debit card. '
-            'Return to the app once payment is complete.',
+            'You will be returned here automatically.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
               height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: 14,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'After paying, tap "Return to Little Heroes" on Chapa\'s page.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                      height: 1.3,
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
         ],

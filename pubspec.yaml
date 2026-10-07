@@ -70,6 +70,8 @@ dependencies:
   flutter_html: ^3.0.0
   flutter_native_splash: ^2.4.6
   app_links: ^7.2.1
+  # flutter_inappwebview: ^6.1.5
+  webview_flutter: ^4.10.0 
 
   
 
