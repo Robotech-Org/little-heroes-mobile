@@ -41,9 +41,9 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
       phone = _normalizePhone(phone);
     }
 
-    debugPrint(
-      '🔵 [PaymentHistoryPage] dispatching LoadInvoices(parent=$phone)',
-    );
+    // debugPrint(
+    //   '🔵 [PaymentHistoryPage] dispatching LoadInvoices(parent=$phone)',
+    // );
     context.read<PaymentBloc>().add(LoadInvoices(parent: phone));
   }
 

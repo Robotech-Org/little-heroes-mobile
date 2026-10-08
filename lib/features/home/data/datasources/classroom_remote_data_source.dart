@@ -30,9 +30,9 @@ class ClassroomRemoteDataSourceImpl implements ClassroomRemoteDataSource {
         queryParameters: {'page': page, 'page_size': pageSize},
       );
 
-      print('=== CLASSROOM API RESPONSE ===');
-      print('Status Code: ${response.statusCode}');
-      print('Response Data: ${response.data}');
+      // print('=== CLASSROOM API RESPONSE ===');
+      // print('Status Code: ${response.statusCode}');
+      // print('Response Data: ${response.data}');
 
       if (response.data is Map<String, dynamic>) {
         return ClassroomResponseModel.fromJson(response.data);
@@ -40,11 +40,11 @@ class ClassroomRemoteDataSourceImpl implements ClassroomRemoteDataSource {
 
       throw Exception('Invalid response format');
     } on DioException catch (e) {
-      print('DioException in getClassrooms: ${e.message}');
+      // print('DioException in getClassrooms: ${e.message}');
       DioErrorHandler.handle(e);
       rethrow;
     } catch (e) {
-      print('Error in getClassrooms: $e');
+      // print('Error in getClassrooms: $e');
       throw Exception(e.toString());
     }
   }

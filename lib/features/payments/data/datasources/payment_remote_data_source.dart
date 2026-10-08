@@ -57,7 +57,7 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
       if (status != null && status.isNotEmpty) query['status'] = status;
       if (parent != null && parent.isNotEmpty) query['parent'] = parent;
 
-      debugPrint('🔵 [Payments] getMyInvoices query: $query');
+      // debugPrint('🔵 [Payments] getMyInvoices query: $query');
 
       final response = await dio.get(
         ApiConstants.getMyInvoices,
@@ -79,12 +79,12 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
 
       //   Unwrap { message: { success, data, message } }
       final envelope = _unwrapEnvelope(raw);
-      debugPrint('🔵 [invoices] envelope keys: ${envelope.keys.toList()}');
+      // debugPrint('🔵 [invoices] envelope keys: ${envelope.keys.toList()}');
 
       final parsed = InvoiceResponseModel.fromJson(envelope);
 
       if (parsed.items.isEmpty) {
-        debugPrint('⚠️ [Payments] No invoices from server — using mock');
+        // debugPrint('⚠️ [Payments] No invoices from server — using mock');
         return _getMockInvoices();
       }
 
@@ -94,14 +94,14 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
       final serverMsg = serverData is Map
           ? (serverData['message'] ?? serverData['exception'])
           : null;
-      debugPrint(
-        '❌ [Payments] getMyInvoices failed '
-        '(status=${e.response?.statusCode}): ${serverMsg ?? e.message}',
-      );
+      // debugPrint(
+      //   '❌ [Payments] getMyInvoices failed '
+      //   '(status=${e.response?.statusCode}): ${serverMsg ?? e.message}',
+      // );
       DioErrorHandler.handle(e);
       return _getMockInvoices();
     } catch (e, st) {
-      debugPrint('❌ [Payments] getMyInvoices unexpected: $e\n$st');
+      // debugPrint('❌ [Payments] getMyInvoices unexpected: $e\n$st');
       return _getMockInvoices();
     }
   }
@@ -127,10 +127,10 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
         data: body,
       );
 
-      debugPrint(
-        ' [init] status=${response.statusCode} '
-        'type=${response.data.runtimeType}',
-      );
+      // debugPrint(
+      //   ' [init] status=${response.statusCode} '
+      //   'type=${response.data.runtimeType}',
+      // );
 
       // 1. Coerce response.data to a Map
       final Map<String, dynamic> raw;
@@ -162,13 +162,13 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
         json['message']?.toString() ?? 'Failed to initialize payment',
       );
     } on DioException catch (e) {
-      debugPrint(
-        '❌ [init] DioException status=${e.response?.statusCode} '
-        'body=${e.response?.data}',
-      );
+      // debugPrint(
+      //   '❌ [init] DioException status=${e.response?.statusCode} '
+      //   'body=${e.response?.data}',
+      // );
       rethrow;
     } catch (e, st) {
-      debugPrint('❌ [init] parse error: $e\n$st');
+      // debugPrint('❌ [init] parse error: $e\n$st');
       rethrow;
     }
   }
@@ -202,17 +202,17 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
         query['invoice_name'] = invoiceName;
       }
 
-      debugPrint('🔵 [status] GET $query');
+      // debugPrint('🔵 [status] GET $query');
 
       final response = await dio.get(
         ApiConstants.getPaymentStatus,
         queryParameters: query,
       );
 
-      debugPrint(
-        ' [status] status=${response.statusCode} '
-        'type=${response.data.runtimeType}',
-      );
+      // debugPrint(
+      //   ' [status] status=${response.statusCode} '
+      //   'type=${response.data.runtimeType}',
+      // );
 
       // 1. Coerce response.data to a Map
       final Map<String, dynamic> raw;
@@ -244,13 +244,13 @@ class PaymentRemoteDataSourceImpl implements PaymentRemoteDataSource {
         json['message']?.toString() ?? 'Failed to get payment status',
       );
     } on DioException catch (e) {
-      debugPrint(
-        '❌ [status] DioException status=${e.response?.statusCode} '
-        'body=${e.response?.data}',
-      );
+      // debugPrint(
+      //   '❌ [status] DioException status=${e.response?.statusCode} '
+      //   'body=${e.response?.data}',
+      // );
       rethrow;
     } catch (e, st) {
-      debugPrint('❌ [status] parse error: $e\n$st');
+      // debugPrint('❌ [status] parse error: $e\n$st');
       rethrow;
     }
   }

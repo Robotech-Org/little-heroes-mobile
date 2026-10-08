@@ -66,7 +66,7 @@ class _ChapaWebViewPageState extends State<ChapaWebViewPage> {
             return NavigationDecision.navigate;
           },
           onWebResourceError: (error) {
-            debugPrint('WebView error: ${error.description}');
+            // debugPrint('WebView error: ${error.description}');
           },
         ),
       )

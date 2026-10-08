@@ -185,7 +185,7 @@ class _CreateLessonPlanPageState extends State<CreateLessonPlanPage> {
         'lesson_plan_key_development_indicator': _keyDevController.text.trim(),
       };
 
-      debugPrint('📤 [CreateLessonPlan] payload:\n$data');
+      // debugPrint('📤 [CreateLessonPlan] payload:\n$data');
 
       final repo = di.sl<LessonPlanRepository>();
       await repo.createLessonPlan(data);

@@ -21,7 +21,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
           ? ApiConstants.dashboardForStudent(studentId)
           : ApiConstants.dashboard;
 
-      print('📊 [Dashboard] GET $endpoint');
+      // print('📊 [Dashboard] GET $endpoint');
 
       final response = await dio.get(endpoint);
 
@@ -33,7 +33,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         if (responseData.isEmpty ||
             (responseData is Map && responseData.isEmpty) ||
             (responseData is List && responseData.isEmpty)) {
-          print('📊 Dashboard data is empty, returning mock data');
+          // print('📊 Dashboard data is empty, returning mock data');
           return _getMockDashboard();
         }
 
@@ -42,10 +42,10 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
 
       throw Exception('Invalid response format');
     } on DioException catch (e) {
-      print('❌ Dashboard API error: ${e.message}');
+      // print('❌ Dashboard API error: ${e.message}');
       return _getMockDashboard();
     } catch (e) {
-      print('❌ Dashboard error: $e');
+      // print('❌ Dashboard error: $e');
       return _getMockDashboard();
     }
   }

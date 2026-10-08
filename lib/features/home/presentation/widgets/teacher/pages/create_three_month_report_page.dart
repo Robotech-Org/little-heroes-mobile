@@ -159,7 +159,7 @@ class _CreateThreeMonthReportPageState
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingCompetencies = false);
-      debugPrint('Failed to load competencies: $e');
+      // debugPrint('Failed to load competencies: $e');
     }
   }
 

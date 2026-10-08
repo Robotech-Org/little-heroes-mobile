@@ -59,8 +59,8 @@ class AppRouter {
     // NOT FOUND — shown when no route matches the URL
     // ═══════════════════════════════════════════════════════════
     errorBuilder: (context, state) {
-      debugPrint('⚠️ Route not found: ${state.uri}');
-      debugPrint('   Error: ${state.error}');
+      // debugPrint('⚠️ Route not found: ${state.uri}');
+      // debugPrint('   Error: ${state.error}');
 
       return PageNotFound(location: state.uri.toString(), error: state.error);
     },

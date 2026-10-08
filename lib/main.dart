@@ -62,10 +62,10 @@ Future<void> _initializeApp() async {
     // Initialize the session-manager cleanup once so the manager can
     // wipe storage the very first time a 401 fires.
     // (No further setup — it's a singleton.)
-    debugPrint('App initialized successfully');
+    // debugPrint('App initialized successfully');
   } catch (e, stackTrace) {
-    debugPrint('Initialization error: $e');
-    debugPrintStack(stackTrace: stackTrace);
+    // debugPrint('Initialization error: $e');
+    // debugPrintStack(stackTrace: stackTrace);
   }
 }
 

@@ -47,9 +47,9 @@ class ClassroomScheduleRemoteDataSourceImpl
         queryParameters: queryParams,
       );
 
-      print('=== CLASSROOM SCHEDULE API RESPONSE ===');
-      print('Status Code: ${response.statusCode}');
-      print('Response Data: ${response.data}');
+      // print('=== CLASSROOM SCHEDULE API RESPONSE ===');
+      // print('Status Code: ${response.statusCode}');
+      // print('Response Data: ${response.data}');
 
       if (response.data is Map<String, dynamic>) {
         return ClassroomScheduleResponseModel.fromJson(response.data);
@@ -57,11 +57,11 @@ class ClassroomScheduleRemoteDataSourceImpl
 
       throw Exception('Invalid response format');
     } on DioException catch (e) {
-      print('DioException in getClassroomSchedules: ${e.message}');
+      // print('DioException in getClassroomSchedules: ${e.message}');
       DioErrorHandler.handle(e);
       rethrow;
     } catch (e) {
-      print('Error in getClassroomSchedules: $e');
+      // print('Error in getClassroomSchedules: $e');
       throw Exception(e.toString());
     }
   }

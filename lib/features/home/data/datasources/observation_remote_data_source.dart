@@ -192,9 +192,9 @@ class ObservationRemoteDataSourceImpl implements ObservationRemoteDataSource {
         'is_private': 0, // Public file
       });
 
-      print('📤 Uploading file to Frappe');
-      print('📤 File name: $fileName');
-      print('📤 Field name: observation_photo');
+      // print('📤 Uploading file to Frappe');
+      // print('📤 File name: $fileName');
+      // print('📤 Field name: observation_photo');
 
       final response = await dio.post(
         ApiConstants.uploadObservationFile,
@@ -206,7 +206,7 @@ class ObservationRemoteDataSourceImpl implements ObservationRemoteDataSource {
       final message = responseData['message'] ?? {};
       final data = message['data'] ?? {};
 
-      print('📤 Upload response: $responseData');
+      // print('📤 Upload response: $responseData');
 
       // Get the file URL from the response
       // Frappe returns file_url in the data
@@ -222,12 +222,12 @@ class ObservationRemoteDataSourceImpl implements ObservationRemoteDataSource {
 
       return fileUrl;
     } on DioException catch (e) {
-      print('❌ File upload error: ${e.message}');
-      print('❌ Error response: ${e.response?.data}');
+      // print('❌ File upload error: ${e.message}');
+      // print('❌ Error response: ${e.response?.data}');
       DioErrorHandler.handle(e);
       rethrow;
     } catch (e) {
-      print('❌ File upload unexpected error: $e');
+      // print('❌ File upload unexpected error: $e');
       throw Exception(e.toString());
     }
   }

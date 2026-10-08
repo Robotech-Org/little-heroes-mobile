@@ -1,4 +1,3 @@
-// lib/core/widgets/little_heroes_loading.dart
 import 'package:flutter/material.dart';
 
 class LittleHeroesLoading extends StatefulWidget {

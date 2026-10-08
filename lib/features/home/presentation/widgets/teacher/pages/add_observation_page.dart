@@ -178,7 +178,7 @@ class _AddObservationPageState extends State<AddObservationPage> {
       });
     } catch (e) {
       setState(() => _isLoadingSchedules = false);
-      print('Failed to load class schedules: $e');
+      // print('Failed to load class schedules: $e');
     }
   }
 

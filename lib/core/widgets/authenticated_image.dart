@@ -113,7 +113,7 @@ class _AuthenticatedImageState extends State<AuthenticatedImage> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Authenticated image error: $e');
+      // debugPrint('❌ Authenticated image error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

@@ -34,7 +34,7 @@ class NotificationService {
     await _requestPermission();
 
     _currentToken = await _messaging.getToken();
-    debugPrint('FCM TOKEN xyz: $_currentToken');
+    // debugPrint('FCM TOKEN xyz: $_currentToken');
 
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
@@ -66,7 +66,7 @@ class NotificationService {
     try {
       await di.sl<UnregisterDevice>()(fcmToken: token);
     } catch (e) {
-      debugPrint('unregister failed: $e');
+      // debugPrint('unregister failed: $e');
     }
   }
 
@@ -77,7 +77,7 @@ class NotificationService {
         platform: Platform.isIOS ? 'iOS' : 'Android',
       );
     } catch (e) {
-      debugPrint('register failed: $e');
+      // debugPrint('register failed: $e');
     }
   }
 
@@ -91,14 +91,14 @@ class NotificationService {
   }
 
   static void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('FCM foreground: ${message.data}');
+    // debugPrint('FCM foreground: ${message.data}');
   }
 
   // ─────────────────────────────────────────────
   // TAP HANDLER
   // ─────────────────────────────────────────────
   static void _handleNotificationTap(RemoteMessage message) {
-    debugPrint('Notification tapped: ${message.data}');
+    // debugPrint('Notification tapped: ${message.data}');
 
     final route = message.data['route'] as String?;
     if (route == null || route.isEmpty) return;
@@ -118,11 +118,11 @@ class NotificationService {
     // Wait until we know whether the user is logged in
     try {
       if (!StorageService.instance.isLoggedIn()) {
-        debugPrint('⏸ Auth not ready — queueing notification route');
+        // debugPrint('⏸ Auth not ready — queueing notification route');
         return;
       }
     } catch (_) {
-      debugPrint('⏸ Storage not ready — queueing notification route');
+      // debugPrint('⏸ Storage not ready — queueing notification route');
       return;
     }
 
@@ -169,13 +169,13 @@ class NotificationService {
             studentId = match.student;
             studentName = match.studentName;
           } catch (e) {
-            debugPrint('⚠️ Could not fetch report $reportId: $e');
+            // debugPrint('⚠️ Could not fetch report $reportId: $e');
           }
         }
 
         // Guard — if still empty, fall back to home
         if (isParent && studentId.isEmpty && studentName.isEmpty) {
-          debugPrint('❌ No student info — cannot route to parent daily report');
+          // debugPrint('❌ No student info — cannot route to parent daily report');
           _goHome();
           return;
         }
@@ -287,10 +287,10 @@ class NotificationService {
         return;
       }
 
-      debugPrint('Unknown notification route: $route — going home');
+      // debugPrint('Unknown notification route: $route — going home');
       _goHome();
     } catch (e) {
-      debugPrint('Route navigation failed: $e');
+      // debugPrint('Route navigation failed: $e');
       _goHome();
     }
   }
@@ -305,7 +305,7 @@ class NotificationService {
         AppRouter.router.go(AppRoutes.main);
       });
     } catch (e) {
-      debugPrint('Could not navigate home: $e');
+      // debugPrint('Could not navigate home: $e');
     }
   }
 
@@ -316,7 +316,7 @@ class NotificationService {
     try {
       return StorageService.instance.getUserRole();
     } catch (e) {
-      debugPrint('role read failed: $e');
+      // debugPrint('role read failed: $e');
       return UserRole.parent;
     }
   }

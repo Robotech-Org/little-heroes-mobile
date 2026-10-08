@@ -1,444 +1,8 @@
-// import 'dart:async';
-
-// import 'package:flutter/material.dart';
-// import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:little_heroes_mobile/injection_container.dart' as di;
-
-// import '../../data/models/chat_models.dart';
-// import '../bloc/chat_bloc.dart';
-// import 'chat_screen.dart';
-
-// class ChatsPage extends StatefulWidget {
-//   const ChatsPage({super.key});
-
-//   @override
-//   State<ChatsPage> createState() => _ChatsPageState();
-// }
-
-// class _ChatsPageState extends State<ChatsPage> {
-//   final TextEditingController _searchController = TextEditingController();
-//   Timer? _pollTimer;
-//   String _searchQuery = '';
-
-//   @override
-//   void initState() {
-//     super.initState();
-
-//     context.read<ChatBloc>().add(LoadChannels());
-
-//     // Auto-refresh the list every 5 s without flicker.
-//     _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-//       if (!mounted) return;
-//       context.read<ChatBloc>().add(LoadChannels(silent: true));
-//     });
-//   }
-
-//   @override
-//   void dispose() {
-//     _pollTimer?.cancel();
-//     _searchController.dispose();
-//     super.dispose();
-//   }
-
-//   // ═════════════════════════════════════════════
-//   // Search
-//   // ═════════════════════════════════════════════
-//   void _onSearchChanged(String value) {
-//     setState(() => _searchQuery = value.trim().toLowerCase());
-//   }
-
-//   void _clearSearch() {
-//     _searchController.clear();
-//     setState(() => _searchQuery = '');
-//   }
-
-//   List<ChatChannel> _filterAndSort(List<ChatChannel> channels) {
-//     var list = channels;
-
-//     if (_searchQuery.isNotEmpty) {
-//       list = channels.where((c) {
-//         final name = (c.studentName ?? '').toLowerCase();
-//         final room = (c.classroom ?? '').toLowerCase();
-//         final preview = _stripHtml(c.lastMessagePreview).toLowerCase();
-//         final title = (c.title ?? '').toLowerCase();
-//         final subtitle = (c.subtitle ?? '').toLowerCase();
-//         return name.contains(_searchQuery) ||
-//             room.contains(_searchQuery) ||
-//             preview.contains(_searchQuery) ||
-//             title.contains(_searchQuery) ||
-//             subtitle.contains(_searchQuery);
-//       }).toList();
-//     }
-
-//     final sorted = List<ChatChannel>.from(list)
-//       ..sort((a, b) {
-//         // Pinned first
-//         final ap = (a.isPinned == true) ? 1 : 0;
-//         final bp = (b.isPinned == true) ? 1 : 0;
-//         if (ap != bp) return bp.compareTo(ap);
-
-//         final at = a.lastMessageTime ?? a.creationTime ?? DateTime(1970);
-//         final bt = b.lastMessageTime ?? b.creationTime ?? DateTime(1970);
-//         return bt.compareTo(at);
-//       });
-//     return sorted;
-//   }
-
-//   // ═════════════════════════════════════════════
-//   // Build
-//   // ═════════════════════════════════════════════
-//   @override
-//   Widget build(BuildContext context) {
-//     final theme = Theme.of(context);
-
-//     return Scaffold(
-//       backgroundColor: theme.scaffoldBackgroundColor,
-//       appBar: AppBar(
-//         elevation: 0,
-//         backgroundColor: theme.scaffoldBackgroundColor,
-//         surfaceTintColor: Colors.transparent,
-//         title: const Text(
-//           'Messages',
-//           style: TextStyle(fontWeight: FontWeight.w700),
-//         ),
-//         actions: [
-//           IconButton(
-//             tooltip: 'Refresh',
-//             icon: const Icon(Icons.refresh_rounded),
-//             onPressed: () => context.read<ChatBloc>().add(LoadChannels()),
-//           ),
-//         ],
-//       ),
-//       body: Column(
-//         children: [
-//           Padding(
-//             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-//             child: _buildSearchBar(theme),
-//           ),
-//           Expanded(
-//             child: BlocBuilder<ChatBloc, ChatState>(
-//               builder: (context, state) {
-//                 if (state is ChannelsLoading) {
-//                   return const Center(child: CircularProgressIndicator());
-//                 }
-
-//                 if (state is ChannelsLoaded) {
-//                   if (state.channels.isEmpty) {
-//                     return _buildEmpty(theme);
-//                   }
-
-//                   final visible = _filterAndSort(state.channels);
-
-//                   if (visible.isEmpty && _searchQuery.isNotEmpty) {
-//                     return _buildNoSearchResults(theme);
-//                   }
-
-//                   return RefreshIndicator(
-//                     onRefresh: () async {
-//                       context.read<ChatBloc>().add(LoadChannels());
-//                       await Future.delayed(const Duration(milliseconds: 600));
-//                     },
-//                     child: ListView.separated(
-//                       physics: const AlwaysScrollableScrollPhysics(),
-//                       itemCount: visible.length,
-//                       separatorBuilder: (_, __) => Divider(
-//                         height: 1,
-//                         indent: 80,
-//                         color: theme.dividerColor.withValues(alpha: 0.08),
-//                       ),
-//                       itemBuilder: (_, i) => _channelTile(theme, visible[i]),
-//                     ),
-//                   );
-//                 }
-
-//                 if (state is ChatError) {
-//                   return _buildError(theme, state.message);
-//                 }
-
-//                 return const SizedBox.shrink();
-//               },
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   // ═════════════════════════════════════════════
-//   // Channel tile
-//   // ═════════════════════════════════════════════
-//   Widget _channelTile(ThemeData theme, ChatChannel channel) {
-//     final isAdmin = channel.isAdmin;
-//     final titleText = channel.displayTitle;
-
-//     //    Prefer the API preview (stripped of HTML), fall back to displaySubtitle
-//     final rawPreview = channel.lastMessagePreview;
-//     final subtitleText = (rawPreview != null && rawPreview.trim().isNotEmpty)
-//         ? _stripHtml(rawPreview)
-//         : channel.displaySubtitle;
-
-//     return ListTile(
-//       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//       leading: CircleAvatar(
-//         radius: 26,
-//         backgroundColor: isAdmin
-//             ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.7)
-//             : theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
-//         child: isAdmin
-//             ? Icon(
-//                 Icons.support_agent_rounded,
-//                 color: theme.colorScheme.onSecondaryContainer,
-//                 size: 26,
-//               )
-//             : Text(
-//                 _initials(channel.studentName),
-//                 style: TextStyle(
-//                   fontWeight: FontWeight.w800,
-//                   color: theme.colorScheme.onPrimaryContainer,
-//                 ),
-//               ),
-//       ),
-//       title: Row(
-//         children: [
-//           if (channel.isPinned == true) ...[
-//             Icon(
-//               Icons.push_pin_rounded,
-//               size: 14,
-//               color: theme.colorScheme.primary,
-//             ),
-//             const SizedBox(width: 4),
-//           ],
-//           Expanded(
-//             child: Text(
-//               titleText,
-//               maxLines: 1,
-//               overflow: TextOverflow.ellipsis,
-//               style: const TextStyle(fontWeight: FontWeight.w700),
-//             ),
-//           ),
-//         ],
-//       ),
-//       subtitle: subtitleText.isEmpty
-//           ? null
-//           : Text(subtitleText, maxLines: 1, overflow: TextOverflow.ellipsis),
-//       trailing: Text(
-//         _formatRelative(channel.lastMessageTime ?? channel.creationTime),
-//         style: theme.textTheme.bodySmall?.copyWith(
-//           color: theme.colorScheme.onSurfaceVariant,
-//         ),
-//       ),
-//       onTap: () {
-//         Navigator.push(
-//           context,
-//           MaterialPageRoute(
-//             builder: (_) => BlocProvider(
-//               create: (_) => di.sl<ChatBloc>(),
-//               child: ChatRoomScreen(
-//                 channelId: channel.ravenChannel,
-//                 title: titleText,
-//               ),
-//             ),
-//           ),
-//         ).then((_) {
-//           if (mounted) {
-//             context.read<ChatBloc>().add(LoadChannels(silent: true));
-//           }
-//         });
-//       },
-//     );
-//   }
-
-//   // ═════════════════════════════════════════════
-//   // Search bar
-//   // ═════════════════════════════════════════════
-//   Widget _buildSearchBar(ThemeData theme) {
-//     final colors = theme.colorScheme;
-//     return TextField(
-//       controller: _searchController,
-//       onChanged: _onSearchChanged,
-//       textInputAction: TextInputAction.search,
-//       decoration: InputDecoration(
-//         hintText: 'Search conversations...',
-//         prefixIcon: Icon(Icons.search_rounded, color: colors.onSurfaceVariant),
-//         suffixIcon: _searchController.text.isNotEmpty
-//             ? IconButton(
-//                 icon: Icon(Icons.clear_rounded, color: colors.onSurfaceVariant),
-//                 onPressed: _clearSearch,
-//               )
-//             : null,
-//         filled: true,
-//         fillColor: colors.surfaceContainerHighest.withValues(alpha: 0.4),
-//         border: OutlineInputBorder(
-//           borderRadius: BorderRadius.circular(14),
-//           borderSide: BorderSide.none,
-//         ),
-//         contentPadding: const EdgeInsets.symmetric(vertical: 4),
-//       ),
-//     );
-//   }
-
-//   // ═════════════════════════════════════════════
-//   // HTML stripping
-//   // ═════════════════════════════════════════════
-//   /// Strips HTML tags for preview text (list view).
-//   String _stripHtml(String? input) {
-//     if (input == null || input.isEmpty) return '';
-//     return input
-//         .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), ' ')
-//         .replaceAll(RegExp(r'<[^>]+>'), '')
-//         .replaceAll('&nbsp;', ' ')
-//         .replaceAll('&amp;', '&')
-//         .replaceAll('&lt;', '<')
-//         .replaceAll('&gt;', '>')
-//         .replaceAll('&quot;', '"')
-//         .replaceAll('&#39;', "'")
-//         .trim();
-//   }
-
-//   // ═════════════════════════════════════════════
-//   // Empty / search / error states
-//   // ═════════════════════════════════════════════
-//   Widget _buildEmpty(ThemeData theme) {
-//     final colors = theme.colorScheme;
-//     return Center(
-//       child: Padding(
-//         padding: const EdgeInsets.all(32),
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             Container(
-//               width: 72,
-//               height: 72,
-//               decoration: BoxDecoration(
-//                 color: colors.surfaceContainerHighest,
-//                 shape: BoxShape.circle,
-//               ),
-//               child: Icon(
-//                 Icons.forum_outlined,
-//                 size: 34,
-//                 color: colors.onSurfaceVariant,
-//               ),
-//             ),
-//             const SizedBox(height: 16),
-//             Text(
-//               'No conversations yet',
-//               style: theme.textTheme.titleMedium?.copyWith(
-//                 fontWeight: FontWeight.w700,
-//               ),
-//             ),
-//             const SizedBox(height: 8),
-//             Text(
-//               'Your chats with teachers will appear here.',
-//               textAlign: TextAlign.center,
-//               style: theme.textTheme.bodyMedium?.copyWith(
-//                 color: colors.onSurfaceVariant,
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildNoSearchResults(ThemeData theme) {
-//     return Center(
-//       child: Padding(
-//         padding: const EdgeInsets.all(32),
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             Icon(
-//               Icons.search_off_rounded,
-//               size: 48,
-//               color: theme.colorScheme.onSurfaceVariant,
-//             ),
-//             const SizedBox(height: 12),
-//             Text(
-//               'No matches for "$_searchQuery"',
-//               style: theme.textTheme.bodyMedium?.copyWith(
-//                 fontWeight: FontWeight.w600,
-//               ),
-//               textAlign: TextAlign.center,
-//             ),
-//             const SizedBox(height: 12),
-//             TextButton.icon(
-//               onPressed: _clearSearch,
-//               icon: const Icon(Icons.clear_rounded),
-//               label: const Text('Clear search'),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildError(ThemeData theme, String message) {
-//     return Center(
-//       child: Padding(
-//         padding: const EdgeInsets.all(32),
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             Icon(
-//               Icons.error_outline_rounded,
-//               size: 48,
-//               color: theme.colorScheme.error,
-//             ),
-//             const SizedBox(height: 12),
-//             Text(
-//               message,
-//               textAlign: TextAlign.center,
-//               style: theme.textTheme.bodyMedium?.copyWith(
-//                 color: theme.colorScheme.onSurfaceVariant,
-//               ),
-//             ),
-//             const SizedBox(height: 16),
-//             ElevatedButton.icon(
-//               onPressed: () => context.read<ChatBloc>().add(LoadChannels()),
-//               icon: const Icon(Icons.refresh_rounded),
-//               label: const Text('Retry'),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-
-//   // ═════════════════════════════════════════════
-//   // Helpers
-//   // ═════════════════════════════════════════════
-//   String _initials(String? name) {
-//     if (name == null) return '?';
-
-//     final parts = name
-//         .trim()
-//         .split(RegExp(r'\s+'))
-//         .where((p) => p.isNotEmpty)
-//         .toList();
-
-//     if (parts.isEmpty) return '?';
-//     if (parts.length == 1) {
-//       final p = parts.first;
-//       return p.isNotEmpty ? p[0].toUpperCase() : '?';
-//     }
-//     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-//   }
-
-//   String _formatRelative(DateTime? time) {
-//     if (time == null) return '';
-//     final diff = DateTime.now().difference(time);
-//     if (diff.isNegative || diff.inMinutes < 1) return 'now';
-//     if (diff.inHours < 1) return '${diff.inMinutes}m';
-//     if (diff.inDays < 1) return '${diff.inHours}h';
-//     if (diff.inDays < 7) return '${diff.inDays}d';
-//     return '${time.day}/${time.month}';
-//   }
-// }
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:little_heroes_mobile/core/constants/app_colors.dart';
 import 'package:little_heroes_mobile/core/services/chat_cache_service.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
 
@@ -458,7 +22,6 @@ class _ChatsPageState extends State<ChatsPage> {
   Timer? _pollTimer;
   String _searchQuery = '';
 
-  /// Cached channels shown before/without network.
   List<ChatChannel> _cachedChannels = [];
   bool _isOffline = false;
   DateTime? _cachedAt;
@@ -467,7 +30,6 @@ class _ChatsPageState extends State<ChatsPage> {
   void initState() {
     super.initState();
 
-    // 1️⃣ Load cache immediately so the page has content while the API runs.
     final cached = ChatCacheService.instance.load();
     if (cached != null && cached.isNotEmpty) {
       setState(() {
@@ -476,10 +38,8 @@ class _ChatsPageState extends State<ChatsPage> {
       });
     }
 
-    // 2️⃣ Kick off network fetch
     context.read<ChatBloc>().add(LoadChannels());
 
-    // 3️⃣ Background refresh every 5s — skipped silently if we're offline.
     _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
       context.read<ChatBloc>().add(LoadChannels(silent: true));
@@ -542,12 +102,18 @@ class _ChatsPageState extends State<ChatsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: theme.scaffoldBackgroundColor,
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : AppColors.lightSurface,
+        foregroundColor: isDark
+            ? AppColors.darkTextPrimary
+            : AppColors.lightTextPrimary,
         surfaceTintColor: Colors.transparent,
         title: const Text(
           'Messages',
@@ -563,14 +129,16 @@ class _ChatsPageState extends State<ChatsPage> {
       ),
       body: Column(
         children: [
+          // ── Search bar ──
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: _buildSearchBar(theme),
           ),
+
+          // ── List ──
           Expanded(
             child: BlocConsumer<ChatBloc, ChatState>(
               listener: (context, state) {
-                // Persist fresh channels to cache & clear offline flag
                 if (state is ChannelsLoaded) {
                   ChatCacheService.instance.save(state.channels);
                   if (_isOffline) {
@@ -580,14 +148,12 @@ class _ChatsPageState extends State<ChatsPage> {
                     });
                   }
                 } else if (state is ChatError) {
-                  // Network failed — if we have cached data, stay on it
                   if (_cachedChannels.isNotEmpty) {
                     setState(() => _isOffline = true);
                   }
                 }
               },
               builder: (context, state) {
-                // ── Choose which list to render ──
                 List<ChatChannel>? channelsToShow;
                 bool showSkeleton = false;
 
@@ -596,10 +162,8 @@ class _ChatsPageState extends State<ChatsPage> {
                 } else if (_cachedChannels.isNotEmpty) {
                   channelsToShow = _cachedChannels;
                 } else if (state is ChannelsLoading || state is ChatInitial) {
-                  // No cache + loading → skeleton
                   showSkeleton = true;
                 } else if (state is ChatError) {
-                  // No cache + error → error screen
                   return _buildError(theme, state.message);
                 }
 
@@ -633,16 +197,19 @@ class _ChatsPageState extends State<ChatsPage> {
                             const Duration(milliseconds: 600),
                           );
                         },
-                        child: ListView.separated(
+                        child: ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                           itemCount: visible.length,
-                          separatorBuilder: (_, __) => Divider(
-                            height: 1,
-                            indent: 80,
-                            color: theme.dividerColor.withValues(alpha: 0.08),
+                          itemBuilder: (_, i) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _ChatCard(
+                              channel: visible[i],
+                              theme: theme,
+                              isDark: isDark,
+                              onTap: () => _openChannel(visible[i]),
+                            ),
                           ),
-                          itemBuilder: (_, i) =>
-                              _channelTile(theme, visible[i]),
                         ),
                       ),
                     ),
@@ -656,87 +223,23 @@ class _ChatsPageState extends State<ChatsPage> {
     );
   }
 
-  // ═════════════════════════════════════════════
-  // Channel tile
-  // ═════════════════════════════════════════════
-  Widget _channelTile(ThemeData theme, ChatChannel channel) {
-    final isAdmin = channel.isAdmin;
-    final titleText = channel.displayTitle;
-
-    final rawPreview = channel.lastMessagePreview;
-    final subtitleText = (rawPreview != null && rawPreview.trim().isNotEmpty)
-        ? _stripHtml(rawPreview)
-        : channel.displaySubtitle;
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: CircleAvatar(
-        radius: 26,
-        backgroundColor: isAdmin
-            ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.7)
-            : theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
-        child: isAdmin
-            ? Icon(
-                Icons.support_agent_rounded,
-                color: theme.colorScheme.onSecondaryContainer,
-                size: 26,
-              )
-            : Text(
-                _initials(channel.studentName),
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
-              ),
-      ),
-      title: Row(
-        children: [
-          if (channel.isPinned == true) ...[
-            Icon(
-              Icons.push_pin_rounded,
-              size: 14,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 4),
-          ],
-          Expanded(
-            child: Text(
-              titleText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
+  void _openChannel(ChatChannel channel) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (_) => di.sl<ChatBloc>(),
+          child: ChatRoomScreen(
+            channelId: channel.ravenChannel,
+            title: channel.displayTitle,
           ),
-        ],
-      ),
-      subtitle: subtitleText.isEmpty
-          ? null
-          : Text(subtitleText, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: Text(
-        _formatRelative(channel.lastMessageTime ?? channel.creationTime),
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => BlocProvider(
-              create: (_) => di.sl<ChatBloc>(),
-              child: ChatRoomScreen(
-                channelId: channel.ravenChannel,
-                title: titleText,
-              ),
-            ),
-          ),
-        ).then((_) {
-          if (mounted) {
-            context.read<ChatBloc>().add(LoadChannels(silent: true));
-          }
-        });
-      },
-    );
+    ).then((_) {
+      if (mounted) {
+        context.read<ChatBloc>().add(LoadChannels(silent: true));
+      }
+    });
   }
 
   // ═════════════════════════════════════════════
@@ -899,12 +402,27 @@ class _ChatsPageState extends State<ChatsPage> {
       ),
     );
   }
+}
 
-  // ═════════════════════════════════════════════
-  // Helpers
-  // ═════════════════════════════════════════════
-  String _initials(String? name) {
-    if (name == null) return '?';
+// ═══════════════════════════════════════════════════════════
+// CHAT CARD — modern, card-based UI
+// ═══════════════════════════════════════════════════════════
+class _ChatCard extends StatelessWidget {
+  final ChatChannel channel;
+  final ThemeData theme;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _ChatCard({
+    required this.channel,
+    required this.theme,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  String get _initials {
+    final name = channel.studentName;
+    if (name == null || name.isEmpty) return '?';
     final parts = name
         .trim()
         .split(RegExp(r'\s+'))
@@ -912,10 +430,30 @@ class _ChatsPageState extends State<ChatsPage> {
         .toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) {
-      final p = parts.first;
-      return p.isNotEmpty ? p[0].toUpperCase() : '?';
+      return parts.first[0].toUpperCase();
     }
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+
+  String get _preview {
+    final raw = channel.lastMessagePreview;
+    if (raw != null && raw.trim().isNotEmpty) {
+      return _strip(raw);
+    }
+    return channel.displaySubtitle;
+  }
+
+  static String _strip(String input) {
+    return input
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), ' ')
+        .replaceAll(RegExp(r'<[^>]+>'), '')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .trim();
   }
 
   String _formatRelative(DateTime? time) {
@@ -927,10 +465,196 @@ class _ChatsPageState extends State<ChatsPage> {
     if (diff.inDays < 7) return '${diff.inDays}d';
     return '${time.day}/${time.month}';
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAdmin = channel.isAdmin;
+    final isPinned = channel.isPinned == true;
+
+    // Role/type based avatar color
+    final avatarColor = isAdmin
+        ? theme.colorScheme.tertiary
+        : theme.colorScheme.primary;
+
+    // Border highlights pinned channels
+    final borderColor = isPinned
+        ? avatarColor.withValues(alpha: 0.35)
+        : (isDark ? AppColors.darkBorder : AppColors.lightBorder);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: isPinned ? 1.5 : 1),
+          ),
+          child: Row(
+            children: [
+              // ── Avatar with status indicator ──
+              Stack(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          avatarColor,
+                          avatarColor.withValues(alpha: 0.7),
+                        ],
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: isAdmin
+                        ? const Icon(
+                            Icons.support_agent_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          )
+                        : Text(
+                            _initials,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                  ),
+                  // Pin badge (top-right)
+                  if (isPinned)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: avatarColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark
+                                ? AppColors.darkCard
+                                : AppColors.lightCard,
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.push_pin_rounded,
+                          size: 9,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+
+              const SizedBox(width: 14),
+
+              // ── Content ──
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Row 1: title + timestamp
+                    Row(
+                      children: [
+                        if (isAdmin) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.tertiary.withValues(
+                                alpha: 0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'ADMIN',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: theme.colorScheme.tertiary,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Expanded(
+                          child: Text(
+                            channel.displayTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: isPinned
+                                  ? FontWeight.w800
+                                  : FontWeight.w700,
+                              fontSize: 15,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatRelative(
+                            channel.lastMessageTime ?? channel.creationTime,
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    // Row 2: preview text
+                    Text(
+                      _preview.isEmpty ? 'No messages yet' : _preview,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: 12.5,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // ── Chevron ──
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ═════════════════════════════════════════════
-// SKELETON
+// SKELETON — matches the new card layout
 // ═════════════════════════════════════════════
 class _ChatsSkeleton extends StatelessWidget {
   const _ChatsSkeleton();
@@ -938,37 +662,52 @@ class _ChatsSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final baseColor = theme.colorScheme.surfaceContainerHighest;
 
-    return ListView.separated(
+    return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: 8,
-      separatorBuilder: (_, __) => Divider(
-        height: 1,
-        indent: 80,
-        color: theme.dividerColor.withValues(alpha: 0.08),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      itemCount: 6,
+      itemBuilder: (_, i) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: _ChatCardSkeleton(
+          baseColor: baseColor,
+          delay: i,
+          cardColor: isDark ? AppColors.darkCard : AppColors.lightCard,
+          borderColor: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+        ),
       ),
-      itemBuilder: (_, i) => _ChatTileSkeleton(baseColor: baseColor, delay: i),
     );
   }
 }
 
-class _ChatTileSkeleton extends StatelessWidget {
+class _ChatCardSkeleton extends StatelessWidget {
   final Color baseColor;
   final int delay;
+  final Color cardColor;
+  final Color borderColor;
 
-  const _ChatTileSkeleton({required this.baseColor, required this.delay});
+  const _ChatCardSkeleton({
+    required this.baseColor,
+    required this.delay,
+    required this.cardColor,
+    required this.borderColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final opacity = (1.0 - delay * 0.08).clamp(0.4, 1.0);
 
     return Opacity(
       opacity: opacity,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor),
+        ),
         child: Row(
           children: [
             // Avatar
@@ -980,7 +719,7 @@ class _ChatTileSkeleton extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -990,23 +729,29 @@ class _ChatTileSkeleton extends StatelessWidget {
                       Expanded(
                         child: _bar(
                           width: 140.0 + ((delay * 17) % 60),
-                          height: 14,
+                          height: 15,
                           color: baseColor,
                         ),
                       ),
                       const SizedBox(width: 12),
                       _bar(
                         width: 28,
-                        height: 10,
+                        height: 11,
                         color: baseColor.withValues(alpha: 0.6),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   _bar(
                     width: double.infinity,
-                    height: 11,
+                    height: 12,
                     color: baseColor.withValues(alpha: 0.7),
+                  ),
+                  const SizedBox(height: 6),
+                  _bar(
+                    width: 120.0 + ((delay * 11) % 80),
+                    height: 12,
+                    color: baseColor.withValues(alpha: 0.5),
                   ),
                 ],
               ),

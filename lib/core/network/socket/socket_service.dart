@@ -54,32 +54,32 @@ class SocketService {
       _registerListeners();
       _socket!.connect();
     } catch (e) {
-      log('❌ Socket connect error: $e');
+      // log('❌ Socket connect error: $e');
     }
   }
 
   void _registerListeners() {
     _socket!.onConnect((_) {
-      log('🟢 Socket connected: ${_socket!.id}');
+      // log('🟢 Socket connected: ${_socket!.id}');
       _isConnected = true;
       _connectionController.add(true);
     });
 
     _socket!.onDisconnect((_) {
-      log('🔴 Socket disconnected');
+      // log('🔴 Socket disconnected');
       _isConnected = false;
       _connectionController.add(false);
     });
 
     _socket!.onConnectError((err) {
-      log('❌ Socket connect error: $err');
+      // log('❌ Socket connect error: $err');
       _isConnected = false;
       _connectionController.add(false);
     });
 
     //   Live chat updates
     _socket!.on('new_message', (data) {
-      log('📩 new_message: $data');
+      // log('📩 new_message: $data');
       if (data is Map<String, dynamic>) {
         _newMessageController.add(data);
       } else if (data is Map) {
@@ -91,7 +91,7 @@ class SocketService {
   void joinChannel(String channelId) {
     if (_socket == null || !_socket!.connected) return;
     _socket!.emit('join_channel', {'channel_id': channelId});
-    log('👥 Joined channel: $channelId');
+    // log('👥 Joined channel: $channelId');
   }
 
   void leaveChannel(String channelId) {

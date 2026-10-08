@@ -43,7 +43,7 @@ class AnnouncementRemoteDataSourceImpl implements AnnouncementRemoteDataSource {
 
         // Log when the server has nothing — but do NOT replace with mock.
         if (result.items.isEmpty) {
-          debugPrint('ℹ️ [Announcements] Server returned 0 items');
+          // debugPrint('ℹ️ [Announcements] Server returned 0 items');
         }
 
         return result;

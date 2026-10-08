@@ -29,7 +29,7 @@ class SettingsCacheService {
     try {
       final payload = {
         'user_type': prefs.userType,
-        'biometric_login_enabled': prefs.biometricLoginEnabled ? 1 : 0,
+        // 'biometric_login_enabled': prefs.biometricLoginEnabled ? 1 : 0,
         'quiet_hours_enabled': prefs.quietHoursEnabled ? 1 : 0,
         'quiet_hours_start': prefs.quietHoursStart,
         'quiet_hours_end': prefs.quietHoursEnd,
