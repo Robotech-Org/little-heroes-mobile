@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.robotics.littleheroes</string>
+	<string>com.robotech.little-heroes</string>
 	<key>PROJECT_ID</key>
 	<string>little-heroes-22f73</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:293817589861:ios:aa219a83e26ffd702e268c</string>
+	<string>1:293817589861:ios:d3facdcc209d54cc2e268c</string>
 </dict>
 </plist>
