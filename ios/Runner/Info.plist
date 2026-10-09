@@ -103,7 +103,7 @@
 				<key>CFBundleTypeRole</key>
 				<string>Editor</string>
 				<key>CFBundleURLName</key>
-				<string>com.robotics.littleheroes</string>
+				<string>com.robotics.little-heroes</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<string>littleheroes</string>
