@@ -40,13 +40,13 @@ class NotificationService {
       if (apns == null) {
         debugPrint('❌ APNs token never arrived — check Xcode Push capability');
       } else {
-        debugPrint('✅ APNs token received: $apns');
+        debugPrint('✅ APNs token received: ');
       }
     }
 
     // 3. Now safe to fetch FCM token (retry loop)
     _currentToken = await _getFcmTokenSafely();
-    debugPrint('FCM TOKEN xyz: $_currentToken');
+    // debugPrint('FCM TOKEN xyz: $_currentToken');
 
     // 4. Wire listeners
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
