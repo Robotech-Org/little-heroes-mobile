@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/widgets.dart'; // 👈 needed for WidgetsBinding
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:little_heroes_mobile/core/constants/user_role.dart';
 import 'package:little_heroes_mobile/core/router/app_router.dart';
@@ -28,14 +28,27 @@ class NotificationService {
   static Map<String, dynamic>? _pendingData;
 
   // ─────────────────────────────────────────────
-  // INIT
+  // INIT  ← FIXED (waits for APNs token on iOS)
   // ─────────────────────────────────────────────
   static Future<void> initialize() async {
+    // 1. Ask permission first
     await _requestPermission();
 
-    _currentToken = await _messaging.getToken();
+    // 2. iOS ONLY — wait for APNs token before requesting FCM token
+    if (Platform.isIOS) {
+      final apns = await _waitForApnsToken();
+      if (apns == null) {
+        debugPrint('❌ APNs token never arrived — check Xcode Push capability');
+      } else {
+        debugPrint('✅ APNs token received: $apns');
+      }
+    }
+
+    // 3. Now safe to fetch FCM token (retry loop)
+    _currentToken = await _getFcmTokenSafely();
     debugPrint('FCM TOKEN xyz: $_currentToken');
 
+    // 4. Wire listeners
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
 
@@ -51,17 +64,55 @@ class NotificationService {
   }
 
   // ─────────────────────────────────────────────
+  // WAIT FOR APNs TOKEN (iOS only)
+  // ─────────────────────────────────────────────
+  static Future<String?> _waitForApnsToken({
+    int maxRetries = 15,
+    Duration delay = const Duration(seconds: 1),
+  }) async {
+    for (var i = 0; i < maxRetries; i++) {
+      try {
+        final apns = await _messaging.getAPNSToken();
+        if (apns != null && apns.isNotEmpty) return apns;
+      } catch (e) {
+        debugPrint('APNs attempt $i: $e');
+      }
+      await Future.delayed(delay);
+    }
+    return null;
+  }
+
+  // ─────────────────────────────────────────────
+  // SAFE FCM TOKEN FETCH (retry loop)
+  // ─────────────────────────────────────────────
+  static Future<String?> _getFcmTokenSafely({int maxRetries = 5}) async {
+    for (var i = 0; i < maxRetries; i++) {
+      try {
+        final token = await _messaging.getToken();
+        if (token != null && token.isNotEmpty) return token;
+      } catch (e) {
+        debugPrint('FCM token attempt $i: $e');
+      }
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    return null;
+  }
+
+  // ─────────────────────────────────────────────
   // REGISTER / UNREGISTER
   // ─────────────────────────────────────────────
   static Future<void> registerCurrentDevice() async {
-    final token = _currentToken ?? await _messaging.getToken();
-    if (token == null || token.isEmpty) return;
+    final token = _currentToken ?? await _getFcmTokenSafely();
+    if (token == null || token.isEmpty) {
+      debugPrint('⚠️ No FCM token — cannot register device');
+      return;
+    }
     _currentToken = token;
     await _safeRegister(token);
   }
 
   static Future<void> unregisterCurrentDevice() async {
-    final token = _currentToken ?? await _messaging.getToken();
+    final token = _currentToken ?? await _getFcmTokenSafely();
     if (token == null || token.isEmpty) return;
     try {
       await di.sl<UnregisterDevice>()(fcmToken: token);
@@ -109,13 +160,11 @@ class NotificationService {
     _tryFlushPending();
   }
 
-  /// Call from SplashPage / AuthBloc once auth has settled.
   static void onAppReady() => _tryFlushPending();
 
   static void _tryFlushPending() {
     if (_pendingRoute == null) return;
 
-    // Wait until we know whether the user is logged in
     try {
       if (!StorageService.instance.isLoggedIn()) {
         debugPrint('⏸ Auth not ready — queueing notification route');
@@ -131,7 +180,6 @@ class NotificationService {
     _pendingRoute = null;
     _pendingData = null;
 
-    //  THE FIX — defer to the next frame so the tree is not mid-dispose
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _navigateToRoute(route, data: data);
     });
@@ -156,7 +204,6 @@ class NotificationService {
         String studentId = data?['studentId']?.toString() ?? '';
         String studentName = data?['studentName']?.toString() ?? '';
 
-        //  Fallback: FCM didn't send student info — fetch it from the report
         if (studentId.isEmpty && reportId.isNotEmpty) {
           try {
             final repo = di.sl<DailyReportRepository>();
@@ -173,7 +220,6 @@ class NotificationService {
           }
         }
 
-        // Guard — if still empty, fall back to home
         if (isParent && studentId.isEmpty && studentName.isEmpty) {
           debugPrint('❌ No student info — cannot route to parent daily report');
           _goHome();
@@ -300,7 +346,6 @@ class NotificationService {
   // ─────────────────────────────────────────────
   static void _goHome() {
     try {
-      // Also defer — same reason
       WidgetsBinding.instance.addPostFrameCallback((_) {
         AppRouter.router.go(AppRoutes.main);
       });

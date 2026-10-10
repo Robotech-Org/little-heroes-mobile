@@ -57,11 +57,14 @@ Future<void> _initializeApp() async {
     await dotenv.load(fileName: '.env');
     await initDependencies();
 
-    await NotificationService.initialize();
+    // ⬇️ Isolate notification init — a push failure must NOT block app startup
+    try {
+      await NotificationService.initialize();
+    } catch (e, st) {
+      debugPrint('⚠️ NotificationService init failed (non-fatal): $e');
+      debugPrintStack(stackTrace: st);
+    }
 
-    // Initialize the session-manager cleanup once so the manager can
-    // wipe storage the very first time a 401 fires.
-    // (No further setup — it's a singleton.)
     debugPrint('App initialized successfully');
   } catch (e, stackTrace) {
     debugPrint('Initialization error: $e');
