@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum AppButtonType {
-  primary,
-  secondary,
-  outline,
-  text,
-  danger,
-}
+enum AppButtonType { primary, secondary, outline, text, danger }
 
 class AppButton extends StatelessWidget {
   final String text;
@@ -64,10 +58,7 @@ class AppButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (icon != null) ...[
-                Icon(icon),
-                const SizedBox(width: 8),
-              ],
+              if (icon != null) ...[Icon(icon), const SizedBox(width: 8)],
 
               Text(text),
 
@@ -81,19 +72,11 @@ class AppButton extends StatelessWidget {
     return SizedBox(
       width: width ?? double.infinity,
       height: height,
-      child: _buildButton(
-        context,
-        child,
-        isDisabled,
-      ),
+      child: _buildButton(context, child, isDisabled),
     );
   }
 
-  Widget _buildButton(
-    BuildContext context,
-    Widget child,
-    bool disabled,
-  ) {
+  Widget _buildButton(BuildContext context, Widget child, bool disabled) {
     switch (type) {
       case AppButtonType.primary:
         return ElevatedButton(

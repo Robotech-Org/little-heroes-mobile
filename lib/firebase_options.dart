@@ -28,7 +28,10 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
@@ -56,19 +59,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyD_bI3QyrZiaQR7bllnPonO1GfBA9zvxBQ',
-    appId: '1:293817589861:ios:aa219a83e26ffd702e268c',
+    appId: '1:293817589861:ios:c878daff02bf74b22e268c',
     messagingSenderId: '293817589861',
     projectId: 'little-heroes-22f73',
     storageBucket: 'little-heroes-22f73.firebasestorage.app',
-    iosBundleId: 'com.robotics.littleheroes',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyD_bI3QyrZiaQR7bllnPonO1GfBA9zvxBQ',
-    appId: '1:293817589861:ios:075734912469f3282e268c',
-    messagingSenderId: '293817589861',
-    projectId: 'little-heroes-22f73',
-    storageBucket: 'little-heroes-22f73.firebasestorage.app',
-    iosBundleId: 'com.example.littleHeroesMobile',
+    iosBundleId: 'com.robotech.littleheroes',
   );
 }
