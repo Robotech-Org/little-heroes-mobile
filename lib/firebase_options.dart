@@ -24,10 +24,7 @@ class DefaultFirebaseOptions {
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for android - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return android;
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
@@ -59,5 +56,13 @@ class DefaultFirebaseOptions {
     projectId: 'little-heroes-22f73',
     storageBucket: 'little-heroes-22f73.firebasestorage.app',
     iosBundleId: 'com.robotech.littleheroes.app',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyDlhy9870oESCR-2kHbLQATIJAyuJvl8z4',
+    appId: '1:293817589861:android:8617e9b5f5398a542e268c',
+    messagingSenderId: '293817589861',
+    projectId: 'little-heroes-22f73',
+    storageBucket: 'little-heroes-22f73.firebasestorage.app',
   );
 }
