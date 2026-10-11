@@ -11,7 +11,7 @@
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.robotech.littleheroes</string>
+	<string>com.robotech.littleheroes.app</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -29,14 +29,14 @@
 
 	<!-- ============================================= -->
 	<!-- APP STORE / EXPORT COMPLIANCE                 -->
-	<!-- ✅ NEW — Skips "encryption" question on upload-->
+	<!--  NEW — Skips "encryption" question on upload-->
 	<!-- ============================================= -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 
 	<!-- ============================================= -->
 	<!-- CRASHLYTICS (optional — harmless if unused)   -->
-	<!-- ✅ NEW — Enables crash reporting              -->
+	<!--  NEW — Enables crash reporting              -->
 	<!-- ============================================= -->
 	<key>FirebaseCrashlyticsCollectionEnabled</key>
 	<true/>
@@ -99,29 +99,7 @@
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<true/>
 
-	<!-- ============================================= -->
-	<!-- BACKGROUND TASK SCHEDULER                     -->
-	<!-- ⚠️ UNCOMMENT ONLY IF you use workmanager or   -->
-	<!--    background_fetch. IDs must match EXACTLY   -->
-	<!--    what your Dart code registers.             -->
-	<!-- ============================================= -->
-	<!--
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.robotech.littleheroes.fetch</string>
-		<string>com.robotech.littleheroes.refresh</string>
-		<string>com.robotech.littleheroes.processing</string>
-	</array>
-	-->
 
-	<!-- ============================================= -->
-	<!-- ANALYTICS                                     -->
-	<!-- ⚠️ UNCOMMENT ONLY IF you use firebase_analytics-->
-	<!-- ============================================= -->
-	<!--
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Little Heroes uses this to improve your experience.</string>
-	-->
 
 	<!-- ============================================= -->
 	<!-- UI CONFIGURATION                              -->
