@@ -40,7 +40,7 @@ class NotificationService {
       if (apns == null) {
         debugPrint('❌ APNs token never arrived — check Xcode Push capability');
       } else {
-        debugPrint('✅ APNs token received: ');
+        debugPrint('✅ APNs token received: $apns ');
       }
     }
 
