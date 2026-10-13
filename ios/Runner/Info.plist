@@ -27,83 +27,136 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 
-	<!-- ============================================= -->
-	<!-- APP STORE / EXPORT COMPLIANCE                 -->
-	<!--  NEW — Skips "encryption" question on upload-->
-	<!-- ============================================= -->
+	<!-- ============================================================= -->
+	<!-- EXPORT COMPLIANCE                                             -->
+	<!-- ============================================================= -->
+	<!--
+		Little Heroes uses HTTPS everywhere:
+		  - Firebase (Auth, Firestore, FCM, Functions, Storage)
+		  - Chapa payment gateway (https://api.chapa.co)
+		HTTPS/TLS qualifies as "non-exempt encryption". Setting this to
+		true correctly answers Apple's export compliance prompt and
+		avoids a rejection under export laws.
+	-->
 	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
+	<true/>
 
-	<!-- ============================================= -->
-	<!-- CRASHLYTICS (optional — harmless if unused)   -->
-	<!--  NEW — Enables crash reporting              -->
-	<!-- ============================================= -->
 	<key>FirebaseCrashlyticsCollectionEnabled</key>
 	<true/>
 
-	<!-- ============================================= -->
-	<!-- PERMISSIONS                                   -->
-	<!-- ============================================= -->
+	<!-- ============================================================= -->
+	<!-- PERMISSIONS (App Store Guideline 5.1.1)                       -->
+	<!-- ============================================================= -->
+
+	<!--
+		Camera — used for TWO purposes only:
+		  1. Teacher scans student QR cards to mark attendance.
+		  2. Teacher captures classroom "moments" photos of children.
+		No other camera use. No video recording of the child.
+	-->
 	<key>NSCameraUsageDescription</key>
-	<string>Little Heroes needs access to your camera so you can take photos.</string>
+	<string>Little Heroes uses the camera to scan student QR cards for attendance and to capture classroom moments.</string>
 
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Little Heroes needs access to your microphone to record audio.</string>
-
+	<!--
+		Location — "When In Use" ONLY.
+		Purpose: verify the teacher is physically inside the school
+		before the QR attendance scan is allowed (geofence check).
+		We explicitly do NOT request "Always" authorization, and the
+		app does not track location in the background.
+	-->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Little Heroes needs your location to provide location-based features.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Little Heroes needs your location to provide location-based features even in the background.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Little Heroes needs your location to provide location-based features.</string>
+	<string>Little Heroes uses your location to confirm you are inside the school before taking student attendance.</string>
 
+	<!--
+		Photo library — read + write.
+		Read: attach existing photos to a classroom moment.
+		Write: save a captured classroom moment back to the library.
+	-->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Little Heroes needs access to your photo library so you can choose images.</string>
+	<string>Little Heroes uses your photo library so you can attach images to classroom moments and profile photos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Little Heroes needs permission to save photos to your library.</string>
+	<string>Little Heroes saves classroom moments to your photo library.</string>
 
-	<!-- ============================================= -->
-	<!-- NETWORK / CLEARTEXT TRAFFIC                   -->
-	<!-- ============================================= -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
-	</dict>
+	<!-- ============================================================= -->
+	<!-- NETWORK / APP TRANSPORT SECURITY                              -->
+	<!-- ============================================================= -->
+	<!--
+		No NSAppTransportSecurity block is declared on purpose.
+		Both Firebase and Chapa communicate strictly over HTTPS,
+		so no cleartext exception is required.
 
-	<!-- ============================================= -->
-	<!-- URL SCHEMES                                   -->
-	<!-- ============================================= -->
+		Removing NSAllowsArbitraryLoads avoids an automatic rejection
+		under App Store Guideline 2.1 (App Transport Security).
+	-->
+
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>https</string>
-		<string>http</string>
 		<string>tel</string>
 		<string>mailto</string>
-		<string>googlegmail</string>
-		<string>google</string>
 	</array>
 
-	<!-- ============================================= -->
-	<!-- PUSH NOTIFICATIONS (FCM)                      -->
-	<!-- ============================================= -->
+	<!-- ============================================================= -->
+	<!-- DEEP LINKS — CHAPA CHECKOUT RETURN                            -->
+	<!-- ============================================================= -->
+	<!--
+		Chapa's web checkout redirects back to a return_url
+		(https://paymentsuccess.tenachin.org). That page then issues
+		a redirect to littleheroes://payment/success which reopens
+		the app on the payment status screen.
+
+		The custom scheme below registers Little Heroes as a handler
+		for "littleheroes://" URLs.
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.robotech.littleheroes.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>littleheroes</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- ============================================================= -->
+	<!-- PUSH NOTIFICATIONS (FCM)                                      -->
+	<!-- ============================================================= -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
 
-	<!-- Firebase Cloud Messaging auto-swizzling (default true) -->
+	<!--
+		FirebaseAppDelegateProxyEnabled = true means FCM swizzles
+		AppDelegate automatically. Do NOT also set
+		Messaging.messaging().delegate manually in AppDelegate.swift,
+		or you'll get double registration and crashes on push.
+	-->
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<true/>
 
+	<!-- ============================================================= -->
+	<!-- UI CONFIGURATION                                              -->
+	<!-- ============================================================= -->
+	<!--
+		Scene configuration for Flutter 3.35+ with FlutterSceneDelegate.
 
-
-	<!-- ============================================= -->
-	<!-- UI CONFIGURATION                              -->
-	<!-- ============================================= -->
+		IMPORTANT:
+		  - UISceneConfigurationName must be exactly "flutter" to match
+		    the default name Flutter's SceneDelegate expects.
+		  - UISceneDelegateClassName must point to our SceneDelegate.swift
+		    in the Runner module.
+		  - We intentionally OMIT UISceneClassName and UISceneStoryboardFile.
+		    Including UISceneStoryboardFile = "Main" makes iOS load
+		    Main.storyboard as the scene root, which conflicts with
+		    FlutterSceneDelegate creating its own FlutterViewController,
+		    causing a crash on launch.
+	-->
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -113,14 +166,10 @@
 			<key>UIWindowSceneSessionRoleApplication</key>
 			<array>
 				<dict>
-					<key>UISceneClassName</key>
-					<string>UIWindowScene</string>
 					<key>UISceneConfigurationName</key>
 					<string>flutter</string>
 					<key>UISceneDelegateClassName</key>
 					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
-					<key>UISceneStoryboardFile</key>
-					<string>Main</string>
 				</dict>
 			</array>
 		</dict>
@@ -134,8 +183,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
