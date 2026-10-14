@@ -203,8 +203,19 @@ Future<void> initDependencies() async {
   // AUTH BLOC
   // ============================================================
 
+  // if (!sl.isRegistered<AuthBloc>()) {
+  //   sl.registerFactory<AuthBloc>(
+  //     () => AuthBloc(
+  //       loginWithPhoneAndPassword: sl<LoginWithPhoneAndPassword>(),
+  //       verifyOtp: sl<VerifyOtp>(),
+  //       logout: sl<Logout>(),
+  //       changePassword: sl<ChangePassword>(),
+  //     ),
+  //   );
+  // }
+
   if (!sl.isRegistered<AuthBloc>()) {
-    sl.registerFactory<AuthBloc>(
+    sl.registerLazySingleton<AuthBloc>(
       () => AuthBloc(
         loginWithPhoneAndPassword: sl<LoginWithPhoneAndPassword>(),
         verifyOtp: sl<VerifyOtp>(),
