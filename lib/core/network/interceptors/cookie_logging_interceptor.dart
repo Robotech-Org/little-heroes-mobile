@@ -3,9 +3,6 @@ import 'package:dio/dio.dart';
 class CookieLoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    // print('');
-    // print('🍪 = COOKIE REQUEST =');
-
     final cookie = options.headers['Cookie'];
 
     if (cookie != null) {
@@ -13,9 +10,6 @@ class CookieLoggingInterceptor extends Interceptor {
     } else {
       // print('⚠️ No Cookie attached');
     }
-
-    // print('🍪 ==');
-    // print('');
 
     handler.next(options);
   }

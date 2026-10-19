@@ -1,3 +1,217 @@
+// import 'package:dio/dio.dart';
+// import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+
+// import '../../../../core/constants/api_constants.dart';
+// import '../../../../core/constants/user_role.dart';
+// import '../../../../core/error/dio_error_handler.dart';
+// import '../../../../core/network/cookie_storage.dart';
+// import '../../domain/entities/auth_user.dart';
+// import '../../domain/entities/otp_response.dart';
+
+// abstract class AuthRemoteDataSource {
+//   Future<OtpResponse> loginWithPhoneAndPassword({
+//     required String phoneNumber,
+//     required String password,
+//   });
+
+//   Future<OtpResponse> requestOtp({required String phoneNumber});
+
+//   Future<AuthUser> verifyOtp({
+//     required String tmpId,
+//     required String otp,
+//     required String phoneNumber,
+//   });
+
+//   Future<void> resetPassword({
+//     required String phoneNumber,
+//     required String newPassword,
+//   });
+
+//   Future<void> logout();
+
+//   Future<void> changePassword({
+//     required String oldPassword,
+//     required String newPassword,
+//   });
+// }
+
+// class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+//   final Dio dio;
+
+//   AuthRemoteDataSourceImpl(this.dio);
+
+//   @override
+//   Future<OtpResponse> loginWithPhoneAndPassword({
+//     required String phoneNumber,
+//     required String password,
+//   }) async {
+//     try {
+//       final response = await dio.post(
+//         ApiConstants.login,
+//         data: {'usr': phoneNumber, 'pwd': password},
+//       );
+
+//       final data = _extractResponse(response);
+//       final tmpId = data['tmp_id']?.toString();
+
+//       final verification = data['verification'];
+//       String message = 'OTP sent successfully';
+
+//       if (verification is Map<String, dynamic>) {
+//         message = verification['prompt']?.toString() ?? message;
+//       } else if (data['message'] != null) {
+//         message = data['message'].toString();
+//       }
+
+//       return OtpResponse(
+//         success: true,
+//         message: message,
+//         phoneNumber: phoneNumber,
+//         tmpId: tmpId,
+//       );
+//     } on DioException catch (e) {
+//       DioErrorHandler.handle(e);
+//       rethrow;
+//     } catch (e, stackTrace) {
+//       throw Exception(e.toString());
+//     }
+//   }
+
+//   @override
+//   Future<OtpResponse> requestOtp({required String phoneNumber}) async {
+//     try {
+//       final response = await dio.post(
+//         ApiConstants.requestOtp,
+//         data: {'usr': phoneNumber},
+//       );
+
+//       final data = _extractResponse(response);
+
+//       return OtpResponse(
+//         success: data['success'] ?? true,
+//         message: data['message']?.toString() ?? 'OTP sent successfully',
+//         phoneNumber: phoneNumber,
+//         tmpId: data['tmp_id']?.toString(),
+//       );
+//     } on DioException catch (e) {
+//       DioErrorHandler.handle(e);
+//       rethrow;
+//     }
+//   }
+
+//   @override
+//   Future<AuthUser> verifyOtp({
+//     required String tmpId,
+//     required String otp,
+//     required String phoneNumber,
+//   }) async {
+//     try {
+//       final response = await dio.post(
+//         ApiConstants.verifyOtp,
+//         data: {'tmp_id': tmpId, 'otp': otp},
+//       );
+
+//       final data = _extractResponse(response);
+//       final fullName = data['full_name']?.toString() ?? '';
+//       final roles = data['roles'] ?? data['role'];
+//       final role = _parseRole(roles);
+
+//       return AuthUser(phoneNumber: phoneNumber, fullName: fullName, role: role);
+//     } on DioException catch (e) {
+//       DioErrorHandler.handle(e);
+//       rethrow;
+//     }
+//   }
+
+//   @override
+//   Future<void> resetPassword({
+//     required String phoneNumber,
+//     required String newPassword,
+//   }) async {
+//     try {
+//       await dio.post(
+//         ApiConstants.resetPassword,
+//         data: {'usr': phoneNumber, 'new_password': newPassword},
+//       );
+//     } on DioException catch (e) {
+//       DioErrorHandler.handle(e);
+//       rethrow;
+//     }
+//   }
+
+//   @override
+//   Future<void> changePassword({
+//     required String oldPassword,
+//     required String newPassword,
+//   }) async {
+//     try {
+//       final response = await dio.post(
+//         ApiConstants.changePassword,
+//         data: {'old_password': oldPassword, 'new_password': newPassword},
+//       );
+//     } on DioException catch (e) {
+//       DioErrorHandler.handle(e);
+//       rethrow;
+//     } catch (e) {
+//       throw Exception(e.toString());
+//     }
+//   }
+
+//   @override
+//   Future<void> logout() async {
+//     try {
+//       await dio.post(ApiConstants.logout);
+//     } on DioException catch (e) {
+//       // Even if API fails, we should still clear local data
+//     } catch (e) {
+//       // Don't rethrow - we want to clear local data anyway
+//     } finally {
+//       await _clearCookies();
+//     }
+//   }
+
+//   Future<void> _clearCookies() async {
+//     try {
+//       await CookieStorage.clearAll();
+//     } catch (e) {
+//       // Silent fail - cookies will be cleared on next login
+//     }
+//   }
+
+//   Map<String, dynamic> _extractResponse(Response<dynamic> response) {
+//     final responseData = response.data;
+
+//     if (responseData is Map<String, dynamic>) {
+//       if (responseData['message'] is Map<String, dynamic>) {
+//         return Map<String, dynamic>.from(responseData['message']);
+//       }
+//       return Map<String, dynamic>.from(responseData);
+//     }
+//     return {};
+//   }
+
+//   UserRole _parseRole(dynamic role) {
+//     if (role is List && role.isNotEmpty) {
+//       role = role.first;
+//     }
+
+//     final roleString = role?.toString().trim().toLowerCase();
+
+//     switch (roleString) {
+//       case 'teacher':
+//         return UserRole.teacher;
+//       case 'adviser':
+//       case 'advisor':
+//         return UserRole.adviser;
+//       case 'parent':
+//         return UserRole.parent;
+//       default:
+//         return UserRole.parent;
+//     }
+//   }
+// }
+
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
@@ -40,6 +254,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   AuthRemoteDataSourceImpl(this.dio);
 
+  // ═══════════════════════════════════════════════════════════
+  // LOGIN — supports BOTH flows:
+  //   1. OTP ON  → server returns tmp_id
+  //   2. OTP OFF → server returns full_name + roles
+  // ═══════════════════════════════════════════════════════════
   @override
   Future<OtpResponse> loginWithPhoneAndPassword({
     required String phoneNumber,
@@ -52,15 +271,53 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
 
       final data = _extractResponse(response);
-      final tmpId = data['tmp_id']?.toString();
 
-      final verification = data['verification'];
+      // ── Message ───────────────────────────────────────────
       String message = 'OTP sent successfully';
-
+      final verification = data['verification'];
       if (verification is Map<String, dynamic>) {
         message = verification['prompt']?.toString() ?? message;
       } else if (data['message'] != null) {
         message = data['message'].toString();
+      }
+
+      // ── OTP flow indicator ────────────────────────────────
+      final tmpId = data['tmp_id']?.toString();
+
+      // ── Bypass flow — parse user if returned ──────────────
+      final fullName = data['full_name']?.toString();
+      final roles = data['roles'] ?? data['role'];
+
+      AuthUser? user;
+      if ((tmpId == null || tmpId.isEmpty) &&
+          (fullName != null || roles != null)) {
+        user = AuthUser(
+          phoneNumber: phoneNumber,
+          fullName: fullName ?? '',
+          role: _parseRole(roles),
+        );
+      }
+
+      // ── Console log ───────────────────────────────────────
+      if (user != null) {
+        debugPrint('');
+        debugPrint('╔══════════════════════════════════════════╗');
+        debugPrint('║   ✅  LOGIN SUCCESS — OTP BYPASSED       ║');
+        debugPrint('╠══════════════════════════════════════════╣');
+        debugPrint('║  Phone : $phoneNumber');
+        debugPrint('║  Name  : ${user.fullName}');
+        debugPrint('║  Role  : ${user.role.name}');
+        debugPrint('╚══════════════════════════════════════════╝');
+        debugPrint('');
+      } else if (tmpId != null && tmpId.isNotEmpty) {
+        debugPrint('');
+        debugPrint('╔══════════════════════════════════════════╗');
+        debugPrint('║   📩  OTP REQUIRED                       ║');
+        debugPrint('╠══════════════════════════════════════════╣');
+        debugPrint('║  Phone  : $phoneNumber');
+        debugPrint('║  tmp_id : $tmpId');
+        debugPrint('╚══════════════════════════════════════════╝');
+        debugPrint('');
       }
 
       return OtpResponse(
@@ -68,6 +325,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         message: message,
         phoneNumber: phoneNumber,
         tmpId: tmpId,
+        user: user,
       );
     } on DioException catch (e) {
       DioErrorHandler.handle(e);
@@ -77,6 +335,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // REQUEST OTP
+  // ═══════════════════════════════════════════════════════════
   @override
   Future<OtpResponse> requestOtp({required String phoneNumber}) async {
     try {
@@ -99,6 +360,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // VERIFY OTP
+  // ═══════════════════════════════════════════════════════════
   @override
   Future<AuthUser> verifyOtp({
     required String tmpId,
@@ -145,7 +409,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String newPassword,
   }) async {
     try {
-      final response = await dio.post(
+      await dio.post(
         ApiConstants.changePassword,
         data: {'old_password': oldPassword, 'new_password': newPassword},
       );
@@ -162,9 +426,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       await dio.post(ApiConstants.logout);
     } on DioException catch (e) {
-      // Even if API fails, we should still clear local data
+      // Even if API fails, still clear local data
     } catch (e) {
-      // Don't rethrow - we want to clear local data anyway
+      // Don't rethrow — we want to clear local data anyway
     } finally {
       await _clearCookies();
     }
@@ -174,7 +438,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       await CookieStorage.clearAll();
     } catch (e) {
-      // Silent fail - cookies will be cleared on next login
+      // Silent fail
     }
   }
 

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:little_heroes_mobile/core/network/socket/socket_service.dart';
+import 'package:little_heroes_mobile/core/services/chat_read_state_service.dart';
 
 import '../../data/models/chat_models.dart';
 import '../../domain/repositories/chat_repository.dart';
@@ -191,6 +192,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     } catch (_) {
       // ignore — read receipts are non-critical
     }
+    await ChatReadStateService.instance.markSeen(event.channelId);
 
     // ── 2) fetch messages — but tolerate failures ──
     List<ChatMessage> messages = const [];
