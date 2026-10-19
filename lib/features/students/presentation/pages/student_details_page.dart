@@ -72,7 +72,7 @@ class StudentDetailsPage extends StatelessWidget {
               Icons.assignment_outlined,
               'Status',
               student.statusText,
-              statusColor: student.isActive ? Colors.green : Colors.grey,
+              statusColor: student.isActive ? Colors.blue : Colors.grey,
             ),
           ]),
           const SizedBox(height: 20),
@@ -99,7 +99,7 @@ class StudentDetailsPage extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Quick Actions
-          _buildQuickActions(theme, colorScheme, context),
+          // _buildQuickActions(theme, colorScheme, context),
         ],
       ),
     );
@@ -149,7 +149,7 @@ class StudentDetailsPage extends StatelessWidget {
                     width: 20,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: Colors.lightBlue,
                       shape: BoxShape.circle,
                       border: Border.all(color: colorScheme.surface, width: 3),
                     ),
@@ -179,7 +179,7 @@ class StudentDetailsPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               color: student.isActive
-                  ? Colors.green.withValues(alpha: 0.12)
+                  ? Colors.blue.withValues(alpha: 0.12)
                   : colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(20),
             ),
@@ -190,7 +190,7 @@ class StudentDetailsPage extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: student.isActive ? Colors.green : Colors.grey,
+                    color: student.isActive ? Colors.blue : Colors.grey,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -199,7 +199,7 @@ class StudentDetailsPage extends StatelessWidget {
                   student.isActive ? 'Active' : 'Inactive',
                   style: TextStyle(
                     color: student.isActive
-                        ? Colors.green
+                        ? Colors.blue
                         : colorScheme.onSurfaceVariant,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -223,7 +223,7 @@ class StudentDetailsPage extends StatelessWidget {
             title: 'Status',
             value: student.statusText,
             icon: Icons.circle_rounded,
-            color: student.isActive ? Colors.green : Colors.grey,
+            color: student.isActive ? Colors.blue : Colors.grey,
           ),
         ),
         const SizedBox(width: 10),

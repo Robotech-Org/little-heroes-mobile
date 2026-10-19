@@ -332,6 +332,8 @@ class _CreateThreeMonthReportPageState
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               physics: const BouncingScrollPhysics(),
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag, 
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
