@@ -13,8 +13,9 @@ class DailyReportCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Status color based on report status
-    final statusColor = _getStatusColor(report.dailyReportStatus, colorScheme);
+    // ── Normalize once; use for BOTH text and color ──────────
+    final displayStatus = _displayStatus(report.dailyReportStatus);
+    final statusColor = _getStatusColor(displayStatus, colorScheme);
 
     return Card(
       elevation: 0,
@@ -55,7 +56,7 @@ class DailyReportCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      report.dailyReportStatus,
+                      displayStatus, // ← was report.dailyReportStatus
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -112,7 +113,7 @@ class DailyReportCard extends StatelessWidget {
               ),
               const SizedBox(height: 14),
 
-              // Emoji Chips - Meals, Nap, Mood, Health
+              // Emoji Chips
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -131,7 +132,14 @@ class DailyReportCard extends StatelessWidget {
     );
   }
 
-  // Helper method to get status color
+  /// pending / Pending / PENDING → "Draft"
+  /// everything else → original (trimmed)
+  String _displayStatus(String status) {
+    final trimmed = status.trim();
+    if (trimmed.toLowerCase() == 'pending') return 'Draft';
+    return trimmed;
+  }
+
   Color _getStatusColor(String status, ColorScheme colorScheme) {
     switch (status.toLowerCase()) {
       case 'submitted':
@@ -139,15 +147,13 @@ class DailyReportCard extends StatelessWidget {
       case 'saved':
         return colorScheme.primary;
       case 'draft':
+      case 'pending': // safety net (usually already normalized to 'draft')
         return Colors.orange;
-      case 'pending':
-        return Colors.amber;
       default:
         return colorScheme.primary;
     }
   }
 
-  // Emoji Chip Widget
   Widget _buildEmojiChip(BuildContext context, String emoji, String label) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -179,12 +185,10 @@ class DailyReportCard extends StatelessWidget {
     );
   }
 
-  // Date formatter
   String _formatDate(String date) {
     try {
       final parts = date.split('-');
       if (parts.length == 3) {
-        // Convert YYYY-MM-DD to DD/MM/YYYY
         return '${parts[2]}/${parts[1]}/${parts[0]}';
       }
       return date;
