@@ -136,7 +136,7 @@ class _ThreeMonthReportsPageState extends State<ThreeMonthReportsPage> {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
-          '3 Month Assessment',
+          '3  Month Assessment',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         backgroundColor: colors.surface,
@@ -483,6 +483,21 @@ class _ReportCard extends StatelessWidget {
     );
   }
 
+  // String _getStatusText(String status) {
+  //   switch (status.toLowerCase()) {
+  //     case 'submitted':
+  //       return 'Complete';
+  //     case 'saved':
+  //       return 'In Progress';
+  //     case 'draft':
+  //       return 'Not Started';
+  //     case 'pending':
+  //       return 'Pending';
+  //     default:
+  //       return status;
+  //   }
+  // }
+
   String _getStatusText(String status) {
     switch (status.toLowerCase()) {
       case 'submitted':
@@ -492,11 +507,26 @@ class _ReportCard extends StatelessWidget {
       case 'draft':
         return 'Not Started';
       case 'pending':
-        return 'Pending';
+        return 'Draft'; // ← was 'Pending'
       default:
         return status;
     }
   }
+
+  // Color _getStatusColor(String status, ColorScheme colors) {
+  //   switch (status.toLowerCase()) {
+  //     case 'submitted':
+  //       return Colors.green;
+  //     case 'saved':
+  //       return Colors.orange;
+  //     case 'draft':
+  //       return Colors.grey;
+  //     case 'pending':
+  //       return Colors.amber;
+  //     default:
+  //       return colors.primary;
+  //   }
+  // }
 
   Color _getStatusColor(String status, ColorScheme colors) {
     switch (status.toLowerCase()) {
@@ -505,9 +535,9 @@ class _ReportCard extends StatelessWidget {
       case 'saved':
         return Colors.orange;
       case 'draft':
-        return Colors.grey;
+        return Colors.yellow;
       case 'pending':
-        return Colors.amber;
+        return Colors.yellow; // ← was Colors.amber  (match draft grey)
       default:
         return colors.primary;
     }

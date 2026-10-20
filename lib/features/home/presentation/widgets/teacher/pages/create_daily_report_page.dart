@@ -308,7 +308,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
   // ═══════════════════════════════════════════════════════
   // SAVE REPORT
   // ═══════════════════════════════════════════════════════
-  Future<void> _saveReport() async {
+  Future<void> _saveReport({String? status}) async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedStudent == null) {
@@ -346,7 +346,9 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
         'student': studentId,
         'student_classroom': _selectedClassroom!.classroomName,
         'report_date': reportDate,
-        'daily_report_status': widget.report?.dailyReportStatus ?? 'Saved',
+        // 'daily_report_status': widget.report?.dailyReportStatus ?? 'Saved',
+        'daily_report_status':
+            status ?? widget.report?.dailyReportStatus ?? 'Saved',
 
         // ── Meals & Snacks ──────────────────────────────
         'meals_and_snacks': _selectedMeal,
@@ -418,6 +420,10 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
     }
   }
 
+  // ═══════════════════════════════════════════════════════
+  // SAVE AS DRAFT (SERVER) — status = 'Draft'
+  // ═══════════════════════════════════════════════════════
+  Future<void> _saveAsServerDraft() => _saveReport(status: 'Pending');
   // ═══════════════════════════════════════════════════════
   // Draft handling
   // ═══════════════════════════════════════════════════════
@@ -773,8 +779,18 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
               _buildMessageField(theme, colorScheme),
               const SizedBox(height: 32),
 
-              _buildSaveDraftButton(theme, colorScheme),
+              // _buildSaveDraftButton(theme, colorScheme),
+              // const SizedBox(height: 12),
+              // _buildSaveServerDraftButton(colorScheme),
+              Row(
+                children: [
+                  Expanded(child: _buildSaveDraftButton(theme, colorScheme)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildSaveServerDraftButton(colorScheme)),
+                ],
+              ),
               const SizedBox(height: 12),
+
               _buildSaveButton(theme, colorScheme),
             ],
           ),
@@ -1008,6 +1024,28 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildSaveServerDraftButton(ColorScheme colorScheme) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: OutlinedButton.icon(
+        onPressed: _isSaving ? null : _saveAsServerDraft,
+        icon: const Icon(Icons.cloud_upload_outlined, size: 20),
+        label: const Text(
+          'Save Draft',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: colorScheme.primary,
+          side: BorderSide(color: colorScheme.primary, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1525,7 +1563,7 @@ class _CreateDailyReportPageState extends State<CreateDailyReportPage> {
               },
         icon: const Icon(Icons.save_outlined, size: 20),
         label: const Text(
-          'Save Draft',
+          'Save Local',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         style: OutlinedButton.styleFrom(

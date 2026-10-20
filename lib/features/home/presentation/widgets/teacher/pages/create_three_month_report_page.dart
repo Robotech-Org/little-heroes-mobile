@@ -100,6 +100,9 @@ class _CreateThreeMonthReportPageState
     ]);
   }
 
+  String? _draftName;
+  // bool _isSubmitting = false;
+
   Future<void> _loadStudents() async {
     setState(() => _isLoadingStudents = true);
     try {
@@ -166,7 +169,8 @@ class _CreateThreeMonthReportPageState
   // ═════════════════════════════════════════════════════════════
   // CREATE
   // ═════════════════════════════════════════════════════════════
-  Future<void> _createReport() async {
+  Future<void> _createReport({required bool isDraft}) async {
+    //  Future<void> _saveReport({required bool isDraft}) async {
     if (_selectedStudent == null) {
       SnackbarUtils.showError(context, 'Please select a student');
       return;
@@ -175,10 +179,11 @@ class _CreateThreeMonthReportPageState
       SnackbarUtils.showError(context, 'Please select a classroom');
       return;
     }
-    if (_assessments.isEmpty) {
+    // Only require assessments when submitting — drafts can be empty.
+    if (!isDraft && _assessments.isEmpty) {
       SnackbarUtils.showError(
         context,
-        'Add at least one assessment before creating',
+        'Add at least one assessment before submitting',
       );
       return;
     }
@@ -193,7 +198,6 @@ class _CreateThreeMonthReportPageState
         return;
       }
 
-      // Build assessments payload (only those with a level selected).
       final assessedItems = _assessments
           .where((a) => a.levelAchieved >= 0)
           .toList();
@@ -231,33 +235,59 @@ class _CreateThreeMonthReportPageState
         };
       }).toList();
 
-      final data = {
+      final data = <String, dynamic>{
         'student': _selectedStudent!.id,
         'student_name': _selectedStudent!.name,
         'classroom': _selectedClassroom!.classroomName,
-        // 'month': _selectedMonth,
-        // "period_start_date": "2026-09-01",
-        // "period_end_date": "2026-11-30",
-        // 'academic_year': "2026-2027",
         'report_date': DateTime.now().toIso8601String().split('T').first,
-        // 'status': "Submitted",
         'teacher': authState.user.fullName,
+
+        // ⭐ THE ONLY DIFFERENCE BETWEEN SUBMIT AND SAVE DRAFT:
+        'status': isDraft ? 'Pending' : 'Submitted',
+
         'assessments': assessmentsData,
         'report_introduction': _wrapHtml(_introductionController.text.trim()),
         'report_summary': _wrapHtml(_summaryController.text.trim()),
       };
 
+      debugPrint(
+        '📤 [3-Month Report] isDraft=$isDraft '
+        'draftName=$_draftName payload:\n$data',
+      );
+
       final repo = di.sl<ThreeMonthReportRepository>();
-      final created = await repo.createThreeMonthReport(data);
+
+      // Update existing draft, or create new
+      if (_draftName != null && _draftName!.isNotEmpty) {
+        await repo.updateThreeMonthReport(reportName: _draftName!, data: data);
+      } else {
+        final created = await repo.createThreeMonthReport(data);
+        if (isDraft) {
+          _draftName = created.name;
+        } else {
+          _draftName = null;
+        }
+      }
 
       if (!mounted) return;
-      SnackbarUtils.showSuccess(context, 'Report created');
 
-      // Replace so back button returns to the list, not to this create page
+      if (isDraft) {
+        // Draft saved → stay on page
+        setState(() => _isSubmitting = false);
+        SnackbarUtils.showSuccess(
+          context,
+          'Saved as pending. You can keep editing and submit later.',
+        );
+        return;
+      }
+
+      // Submitted → navigate to detail page
+      SnackbarUtils.showSuccess(context, 'Report submitted');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ThreeMonthReportDetailPage(reportName: created.name),
+          builder: (_) =>
+              ThreeMonthReportDetailPage(reportName: _draftName ?? ''),
         ),
       );
     } catch (e) {
@@ -265,7 +295,8 @@ class _CreateThreeMonthReportPageState
       setState(() => _isSubmitting = false);
       SnackbarUtils.showError(
         context,
-        'Failed to create: ${e.toString().replaceFirst('Exception: ', '')}',
+        'Failed to ${isDraft ? 'save' : 'submit'}: '
+        '${e.toString().replaceFirst('Exception: ', '')}',
       );
     }
   }
@@ -281,6 +312,16 @@ class _CreateThreeMonthReportPageState
   }
 
   // ═════════════════════════════════════════════════════════════
+  // SUBMIT — status = 'Submitted' → navigates to detail page
+  // ═════════════════════════════════════════════════════════════
+  Future<void> _create_new_Report() => _createReport(isDraft: false);
+
+  // ═════════════════════════════════════════════════════════════
+  // SAVE DRAFT — status = 'Pending' → stays on page
+  // ═════════════════════════════════════════════════════════════
+  Future<void> _saveDraft() => _createReport(isDraft: true);
+
+  // ═════════════════════════════════════════════════════════════
   // BUILD
   // ═════════════════════════════════════════════════════════════
   @override
@@ -293,7 +334,7 @@ class _CreateThreeMonthReportPageState
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
-          'New 3 Month Report',
+          '3 Month Report',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         backgroundColor: isDark
@@ -308,9 +349,35 @@ class _CreateThreeMonthReportPageState
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
+        // actions: [
+        //   TextButton(
+        //     onPressed: _isSubmitting ? null : _create_new_Report,
+        //     child: _isSubmitting
+        //         ? SizedBox(
+        //             width: 20,
+        //             height: 20,
+        //             child: CircularProgressIndicator(
+        //               strokeWidth: 2,
+        //               color: colorScheme.primary,
+        //             ),
+        //           )
+        //         : const Text(
+        //             'Create',
+        //             style: TextStyle(fontWeight: FontWeight.w700),
+        //           ),
+        //   ),
+        // ],
+
         actions: [
+          // 💾 Quick Save Draft shortcut
+          IconButton(
+            icon: const Icon(Icons.save_outlined),
+            tooltip: _draftName != null ? 'Update pending' : 'Save as draft',
+            onPressed: _isSubmitting ? null : _saveDraft,
+          ),
+          // ✈️ Submit shortcut
           TextButton(
-            onPressed: _isSubmitting ? null : _createReport,
+            onPressed: _isSubmitting ? null : _create_new_Report,
             child: _isSubmitting
                 ? SizedBox(
                     width: 20,
@@ -321,7 +388,7 @@ class _CreateThreeMonthReportPageState
                     ),
                   )
                 : const Text(
-                    'Create',
+                    'Submit',
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
           ),
@@ -332,7 +399,7 @@ class _CreateThreeMonthReportPageState
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               physics: const BouncingScrollPhysics(),
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag, 
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,42 +418,153 @@ class _CreateThreeMonthReportPageState
                   // ── Competencies ─────────────────────────
                   _buildDevelopmentFrameworks(theme, colorScheme),
 
-                  const SizedBox(height: 24),
+                  // const SizedBox(height: 24),
 
                   // ── Submit button ────────────────────────
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton.icon(
-                      onPressed: _isSubmitting ? null : _createReport,
-                      icon: _isSubmitting
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: colorScheme.onPrimary,
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   height: 54,
+                  //   child: ElevatedButton.icon(
+                  //     onPressed: _isSubmitting ? null : _createReport,
+                  //     icon: _isSubmitting
+                  //         ? SizedBox(
+                  //             width: 20,
+                  //             height: 20,
+                  //             child: CircularProgressIndicator(
+                  //               strokeWidth: 2,
+                  //               color: colorScheme.onPrimary,
+                  //             ),
+                  //           )
+                  //         : const Icon(Icons.check_rounded),
+                  //     label: Text(
+                  //       _isSubmitting
+                  //           ? 'Creating...'
+                  //           : 'Create Report (${_assessments.where((a) => a.levelAchieved >= 0).length} assessed)',
+                  //       style: const TextStyle(
+                  //         fontSize: 15,
+                  //         fontWeight: FontWeight.w700,
+                  //       ),
+                  //     ),
+                  //     style: ElevatedButton.styleFrom(
+                  //       backgroundColor: colorScheme.primary,
+                  //       foregroundColor: colorScheme.onPrimary,
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(14),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                  const SizedBox(height: 24),
+
+                  // ── Save Draft + Submit buttons ──────────
+                  Row(
+                    children: [
+                      // 💾 SAVE DRAFT — status 'Pending'
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: OutlinedButton.icon(
+                            onPressed: _isSubmitting ? null : _saveDraft,
+                            icon: const Icon(Icons.save_outlined, size: 18),
+                            label: Text(
+                              _draftName != null
+                                  ? 'Update Pending'
+                                  : 'Save as Draft',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
                               ),
-                            )
-                          : const Icon(Icons.check_rounded),
-                      label: Text(
-                        _isSubmitting
-                            ? 'Creating...'
-                            : 'Create Report (${_assessments.where((a) => a.levelAchieved >= 0).length} assessed)',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: colorScheme.primary,
+                              side: BorderSide(
+                                color: colorScheme.primary,
+                                width: 1.5,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                      const SizedBox(width: 12),
+
+                      // ✈️ SUBMIT — status 'Submitted'
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: ElevatedButton.icon(
+                            onPressed: _isSubmitting
+                                ? null
+                                : _create_new_Report,
+                            icon: _isSubmitting
+                                ? SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: colorScheme.onPrimary,
+                                    ),
+                                  )
+                                : const Icon(Icons.send_rounded, size: 18),
+                            label: Text(
+                              _isSubmitting
+                                  ? 'Saving...'
+                                  : 'Submit (${_assessments.where((a) => a.levelAchieved >= 0).length})',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
                         ),
+                      ),
+                    ],
+                  ),
+
+                  // ── Pending indicator ────────────────────
+                  if (_draftName != null) ...[
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.cloud_done_rounded,
+                            size: 14,
+                            color: Colors.orange.shade700,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Saved as Pending — further edits update it',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.orange.shade700,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
