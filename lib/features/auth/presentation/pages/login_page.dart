@@ -82,9 +82,19 @@ class _LoginViewState extends State<_LoginView> {
 
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
+        // if (state is AuthAuthenticated) {
+        //   HapticFeedback.mediumImpact();
+        //   debugPrint('🚀 AUTHENTICATED → going to ${AppRoutes.main}');
+        //   context.go(AppRoutes.main);
+        //   return;
+        // }
+
         if (state is AuthAuthenticated) {
+          FocusManager.instance.primaryFocus?.unfocus();
+          SystemChannels.textInput.invokeMethod(
+            'TextInput.hide',
+          ); // iOS specific
           HapticFeedback.mediumImpact();
-          debugPrint('🚀 AUTHENTICATED → going to ${AppRoutes.main}');
           context.go(AppRoutes.main);
           return;
         }
