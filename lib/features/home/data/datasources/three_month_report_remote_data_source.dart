@@ -29,6 +29,7 @@ abstract class ThreeMonthReportRemoteDataSource {
     required String reportName,
     required Map<String, dynamic> data,
   });
+
   Future<String> getThreeMonthReportPdf(String reportName);
   Future<ThreeMonthReportModel> createThreeMonthReportTmr(
     Map<String, dynamic> data,

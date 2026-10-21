@@ -289,7 +289,7 @@ class ApiConstants {
 
   /// PUT — Update a Three Month Report (Teacher)
   static const String updateThreeMonthReport =
-      '/api/method/little_heroes.api.v1.three_month_reports.update_three_month_report';
+      '/api/method/little_heroes.api.v1.internal_three_month_reports.update_internal_three_month_report';
 
   /// GET — Get a single Three Month Report
   static const String getThreeMonthReport =
