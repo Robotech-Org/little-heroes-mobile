@@ -37,6 +37,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
 
   /// Guards against repeated auto-scope fetches when there's only one child.
   bool _autoScoped = false;
+  int _dashboardRequestId = 0;
 
   @override
   void initState() {
@@ -44,10 +45,104 @@ class _ParentDashboardState extends State<ParentDashboard> {
     _loadDashboard();
   }
 
+  Future<void> _loadDashboard() async {
+    final requestId = ++_dashboardRequestId;
+    final studentId = _selectedStudentId;
+    final cache = ParentDashboardCacheService.instance;
+    final cached = cache.load(studentId);
+
+    if (!mounted) return;
+
+    setState(() {
+      if (cached != null) {
+        _dashboardData = cached;
+        if (cached.children.isNotEmpty && studentId == null) {
+          _children = cached.children;
+        }
+        _cachedAt = cache.lastUpdated(studentId);
+        _isLoading = false;
+        _isError = false;
+        _isOffline = false;
+      } else {
+        _isLoading = true;
+        _isError = false;
+      }
+    });
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+
+      if (authState is! AuthAuthenticated) {
+        if (!mounted || requestId != _dashboardRequestId) return;
+
+        if (cached == null) {
+          setState(() {
+            _isLoading = false;
+            _isError = true;
+            _errorMessage = 'Please login to view dashboard';
+          });
+        }
+        return;
+      }
+
+      final repository = di.sl<DashboardRepository>();
+      final response = await repository.getDashboard(studentId: studentId);
+
+      if (!mounted || requestId != _dashboardRequestId) return;
+
+      if (response.data is! ParentData) {
+        if (cached == null) {
+          setState(() {
+            _isLoading = false;
+            _isError = true;
+            _errorMessage = 'Invalid dashboard data for parent';
+          });
+        }
+        return;
+      }
+
+      final data = response.data as ParentData;
+
+      // Update the complete child list only from an unscoped response.
+      final updatedChildren = studentId == null && data.children.isNotEmpty
+          ? data.children
+          : _children;
+
+      // Do not await cache writes before updating the visible UI.
+      setState(() {
+        _dashboardData = data;
+        if (updatedChildren.isNotEmpty) {
+          _children = updatedChildren;
+        }
+        _isLoading = false;
+        _isError = false;
+        _isOffline = false;
+        _cachedAt = DateTime.now();
+      });
+
+      await cache.save(studentId, data);
+    } catch (e) {
+      if (!mounted || requestId != _dashboardRequestId) return;
+
+      setState(() {
+        _isLoading = false;
+        if (cached != null) {
+          _isError = false;
+          _isOffline = true;
+          _errorMessage = e.toString();
+        } else {
+          _isError = true;
+          _isOffline = false;
+          _errorMessage = e.toString();
+        }
+      });
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════
   // LOAD — cache first, then network
   // ═══════════════════════════════════════════════════════════
-  Future<void> _loadDashboard() async {
+  Future<void> _loadDashboard_work() async {
     final cache = ParentDashboardCacheService.instance;
 
     // 1️ Try cached data for the current scope (null = All Children)
@@ -162,6 +257,19 @@ class _ParentDashboardState extends State<ParentDashboard> {
 
   Future<void> _onChildSelected(String? studentId) async {
     if (studentId == _selectedStudentId) return;
+
+    setState(() {
+      _selectedStudentId = studentId;
+      _isLoading = false;
+      _isError = false;
+      _isOffline = false;
+    });
+
+    await _loadDashboard();
+  }
+
+  Future<void> _onChildSelected_work(String? studentId) async {
+    if (studentId == _selectedStudentId) return;
     setState(() => _selectedStudentId = studentId);
     await _loadDashboard();
   }
@@ -197,7 +305,8 @@ class _ParentDashboardState extends State<ParentDashboard> {
           _ChildSelector(
             children: _children,
             selectedId: _selectedStudentId,
-            onChanged: _isLoading ? null : _onChildSelected,
+            // onChanged: _isLoading ? null : _onChildSelected,
+            onChanged: _onChildSelected,
             allowAll: !hasSingleChild,
           ),
           const SizedBox(height: 8),

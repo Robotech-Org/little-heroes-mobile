@@ -118,7 +118,7 @@ class _LittleHeroesAppState extends State<LittleHeroesApp> {
     final messenger = rootScaffoldMessengerKey.currentState;
     if (messenger == null) {
       debugPrint(
-        ' rootScaffoldMessengerKey has no state — '
+        '❌ rootScaffoldMessengerKey has no state — '
         'did you set scaffoldMessengerKey on MaterialApp.router?',
       );
       return;
@@ -130,23 +130,24 @@ class _LittleHeroesAppState extends State<LittleHeroesApp> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
-          //  Use AppColors.warning once you add it to the constants file:
-          //    backgroundColor: AppColors.warning,
           backgroundColor: _kSessionWarning,
           elevation: 6,
-          duration: const Duration(seconds: 5),
+          // ── Auto-close after 3 seconds ──────────────
+          duration: const Duration(seconds: 3),
+          // ── Allow swipe-to-dismiss (left/right) ─────
+          dismissDirection: DismissDirection.horizontal,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          content: const Row(
+          content: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.lock_clock_rounded,
-                color: AppColors.white, //  from AppColors
+                color: AppColors.white,
                 size: 22,
               ),
-              SizedBox(width: 12),
-              Expanded(
+              const SizedBox(width: 12),
+              const Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +155,7 @@ class _LittleHeroesAppState extends State<LittleHeroesApp> {
                     Text(
                       'Session expired',
                       style: TextStyle(
-                        color: AppColors.white, //  from AppColors
+                        color: AppColors.white,
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                       ),
@@ -163,7 +164,7 @@ class _LittleHeroesAppState extends State<LittleHeroesApp> {
                     Text(
                       'Please log in again to continue.',
                       style: TextStyle(
-                        color: AppColors.white, //  from AppColors
+                        color: AppColors.white,
                         fontWeight: FontWeight.w500,
                         fontSize: 12.5,
                       ),
@@ -171,19 +172,28 @@ class _LittleHeroesAppState extends State<LittleHeroesApp> {
                   ],
                 ),
               ),
+              // ── Close (X) button ────────────────────
+              IconButton(
+                tooltip: 'Dismiss',
+                onPressed: messenger.hideCurrentSnackBar,
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                icon: const Icon(
+                  Icons.close_rounded,
+                  color: AppColors.white,
+                  size: 20,
+                ),
+              ),
             ],
           ),
-          action: SnackBarAction(
-            label: 'Log In',
-            textColor: AppColors.white, //  from AppColors
-            onPressed: () {
-              messenger.hideCurrentSnackBar();
-              AppRouter.router.go(AppRoutes.login);
-            },
-          ),
+          // ❌ Removed SnackBarAction "Log In" — we already redirect,
+          //    and the X in the content does the job.
         ),
       );
   }
+
+ 
 
   @override
   void dispose() {

@@ -53,9 +53,32 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> {
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
+            // SliverToBoxAdapter(
+            //   child: Padding(
+            //     padding: const EdgeInsets.fromLTRB(16, 12, 20, 20),
+            //     child: Row(
+            //       children: [
+            //         IconButton(
+            //           onPressed: () => Navigator.pop(context),
+            //           icon: const Icon(
+            //             Icons.arrow_back_ios_new_rounded,
+            //             size: 20,
+            //           ),
+            //         ),
+            //         const SizedBox(width: 4),
+            //         Text(
+            //           'Photo Gallery',
+            //           style: Theme.of(context).textTheme.headlineSmall
+            //               ?.copyWith(fontWeight: FontWeight.w800),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
+
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 20, 20),
+                padding: const EdgeInsets.fromLTRB(16, 12, 12, 20),
                 child: Row(
                   children: [
                     IconButton(
@@ -70,6 +93,39 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> {
                       'Photo Gallery',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const Spacer(),
+
+                    // ── Refresh button ─────────────────────────────
+                    BlocBuilder<GalleryBloc, GalleryState>(
+                      buildWhen: (prev, curr) =>
+                          curr is GalleryLoading ||
+                          prev is GalleryLoading ||
+                          curr is GalleryError ||
+                          prev is GalleryError,
+                      builder: (context, state) {
+                        final isLoading = state is GalleryLoading;
+
+                        return IconButton(
+                          tooltip: 'Refresh',
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  context.read<GalleryBloc>().add(
+                                    RefreshGalleryItems(),
+                                  );
+                                },
+                          icon: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.refresh_rounded, size: 22),
+                        );
+                      },
                     ),
                   ],
                 ),
