@@ -37,8 +37,8 @@ class _CreateLessonPlanPageState extends State<CreateLessonPlanPage> {
   CurriculumPlanModel? _selectedCurriculumPlan;
   String? _selectedDomain;
   CompetencyModel? _selectedSubDomain;
-  String _selectedType = 'weekly';
-  String _selectedStatus = 'pending';
+  String _selectedType = 'Weekly';
+  String _selectedStatus = 'submitted';
 
   // Data
   List<ClassroomModel> _classrooms = [];
@@ -176,7 +176,9 @@ class _CreateLessonPlanPageState extends State<CreateLessonPlanPage> {
             .split('T')
             .first,
         'lesson_plan_type': _selectedType,
-        'lesson_plan_status': isDraft ? 'Draft' : _selectedStatus,
+        // 'lesson_plan_status': isDraft ? 'Draft' : _selectedStatus,
+        'lesson_plan_status': isDraft ? 'pending' : 'submited',
+
         'lesson_plan_subject': _subjectController.text.trim(),
         'lesson_plan_title_of_lesson': _titleController.text.trim(),
         'lesson_plan_objective': _objectiveController.text.trim(),

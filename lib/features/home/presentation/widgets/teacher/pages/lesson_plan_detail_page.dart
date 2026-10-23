@@ -7,6 +7,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.d
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/home/data/models/lesson_plan_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/lesson_plan_repository.dart';
+import 'package:little_heroes_mobile/features/home/presentation/widgets/teacher/pages/ledit_lesson_planner_page.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
 
 class LessonPlanDetailPage extends StatefulWidget {
@@ -75,6 +76,22 @@ class _LessonPlanDetailPageState extends State<LessonPlanDetailPage> {
       });
     }
   }
+  Future<void> _navigateToEdit() async {
+  final p = _plan;
+  if (p == null) return;
+
+  final updated = await Navigator.push<bool>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => EditLessonPlanPage(plan: p),
+    ),
+  );
+
+  if (updated == true && mounted) {
+    // Re-fetch so detail reflects the edits
+    await _load();
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +119,11 @@ class _LessonPlanDetailPageState extends State<LessonPlanDetailPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+    icon: const Icon(Icons.edit_rounded),
+    tooltip: 'Edit lesson plan',
+    onPressed: _plan == null ? null : _navigateToEdit,
+  ),
           IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _load),
         ],
       ),
