@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:little_heroes_mobile/core/services/newsletter_cache_service.dart';
+import 'package:little_heroes_mobile/core/utils/url_helper.dart';
+import 'package:little_heroes_mobile/core/widgets/authenticated_image.dart';
 
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
@@ -23,9 +25,9 @@ class _NewsletterPageState extends State<NewsletterPage> {
   List<NewsletterModel> _all = [];
   List<NewsletterModel> _filtered = [];
 
-  bool _isLoading = true; // true only when there's nothing to show yet
+  bool _isLoading = true;
   bool _isError = false;
-  bool _isOffline = false; // ← true when showing cached data due to API failure
+  bool _isOffline = false;
   String _errorMessage = '';
   DateTime? _cachedAt;
 
@@ -41,12 +43,7 @@ class _NewsletterPageState extends State<NewsletterPage> {
     super.dispose();
   }
 
-  // ══════════════════════════════════════════════════
-  // LOAD — cache first, then network
-  // ══════════════════════════════════════════════════
-
   Future<void> _load() async {
-    //  Try cache first — instant display
     final cached = NewsletterCacheService.instance.load();
     if (cached != null && cached.isNotEmpty) {
       setState(() {
@@ -64,12 +61,10 @@ class _NewsletterPageState extends State<NewsletterPage> {
       });
     }
 
-    // 2️ Then hit the network
     try {
       final authState = context.read<AuthBloc>().state;
       if (authState is! AuthAuthenticated) {
         if (!mounted) return;
-        // If we have cache, keep showing it; only show error if we don't
         if (cached == null || cached.isEmpty) {
           setState(() {
             _isLoading = false;
@@ -85,7 +80,6 @@ class _NewsletterPageState extends State<NewsletterPage> {
 
       if (!mounted) return;
 
-      // 3️ Success — update UI + save to cache
       await NewsletterCacheService.instance.save(response.items);
 
       setState(() {
@@ -101,7 +95,6 @@ class _NewsletterPageState extends State<NewsletterPage> {
 
       final message = e.toString().replaceFirst('Exception: ', '');
 
-      // 4️ Network failed — if we have cache, stay offline (don't error)
       if (cached != null && cached.isNotEmpty) {
         setState(() {
           _isLoading = false;
@@ -110,7 +103,6 @@ class _NewsletterPageState extends State<NewsletterPage> {
           _errorMessage = message;
         });
       } else {
-        // No cache to fall back to — show full error screen
         setState(() {
           _isLoading = false;
           _isError = true;
@@ -120,10 +112,6 @@ class _NewsletterPageState extends State<NewsletterPage> {
       }
     }
   }
-
-  // ══════════════════════════════════════════════════
-  // SEARCH
-  // ══════════════════════════════════════════════════
 
   void _applySearch(String q) {
     final query = q.trim().toLowerCase();
@@ -138,10 +126,6 @@ class _NewsletterPageState extends State<NewsletterPage> {
       }).toList();
     });
   }
-
-  // ══════════════════════════════════════════════════
-  // BUILD
-  // ══════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -173,20 +157,15 @@ class _NewsletterPageState extends State<NewsletterPage> {
       ),
       body: Column(
         children: [
-          // ══════════ OFFLINE BANNER ══════════
           if (_isOffline) _buildOfflineBanner(theme, colors),
-
-          // ══════════ SEARCH BAR ══════════
           if (!_isLoading && !_isError && _all.isNotEmpty)
             _buildSearchBar(theme, colors),
-
           Expanded(child: _buildBody(theme, colors)),
         ],
       ),
     );
   }
 
-  // ─── Offline banner ───────────────────────────────
   Widget _buildOfflineBanner(ThemeData theme, ColorScheme colors) {
     return Material(
       color: Colors.orange.withValues(alpha: 0.12),
@@ -221,7 +200,6 @@ class _NewsletterPageState extends State<NewsletterPage> {
     );
   }
 
-  // ─── Search bar ───────────────────────────────────
   Widget _buildSearchBar(ThemeData theme, ColorScheme colors) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -255,7 +233,6 @@ class _NewsletterPageState extends State<NewsletterPage> {
     );
   }
 
-  // ─── Body ─────────────────────────────────────────
   Widget _buildBody(ThemeData theme, ColorScheme colors) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -357,7 +334,6 @@ class _NewsletterPageState extends State<NewsletterPage> {
     );
   }
 
-  // ─── Date formatter ───────────────────────────────
   String _fmtDate(DateTime d) {
     final diff = DateTime.now().difference(d);
     if (diff.inMinutes < 1) return 'just now';
@@ -383,7 +359,7 @@ class _NewsletterPageState extends State<NewsletterPage> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CARD (unchanged)
+// CARD — uses AuthenticatedImage for cover_image
 // ═══════════════════════════════════════════════════════════════
 
 class _NewsletterCard extends StatelessWidget {
@@ -399,6 +375,10 @@ class _NewsletterCard extends StatelessWidget {
     final isDraft = !newsletter.isPublished;
     final statusColor = isDraft ? Colors.orange : Colors.green;
 
+    // cover_image → falls back to image → falls back to image_url
+    final coverRaw = newsletter.effectiveCoverImage;
+    final hasCover = coverRaw.trim().isNotEmpty;
+
     return Material(
       color: colors.surface,
       borderRadius: BorderRadius.circular(16),
@@ -406,108 +386,146 @@ class _NewsletterCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
           ),
+          clipBehavior: Clip.antiAlias,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+              // ── Cover image (authenticated) ──
+              if (hasCover)
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: AuthenticatedImage(
+                    imageUrl: UrlHelper.resolve(coverRaw),
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: Container(
+                      color: colors.surfaceVariant.withValues(alpha: 0.5),
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
                     ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    errorWidget: _imagePlaceholder(colors),
+                  ),
+                ),
+
+              // ── Text content ──
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
-                            color: statusColor,
-                            shape: BoxShape.circle,
+                            color: statusColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                newsletter.status.toUpperCase(),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: statusColor,
+                                  fontSize: 9.5,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        Text(
-                          newsletter.status.toUpperCase(),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: statusColor,
-                            fontSize: 9.5,
-                            letterSpacing: 0.4,
+                        const Spacer(),
+                        if (newsletter.publishedAt != null)
+                          Text(
+                            _fmtDate(newsletter.publishedAt!),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
                           ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      newsletter.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _stripHtml(newsletter.body),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.campaign_outlined,
+                          size: 13,
+                          color: colors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            newsletter.publishedBy.isNotEmpty
+                                ? newsletter.publishedBy
+                                : 'School',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: colors.onSurfaceVariant,
                         ),
                       ],
                     ),
-                  ),
-                  const Spacer(),
-                  if (newsletter.publishedAt != null)
-                    Text(
-                      _fmtDate(newsletter.publishedAt!),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 11,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                newsletter.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  ],
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _stripHtml(newsletter.body),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.campaign_outlined,
-                    size: 13,
-                    color: colors.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 5),
-                  Expanded(
-                    child: Text(
-                      newsletter.publishedBy.isNotEmpty
-                          ? newsletter.publishedBy
-                          : 'School',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: colors.onSurfaceVariant,
-                  ),
-                ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder(ColorScheme colors) {
+    return Container(
+      color: colors.surfaceVariant.withValues(alpha: 0.5),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.image_outlined,
+        size: 28,
+        color: colors.onSurfaceVariant.withValues(alpha: 0.6),
       ),
     );
   }

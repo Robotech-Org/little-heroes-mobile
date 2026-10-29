@@ -371,7 +371,9 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
       return const SizedBox.shrink();
     }
 
-    DateTime currentDisplayDate = _selectedDate ?? _availableDates.first;
+    // DateTime currentDisplayDate = _selectedDate ?? _availableDates.first;
+    //  AFTER — falls back to NEWEST if somehow null
+    DateTime currentDisplayDate = _selectedDate ?? _availableDates.last;
 
     return Container(
       height: 80,
@@ -516,7 +518,7 @@ class _DailyReportPageState extends State<DailyReportPageTeachers> {
       controller: _searchController,
       onChanged: _searchReports,
       decoration: InputDecoration(
-        hintText: 'Search by student name...',
+        hintText: 'Search by student name',
         prefixIcon: Icon(
           Icons.search_rounded,
           color: colorScheme.onSurfaceVariant,

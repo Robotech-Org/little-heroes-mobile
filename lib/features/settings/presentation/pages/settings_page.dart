@@ -12,6 +12,7 @@ import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_event.
 import 'package:little_heroes_mobile/features/auth/presentation/bloc/auth_state.dart';
 import 'package:little_heroes_mobile/features/settings/domain/entities/user_preferences.dart';
 import 'package:little_heroes_mobile/features/settings/domain/entities/user_profile.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
@@ -367,15 +368,17 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
 
                     const SizedBox(height: 20),
-                    Center(
-                      child: Text(
-                        'Little Heroes • v1.0.0',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+Center(
+  child: Text(
+    'Little Heroes • v1.0.0',
+    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    ),
+  ),
+),
+const SizedBox(height: 10),
+const Center(child: _PoweredByRobotech()),
+const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -399,7 +402,89 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 }
+// ═══════════════════════════════════════════════════════════
+// POWERED BY ROBOTECH
+// ═══════════════════════════════════════════════════════════
 
+class _PoweredByRobotech extends StatelessWidget {
+  const _PoweredByRobotech();
+
+  static const _url = 'https://www.robotech.et/';
+  static const _brandColor = Color(0xFF0EA5E9); // Robotech sky blue
+
+  Future<void> _launch(BuildContext context) async {
+    final uri = Uri.parse(_url);
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && context.mounted) {
+        _snack(context, 'Could not open link');
+      }
+    } catch (_) {
+      if (context.mounted) _snack(context, 'Could not open link');
+    }
+  }
+
+  void _snack(BuildContext context, String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = theme.colorScheme.onSurfaceVariant;
+
+    return Semantics(
+      link: true,
+      label: 'Powered by Robotech — opens robotech.et',
+      child: InkWell(
+        onTap: () => _launch(context),
+        borderRadius: BorderRadius.circular(12),
+        splashColor: _brandColor.withValues(alpha: 0.12),
+        highlightColor: _brandColor.withValues(alpha: 0.06),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.bolt_rounded,
+                size: 14,
+                color: _brandColor.withValues(alpha: 0.85),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Powered by ',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: baseColor,
+                  fontSize: 11.5,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              Text(
+                'Robotech',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: _brandColor,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.open_in_new_rounded,
+                size: 11,
+                color: _brandColor.withValues(alpha: 0.75),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 // ═══════════════════════════════════════════════════════════
 // SECURITY SECTION
 // ═══════════════════════════════════════════════════════════

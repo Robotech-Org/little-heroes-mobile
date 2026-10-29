@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:little_heroes_mobile/core/utils/url_helper.dart';
+import 'package:little_heroes_mobile/core/widgets/authenticated_image.dart';
 import 'package:little_heroes_mobile/features/home/data/models/newsletter_model.dart';
 import 'package:little_heroes_mobile/features/home/domain/repositories/newsletter_repository.dart';
 import 'package:little_heroes_mobile/injection_container.dart' as di;
@@ -119,12 +121,39 @@ class _NewsletterDetailPageState extends State<NewsletterDetailPage> {
     }
 
     final n = _newsletter!;
+    // image → falls back to cover_image → falls back to image_url
+    final heroRaw = n.effectiveHeroImage;
+    final hasHero = heroRaw.trim().isNotEmpty;
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Hero image (authenticated) ──
+          if (hasHero) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: AuthenticatedImage(
+                  imageUrl: UrlHelper.resolve(heroRaw),
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  placeholder: Container(
+                    color: colors.surfaceVariant.withValues(alpha: 0.5),
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  errorWidget: _imagePlaceholder(colors),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          // ── Title ──
           Text(
             n.title,
             style: theme.textTheme.headlineSmall?.copyWith(
@@ -134,6 +163,8 @@ class _NewsletterDetailPageState extends State<NewsletterDetailPage> {
             ),
           ),
           const SizedBox(height: 10),
+
+          // ── Byline ──
           Row(
             children: [
               Icon(
@@ -166,15 +197,26 @@ class _NewsletterDetailPageState extends State<NewsletterDetailPage> {
             ],
           ),
           const SizedBox(height: 20),
-          // Body — HTML is stripped here for a simple, clean read.
-          // If you want rendered rich text, add the `flutter_html` package
-          // and swap this `Text` for `Html(data: n.body)`.
+
+          // ── Body ──
           Text(
             _stripHtml(n.body),
             style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
           ),
           const SizedBox(height: 40),
         ],
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder(ColorScheme colors) {
+    return Container(
+      color: colors.surfaceVariant.withValues(alpha: 0.5),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.image_outlined,
+        size: 40,
+        color: colors.onSurfaceVariant.withValues(alpha: 0.6),
       ),
     );
   }
