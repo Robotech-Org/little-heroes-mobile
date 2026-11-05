@@ -40,6 +40,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DeepLinkService.instance.init();
   await _initializeApp();
+  await NotificationService.initialize();
   await ChatReadStateService.instance.init();
 
   runApp(
@@ -192,8 +193,6 @@ class _LittleHeroesAppState extends State<LittleHeroesApp> {
         ),
       );
   }
-
- 
 
   @override
   void dispose() {

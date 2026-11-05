@@ -20,7 +20,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.robotics.little_heroes_mobile"
+    namespace = "com.robotech.littleheroes.app"
     // compileSdk = flutter.compileSdkVersion
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
@@ -43,7 +43,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.robotics.little_heroes_mobile"
+        applicationId = "com.robotech.littleheroes.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

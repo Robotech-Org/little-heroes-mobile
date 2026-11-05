@@ -121,14 +121,36 @@ class NotificationService {
     }
   }
 
+  // static Future<void> _safeRegister(String token) async {
+  //   try {
+  //     await di.sl<RegisterDevice>()(
+  //       fcmToken: token,
+  //       platform: Platform.isIOS ? 'iOS' : 'Android',
+  //     );
+  //   } catch (e) {
+  //     debugPrint('register failed: $e');
+  //   }
+  // }
+
   static Future<void> _safeRegister(String token) async {
     try {
+      // debugPrint('📤 Registering FCM device token...');
+      debugPrint('Platform: ${Platform.isIOS ? 'iOS' : 'Android'}');
+      debugPrint(
+        'Token: ${token.substring(0, token.length > 15 ? 15 : token.length)}...',
+      );
+
       await di.sl<RegisterDevice>()(
         fcmToken: token,
         platform: Platform.isIOS ? 'iOS' : 'Android',
       );
-    } catch (e) {
-      debugPrint('register failed: $e');
+
+      // debugPrint('✅ FCM DEVICE REGISTRATION SUCCESSFUL');
+      // debugPrint('✅ Backend accepted the device registration');
+    } catch (e, stackTrace) {
+      // debugPrint('❌ FCM DEVICE REGISTRATION FAILED');
+      // debugPrint('Error: $e');
+      // debugPrint('StackTrace: $stackTrace');
     }
   }
 

@@ -1,4 +1,4 @@
-package com.robotics.little_heroes_mobile 
+package com.robotech.littleheroes.app 
 
 import io.flutter.embedding.android.FlutterActivity
 
