@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:little_heroes_mobile/core/constants/app_colors.dart';
@@ -205,10 +206,7 @@ class _WeeklyPlannerPageState extends State<WeeklyPlannerPage> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Row(children: [
-              
-            ],
-          ),
+          child: Row(children: []),
         ),
 
         // List
@@ -416,9 +414,9 @@ class _LessonPlanCard extends StatelessWidget {
     final title = plan.titleOfLesson?.trim().isNotEmpty == true
         ? plan.titleOfLesson!
         : 'Untitled Lesson';
-    final dateStr = plan.lessonPlanDate?.isNotEmpty == true
-        ? _formatDate(plan.lessonPlanDate!)
-        : 'No date';
+
+    // ✅ Uses the model getter — handles both dd/MM/yyyy and ISO
+    final dateStr = plan.displayPlanDate;
 
     final primaryText = isDark
         ? AppColors.darkTextPrimary
@@ -595,7 +593,7 @@ class _LessonPlanCard extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                // ── Row 3: Meta (classroom, date) ──────
+                // ── Row 3: Meta (classroom, plan date) ─
                 Row(
                   children: [
                     _metaItem(
@@ -608,7 +606,7 @@ class _LessonPlanCard extends StatelessWidget {
                     _metaItem(
                       theme: theme,
                       icon: Icons.calendar_today_rounded,
-                      label: dateStr,
+                      label: dateStr, // ✅ from displayPlanDate
                       color: secondaryText,
                     ),
                   ],
@@ -703,27 +701,4 @@ class _LessonPlanCard extends StatelessWidget {
     }
   }
 
-  String _formatDate(String iso) {
-    if (iso.isEmpty) return '—';
-    try {
-      final d = DateTime.parse(iso.replaceFirst(' ', 'T'));
-      const months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      return '${months[d.month - 1]} ${d.day}, ${d.year}';
-    } catch (_) {
-      return iso;
-    }
-  }
 }

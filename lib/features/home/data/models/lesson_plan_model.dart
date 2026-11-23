@@ -1,3 +1,5 @@
+
+
 class LessonPlanModel {
   final String name;
   final String status;
@@ -5,7 +7,7 @@ class LessonPlanModel {
   final String teacher;
   final String classroom;
   final String? curriculumPlan;
-  final String? lessonPlanDate;
+  final String? lessonPlanDate;          
   final String? lessonPlanWeekStart;
   final String? lessonPlanType;
   final String? frameworkDomain;
@@ -51,7 +53,7 @@ class LessonPlanModel {
       teacher: json['lesson_plan_teacher']?.toString() ?? '',
       classroom: json['lesson_plan_classroom']?.toString() ?? '',
       curriculumPlan: json['curriculum_plan']?.toString(),
-      lessonPlanDate: json['lesson_plan_date']?.toString(),
+      lessonPlanDate: json['lesson_plan_date']?.toString(),          // ✅
       lessonPlanWeekStart: json['lesson_plan_week_start']?.toString(),
       lessonPlanType: json['lesson_plan_type']?.toString(),
       frameworkDomain: json['lesson_plan_framework_domain']?.toString(),
@@ -76,7 +78,7 @@ class LessonPlanModel {
     'lesson_plan_teacher': teacher,
     'lesson_plan_classroom': classroom,
     'curriculum_plan': curriculumPlan,
-    'lesson_plan_date': lessonPlanDate,
+    'lesson_plan_date': lessonPlanDate,                             // ✅
     'lesson_plan_week_start': lessonPlanWeekStart,
     'lesson_plan_type': lessonPlanType,
     'lesson_plan_framework_domain': frameworkDomain,
@@ -110,6 +112,30 @@ class LessonPlanModel {
         return 'Rejected';
       default:
         return status;
+    }
+  }
+
+  // ✅ NEW — safe display string for the card.
+  // Handles both:
+  //   • "23/11/2026"               (your new dd/MM/yyyy format)
+  //   • "2026-11-23T00:00:00.000"  (old ISO format)
+  String get displayPlanDate {
+    final raw = lessonPlanDate?.trim();
+    if (raw == null || raw.isEmpty) return 'No date';
+
+    // Already dd/MM/yyyy → return as-is
+    if (RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(raw)) return raw;
+
+    // Try ISO
+    try {
+      final d = DateTime.parse(raw.replaceFirst(' ', 'T'));
+      const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      ];
+      return '${months[d.month - 1]} ${d.day}, ${d.year}';
+    } catch (_) {
+      return raw;
     }
   }
 }
